@@ -12,4 +12,8 @@ export class Cache {
     public set(key: string, value: any): void {
         this.cache.set(key, value);
     }
+
+    public clear(): void {
+        this.cache.clear();
+    }
 }

@@ -1,10 +1,12 @@
 // @ts-ignore
 import express from 'express';
+import cors from 'cors';
 // import "../prelaunch"; // this triggers the prelaunch code
 import { TranslationController } from './controllers/TranslationController';
 import { authenticationMiddleware } from './middleware/AuthenticationMiddleware';
 
 const app = express();
+app.use(cors());
 const translationController = new TranslationController();
 
 app.use(express.json());

@@ -13,6 +13,7 @@ export class TranslationController {
 
     public reloadTranslations(req: Request, res: Response): void {
         this.translationService.reloadTranslations();
+        this.cache.clear();
         res.status(204).send();
     }
 

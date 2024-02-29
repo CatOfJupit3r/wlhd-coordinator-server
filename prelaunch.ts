@@ -26,9 +26,9 @@ const downloadDlc = async (installed_packages: string[] = []): Promise<void> => 
                     const dlc_folder_name: string = (dlc_source.split('/').pop() as string).split('.')[0];
                     const dlc_folder_path: string = path.join(__dirname, 'data', dlc_folder_name);
                     if (installed_packages.includes(dlc_descriptor)) {
-                        if (!DLC_UPDATES_ENABLED) {
-                            continue;
-                        }
+                        // if (!DLC_UPDATES_ENABLED) {
+                        //     continue;
+                        // }
                         await git.pull({
                             fs,
                             http: https,
