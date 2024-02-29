@@ -10,5 +10,7 @@ app.use(express.json());
 app.use(authenticationMiddleware);
 
 app.get('/translation', translationController.getTranslation.bind(translationController));
+app.get('/translation-snippet', translationController.getTranslationSnippet.bind(translationController));
+app.post('/reload-translations', translationController.reloadTranslations.bind(translationController));
 
 export default app;
