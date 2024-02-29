@@ -1,4 +1,3 @@
-// import translationsData from '../data/translations.json'; // Assuming translations are stored in a JSON file
 import { Translation } from '../models/Translation';
 import {getTranslationData} from "../utils/getTranslationData";
 
@@ -6,7 +5,7 @@ export class TranslationService {
     private translations: Translation = {};
 
     constructor() {
-        this.translations = getTranslationData();
+        this.reloadTranslations();
     }
 
     public reloadTranslations(): void {
@@ -14,7 +13,11 @@ export class TranslationService {
     }
 
     public getTranslation(language: string, dlc: string): { [p: string]: string } {
-        return this.translations[language][dlc];
+        if (language in this.translations && dlc in this.translations[language]) {
+            return this.translations[language][dlc];
+        } else {
+            return {};
+        }
     }
 
     public getTranslationSnippet(language: string, dlc: string, keys: string[]): { [p: string]: string } {
