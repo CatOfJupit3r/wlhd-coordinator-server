@@ -1,5 +1,6 @@
 // @ts-ignore
 import express from 'express';
+// import "../prelaunch"; // this triggers the prelaunch code
 import { TranslationController } from './controllers/TranslationController';
 import { authenticationMiddleware } from './middleware/AuthenticationMiddleware';
 

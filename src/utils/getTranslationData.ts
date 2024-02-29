@@ -10,7 +10,6 @@ export const getTranslationData = (): Translation => {
         const translationsFiles = fs.readdirSync(dlcFolderPath);
         translationsFiles.forEach(file => {
             if (fs.lstatSync(`${dlcFolderPath}/${file}`).isFile()) {
-                console.log(file + " not a folder, skipping...");
                 return;
             }
             const manifest = fs.readFileSync(`${dlcFolderPath}/${file}/manifest.json`, 'utf8');
