@@ -16,4 +16,10 @@ export class Cache {
     public clear(): void {
         this.cache.clear();
     }
+
+    public pop(key: string): any {
+        const value = this.cache.get(key);
+        this.cache.delete(key);
+        return value;
+    }
 }
