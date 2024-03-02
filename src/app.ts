@@ -1,15 +1,31 @@
 // @ts-ignore
 import express from 'express';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
 // import "../prelaunch"; // this triggers the prelaunch code
+
 import { TranslationController } from './controllers/TranslationController';
 import { authenticationMiddleware } from './middleware/AuthenticationMiddleware';
-import {GameInfoController} from "./controllers/GameInfoController";
+import { GameInfoController } from "./controllers/GameInfoController";
+import { GameSocketController } from "./controllers/GameSocketController";
 
 const app = express();
 app.use(cors());
+
+// both socket and http server are created on the same port
+const server = http.createServer(app);
+const io = new SocketIOServer(server, {
+    cors: {
+        origin: "http://localhost:3000",
+        methods: ["GET", "POST"]
+    }
+});
+
+
 const translationController = new TranslationController();
 const gameInfoController = new GameInfoController();
+const gameSocketController = new GameSocketController();
 
 app.use(express.json());
 app.use(authenticationMiddleware);
@@ -22,5 +38,16 @@ app.get('/:game_id/game_state', gameInfoController.getGameState.bind(gameInfoCon
 app.get('/:game_id/game_field', gameInfoController.getGameField.bind(gameInfoController));
 app.get('/:game_id/action_options/:entity_id', gameInfoController.getActionOptions.bind(gameInfoController));
 app.get('/:game_id/memory_cell/:memory_cell', gameInfoController.getMemoryCell.bind(gameInfoController));
+app.get('/:game_id/create_game', gameSocketController.createGame.bind(gameSocketController));
 
-export default app;
+io.on('connection', (socket) => {
+    const gameId = socket.handshake.query.game_id;
+    const userToken = socket.handshake.query.user_token;
+    if (!gameId || !userToken) {
+        console.log('Invalid connection');
+        return;
+    }
+    gameSocketController.handlePlayer(gameId as string, userToken as string, socket);
+});
+
+export default server;

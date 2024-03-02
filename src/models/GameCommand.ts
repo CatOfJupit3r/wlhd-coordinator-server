@@ -1,6 +1,6 @@
 export interface GameCommand {
     command: string,
-    payload: {
+    payload?: {
         [key: string]: string
     }
 }
