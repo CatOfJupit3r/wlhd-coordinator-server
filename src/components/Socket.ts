@@ -85,6 +85,25 @@ export class GameSocket {
                 const finishedData = data as GameFinishedCommand;
                 this.sendToAllPlayers("game_finished", finishedData.payload);
                 break;
+            case "request_verification":
+                this.sendToServer({
+                    "command": "verify_socket",
+                    "payload": {
+                        "game_id": "5000",
+                        "species": "web",
+                        "players": ["ADMIN"]
+                    }
+                })
+                break;
+            case "verification_result":
+                if (data.payload?.code === 200) {
+                    console.log('Game server verified');
+                } else {
+                    console.log('Game server verification failed');
+                    console.log(data);
+                    this.onClose();
+                }
+                break;
             default:
                 console.log('Unknown command', data.command);
         }
