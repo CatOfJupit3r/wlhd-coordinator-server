@@ -32,7 +32,7 @@ export class GameSocketService {
         * Then, we pass the userToken to the GameSocket
          */
         if (!this.servingSockets.get(gameId)) {
-            this.servingSockets.set(gameId, new GameSocket());
+            this.createGame(gameId); // TODO: THIS CAUSES TO GENERATE A NEW GAME SOCKET TOO
         }
         this.servingSockets.get(gameId)?.handlePlayer(userToken, playerSocket);
     }
@@ -46,7 +46,14 @@ export class GameSocketService {
         if (!this.servingSockets.get(gameId)) {
             this.servingSockets.set(gameId, new GameSocket());
         } else {
-            console.log('Game already exists');
+            console.log(this.servingSockets);
+            console.log(this.servingSockets.get(gameId));
+            console.log(this.servingSockets.get(gameId)?.isActive());
+            if (this.servingSockets.get(gameId)?.isActive()) {
+                console.log('Game already exists');
+            } else {
+                this.servingSockets.get(gameId)?.connect();
+            }
         }
     }
 }

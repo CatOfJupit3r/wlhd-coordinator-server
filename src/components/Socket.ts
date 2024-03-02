@@ -24,6 +24,10 @@ export class GameSocket {
         }
     }
 
+    public isActive() {
+        return this.active;
+    }
+
     public connect() {
         /**
         * @throws {Error} if connection to game server fails
@@ -38,6 +42,7 @@ export class GameSocket {
             playerSocket.emit('message', 'You are already connected');
             return
         }
+        console.log('Player connected', userToken)
         this.activePlayers.set(userToken, playerSocket);
         this.activePlayers.get(userToken)?.on('message', (data: GameCommand) => {
             if (data.command !== 'take_action') {
@@ -85,17 +90,17 @@ export class GameSocket {
                 const finishedData = data as GameFinishedCommand;
                 this.sendToAllPlayers("game_finished", finishedData.payload);
                 break;
-            case "request_verification":
+            case "request_authentication":
                 this.sendToServer({
                     "command": "verify_socket",
                     "payload": {
-                        "game_id": "5000",
+                        "game_id": "555",
                         "species": "web",
                         "players": ["ADMIN"]
                     }
                 })
                 break;
-            case "verification_result":
+            case "authentication_result":
                 if (data.payload?.code === 200) {
                     console.log('Game server verified');
                 } else {
@@ -119,6 +124,7 @@ export class GameSocket {
                 this.handleCommand(parsedData);
             } catch (e: any) {
                 console.log('Error parsing data from game server', e.message);
+                console.log(data.toString());
                 return;
             }
         })

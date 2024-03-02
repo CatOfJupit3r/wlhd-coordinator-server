@@ -1,5 +1,6 @@
 import {GameSocketService} from "../services/GameSocketService";
 import {Socket} from "socket.io";
+import {Request, Response} from "express";
 
 export class GameSocketController {
     private gameSocketService: GameSocketService;
@@ -12,7 +13,9 @@ export class GameSocketController {
         this.gameSocketService.handlePlayer(gameId, userToken, playerSocket);
     }
 
-    public createGame(gameId: string) {
-        this.gameSocketService.createGame(gameId);
+    public createGame(req: Request, res: Response) {
+        const {game_id} = req.params;
+        this.gameSocketService.createGame(game_id);
+        res.json({status: 'ok'});
     }
 }
