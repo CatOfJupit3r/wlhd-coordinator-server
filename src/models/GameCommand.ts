@@ -14,19 +14,6 @@ export interface TakeActionCommand extends GameCommand {
     }
 }
 
-export interface RoundUpdateCommand extends GameCommand {
-    payload: {
-        round: string
-    }
-}
-
-export interface StateUpdateCommand extends GameCommand {
-    payload: {
-        battlefieldChanged: boolean,
-        memoryCell: string | null
-    }
-}
-
 export interface GameFinishedCommand extends GameCommand {
     payload: {
         result: string,

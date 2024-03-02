@@ -1,18 +1,17 @@
 import {Socket as GameServerSocket} from 'net';
 import {Socket as PlayerSocket} from 'socket.io';
-import {GAME_SERVER_HOST, GAME_SOCKET_HOST, GAME_SOCKET_PORT} from "../configs/config";
+import {GAME_SOCKET_HOST, GAME_SOCKET_PORT} from "../configs/config";
 import {
     GameCommand,
     ActionResultCommand,
     GameFinishedCommand,
-    RoundUpdateCommand,
     TakeActionCommand,
-    StateUpdateCommand,
 } from "../models/GameCommand";
 
 export class GameSocket {
     private activePlayers: Map<string, PlayerSocket>;
     private socket: GameServerSocket;
+    private active: boolean = false;
 
     constructor() {
         this.socket = new GameServerSocket();
@@ -30,6 +29,7 @@ export class GameSocket {
         * @throws {Error} if connection to game server fails
          */
         this.socket.connect(parseInt(GAME_SOCKET_PORT.toString()), GAME_SOCKET_HOST);
+        this.active = true;
     }
 
     public handlePlayer (userToken: string, playerSocket: PlayerSocket) {
@@ -96,7 +96,7 @@ export class GameSocket {
         });
         this.socket.on('data', (data) => {
             try {
-                const parsedData = JSON.parse(data.toString().replace(/'/g, '"'));
+                const parsedData: GameCommand = JSON.parse(data.toString().replace(/'/g, '"'));
                 this.handleCommand(parsedData);
             } catch (e: any) {
                 console.log('Error parsing data from game server', e.message);
@@ -105,35 +105,45 @@ export class GameSocket {
         })
         this.socket.on('error', (err) => {
             if (err.message === 'read ECONNRESET') {
-                console.log('Game server connection closed');
-                this.activePlayers.forEach((player) => {
-                    player.emit('message', 'Game server connection closed');
-                })
+                this.onClose('Game server connection lost');
                 return;
             }
             console.log('Error from game server', err.message);
         });
         this.socket.on('close', () => {
             console.log('Game server connection closed');
-            this.activePlayers.forEach((player) => {
-                player.emit('message', 'Game server connection closed');
-            })
+            this.onClose();
         });
     }
 
     private sendToAllPlayers(event: string, payload?: object) {
         this.activePlayers.forEach((player) => {
-            payload ? player.emit(event, payload) : player.emit(event);
+            payload && player.connected ? player.emit(event, payload) : player.emit(event);
         });
     }
 
     private sendToPlayer(userToken: string, event: string, payload?: object) {
         if (this.activePlayers.has(userToken)) {
-            payload ? this.activePlayers.get(userToken)?.emit(event, payload) : this.activePlayers.get(userToken)?.emit(event);
+            const player = this.activePlayers.get(userToken);
+            payload && player?.connected ? player?.emit(event, payload) : player?.emit(event);
         }
     }
 
     private sendToServer(data: GameCommand) {
-        this.socket.write(JSON.stringify(data));
+        try {
+            this.socket.write(JSON.stringify(data));
+        } catch (e: any) {
+            console.log('Error sending data to game server', e.message);
+            this.onClose('Game server connection lost');
+        }
+    }
+
+    private onClose(message: string = 'Game server connection closed') {
+        this.activePlayers.forEach((player) => {
+            player.emit('close', message);
+            player.disconnect();
+        })
+        this.activePlayers.clear();
+        this.active = false;
     }
 }
