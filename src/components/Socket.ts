@@ -1,6 +1,14 @@
 import {Socket as GameServerSocket} from 'net';
 import {Socket as PlayerSocket} from 'socket.io';
 import {GAME_SERVER_HOST, GAME_SOCKET_HOST, GAME_SOCKET_PORT} from "../configs/config";
+import {
+    GameCommand,
+    ActionResultCommand,
+    GameFinishedCommand,
+    RoundUpdateCommand,
+    TakeActionCommand,
+    StateUpdateCommand,
+} from "../models/GameCommand";
 
 export class GameSocket {
     private activePlayers: Map<string, PlayerSocket>;
@@ -31,20 +39,51 @@ export class GameSocket {
             return
         }
         this.activePlayers.set(userToken, playerSocket);
-        this.activePlayers.get(userToken)?.on('message', (data) => {
-            this.socket.write(JSON.stringify(data));
+        this.activePlayers.get(userToken)?.on('message', (data: GameCommand) => {
+            if (data.command !== 'take_action') {
+                this.activePlayers.get(userToken)?.emit('error', 'Invalid command');
+            } else {
+                this.sendToServer(data);
+            }
         })
     }
 
-    private handleCommand(data: any) {
+    private handleCommand(data: GameCommand) {
         switch (data.command) {
-            case 'clear_cache':
+            case "game_started":
+                this.sendToAllPlayers("game_started")
                 break;
-            case 'auth':
-                this.socket.write(JSON.stringify({
-                    command: 'auth',
-                    token: "1222222223123111"
-                }));
+            case "round_update":
+                this.sendToAllPlayers("round_update", data.payload)
+                break;
+            case "state_updated":
+                this.sendToAllPlayers("state_updated", data.payload)
+                break;
+            case "take_action":
+                const actionData = data as TakeActionCommand;
+                const userToken = actionData.payload.user_token;
+                if (this.activePlayers.has(userToken)) {
+                    this.sendToPlayer(userToken, "take_action", actionData.payload);
+                } else {
+                    console.log('Player not found', userToken);
+                    this.sendToServer({
+                        "command": "take_action",
+                        "payload": {
+                            "user_token": userToken,
+                            "action": {
+                                "action": "skip_turn"
+                            }
+                        }
+                    })
+                }
+                break;
+            case "action_result":
+                const resultData = data as ActionResultCommand;
+                this.sendToPlayer(resultData.payload.user_token, "action_result", resultData.payload);
+                break;
+            case "game_finished":
+                const finishedData = data as GameFinishedCommand;
+                this.sendToAllPlayers("game_finished", finishedData.payload);
                 break;
             default:
                 console.log('Unknown command', data.command);
@@ -56,9 +95,13 @@ export class GameSocket {
             console.log('Connected to game server');
         });
         this.socket.on('data', (data) => {
-            const parsedData = JSON.parse(data.toString().replace(/'/g, '"'));
-            console.log('Received data from game server', parsedData);
-            this.handleCommand(parsedData);
+            try {
+                const parsedData = JSON.parse(data.toString().replace(/'/g, '"'));
+                this.handleCommand(parsedData);
+            } catch (e: any) {
+                console.log('Error parsing data from game server', e.message);
+                return;
+            }
         })
         this.socket.on('error', (err) => {
             if (err.message === 'read ECONNRESET') {
@@ -78,15 +121,19 @@ export class GameSocket {
         });
     }
 
-    private sendToAllPlayers(data: any) {
+    private sendToAllPlayers(event: string, payload?: object) {
         this.activePlayers.forEach((player) => {
-            player.emit('message', data);
+            payload ? player.emit(event, payload) : player.emit(event);
         });
     }
 
-    private sendToPlayer(userToken: string, data: any) {
+    private sendToPlayer(userToken: string, event: string, payload?: object) {
         if (this.activePlayers.has(userToken)) {
-            this.activePlayers.get(userToken)?.emit('message', data);
+            payload ? this.activePlayers.get(userToken)?.emit(event, payload) : this.activePlayers.get(userToken)?.emit(event);
         }
+    }
+
+    private sendToServer(data: GameCommand) {
+        this.socket.write(JSON.stringify(data));
     }
 }
