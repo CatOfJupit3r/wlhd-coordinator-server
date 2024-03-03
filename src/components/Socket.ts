@@ -25,7 +25,7 @@ export class GameSocket {
     }
 
     public isActive() {
-        return this.active;
+        return this.active && this.socket.readable && this.socket.writable;
     }
 
     public connect() {
@@ -45,6 +45,9 @@ export class GameSocket {
         console.log('Player connected', userToken)
         // we set up players BEFORE we add players to active sockets.
         // I DON'T KNOW WHY IT DOESN'T WORK OTHERWISE
+        // try {
+        //     this.sendNewPlayerToServer(userToken, playerSocket);
+        // }
         playerSocket.on('take_action', (data: any) => {
             console.log("Received message from Player. Sending to server...")
             if (data === undefined) {
@@ -132,9 +135,10 @@ export class GameSocket {
         });
         this.socket.on('data', (data) => {
             try {
-                // might receive multiple jsons at once, so need to separate too
-                const parsedData: GameCommand = JSON.parse(data.toString().replace(/'/g, '"'));
-                this.handleCommand(parsedData);
+                const parsedData = this.parseData(data);
+                parsedData.forEach((data) => {
+                    this.handleCommand(data);
+                })
             } catch (e: any) {
                 console.log('Error parsing data from game server', e.message);
                 console.log(data.toString());
@@ -152,6 +156,30 @@ export class GameSocket {
             console.log('Game server connection closed');
             this.onClose();
         });
+    }
+
+    private parseData(data: Buffer): GameCommand[] {
+        try {
+            const parsedObjects: GameCommand[] = [];
+            let buffer = data.toString().replace(/'/g, '"');
+            while (buffer.includes('}')) {
+                const startIdx = buffer.indexOf('{');
+                const endIdx = buffer.indexOf('}');
+                if (startIdx !== -1 && endIdx !== -1) {
+                    const jsonStr = buffer.slice(startIdx, endIdx + 1);
+                    const parsedData = JSON.parse(jsonStr);
+                    parsedObjects.push(parsedData);
+                    buffer = buffer.slice(endIdx + 1);
+                } else {
+                    break;
+                }
+            }
+            return parsedObjects
+        } catch (e: any) {
+            console.log('Error parsing data from game server', e.message);
+            console.log(data.toString());
+            return []
+        }
     }
 
     private sendToAllPlayers(event: string, payload?: object) {
@@ -184,4 +212,8 @@ export class GameSocket {
         this.activePlayers.clear();
         this.active = false;
     }
+
+    // private addNewPlayer(userToken: string, playerSocket: PlayerSocket) {
+    //
+    // }
 }
