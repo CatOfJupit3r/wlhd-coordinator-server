@@ -38,11 +38,14 @@ app.get('/:game_id/game_state', gameInfoController.getGameState.bind(gameInfoCon
 app.get('/:game_id/game_field', gameInfoController.getGameField.bind(gameInfoController));
 app.get('/:game_id/action_options/:entity_id', gameInfoController.getActionOptions.bind(gameInfoController));
 app.get('/:game_id/memory_cell/:memory_cell', gameInfoController.getMemoryCell.bind(gameInfoController));
+app.get('/:game_id/all_messages', gameInfoController.getAllMemoryCells.bind(gameInfoController));
 app.get('/:game_id/create_game', gameSocketController.createGame.bind(gameSocketController));
+
 
 io.on('connection', (socket) => {
     const gameId = socket.handshake.query.game_id;
     const userToken = socket.handshake.query.user_token;
+    console.log('Connected', gameId, userToken);
     if (!gameId || !userToken) {
         console.log('Invalid connection');
         return;

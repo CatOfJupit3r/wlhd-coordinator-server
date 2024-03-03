@@ -30,3 +30,6 @@ export interface ActionResultCommand extends GameCommand {
     }
 }
 
+export interface ActionOutput {
+    [key: string]: string
+}

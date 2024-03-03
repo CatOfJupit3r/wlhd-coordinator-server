@@ -46,9 +46,6 @@ export class GameSocketService {
         if (!this.servingSockets.get(gameId)) {
             this.servingSockets.set(gameId, new GameSocket());
         } else {
-            console.log(this.servingSockets);
-            console.log(this.servingSockets.get(gameId));
-            console.log(this.servingSockets.get(gameId)?.isActive());
             if (this.servingSockets.get(gameId)?.isActive()) {
                 console.log('Game already exists');
             } else {

@@ -39,18 +39,30 @@ export class GameSocket {
     public handlePlayer (userToken: string, playerSocket: PlayerSocket) {
         if (this.activePlayers.has(userToken) &&
             this.activePlayers.get(userToken)?.connected) {
-            playerSocket.emit('message', 'You are already connected');
+            playerSocket.emit('error', 'You are already connected');
             return
         }
         console.log('Player connected', userToken)
-        this.activePlayers.set(userToken, playerSocket);
-        this.activePlayers.get(userToken)?.on('message', (data: GameCommand) => {
-            if (data.command !== 'take_action') {
-                this.activePlayers.get(userToken)?.emit('error', 'Invalid command');
-            } else {
-                this.sendToServer(data);
+        // we set up players BEFORE we add players to active sockets.
+        // I DON'T KNOW WHY IT DOESN'T WORK OTHERWISE
+        playerSocket.on('take_action', (data: any) => {
+            console.log("Received message from Player. Sending to server...")
+            if (data === undefined) {
+                playerSocket.emit('error', 'Invalid payload');
             }
+            this.sendToServer({
+                "command": "take_action",
+                "payload": {
+                    "user_token": userToken,
+                    "action": data
+                }
+            })
         })
+        playerSocket.on("error", () => {
+            console.log('Invalid event');
+            playerSocket.emit('error', 'Invalid event');
+        })
+        this.activePlayers.set(userToken, playerSocket);
     }
 
     private handleCommand(data: GameCommand) {
@@ -59,16 +71,16 @@ export class GameSocket {
                 this.sendToAllPlayers("game_started")
                 break;
             case "round_update":
-                this.sendToAllPlayers("round_update", data.payload)
+                this.sendToAllPlayers("round_update", data)
                 break;
             case "state_updated":
-                this.sendToAllPlayers("state_updated", data.payload)
+                this.sendToAllPlayers("state_updated", data)
                 break;
             case "take_action":
                 const actionData = data as TakeActionCommand;
                 const userToken = actionData.payload.user_token;
                 if (this.activePlayers.has(userToken)) {
-                    this.sendToPlayer(userToken, "take_action", actionData.payload);
+                    this.sendToPlayer(userToken, "take_action", actionData);
                 } else {
                     console.log('Player not found', userToken);
                     this.sendToServer({
@@ -88,7 +100,7 @@ export class GameSocket {
                 break;
             case "game_finished":
                 const finishedData = data as GameFinishedCommand;
-                this.sendToAllPlayers("game_finished", finishedData.payload);
+                this.sendToAllPlayers("game_finished", finishedData);
                 break;
             case "request_authentication":
                 this.sendToServer({
@@ -120,6 +132,7 @@ export class GameSocket {
         });
         this.socket.on('data', (data) => {
             try {
+                // might receive multiple jsons at once, so need to separate too
                 const parsedData: GameCommand = JSON.parse(data.toString().replace(/'/g, '"'));
                 this.handleCommand(parsedData);
             } catch (e: any) {

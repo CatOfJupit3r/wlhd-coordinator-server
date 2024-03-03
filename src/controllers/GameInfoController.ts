@@ -7,7 +7,7 @@ export class GameInfoController {
 
     private gameInfoService: GameInfoService;
     private staticCommands: string[] = ["message"];
-    private dynamicCommands: string[] = ["state", "field", "options"];
+    private dynamicCommands: string[] = ["state", "field", "options", "all_memory_cells"];
 
     private staticCache: Map<string, Cache>;
     private dynamicCache: Map<string, Cache>;
@@ -73,15 +73,29 @@ export class GameInfoController {
     }
 
     private checkCache(game_id: string, command: string, res: Response): boolean {
-        if (this.staticCache.get(command)?.get(game_id)) {
-            res.json(this.staticCache.get(command)?.get(game_id));
-            return true;
-        } else if (this.processingStatic.get(command)?.has(game_id)) {
-            while (!this.staticCache.get(command)?.get(game_id)) {
-                setTimeout(() => {}, 2000);
+        if (this.dynamicCommands.includes(command)) {
+            if (this.dynamicCache.get(command)?.get(game_id)) {
+                res.json(this.dynamicCache.get(command)?.get(game_id));
+                return true;
+            } else if (this.processingDynamic.get(command)?.has(game_id)) {
+                while (!this.dynamicCache.get(command)?.get(game_id)) {
+                    setTimeout(() => {}, 2000);
+                }
+                res.json(this.dynamicCache.get(command)?.get(game_id));
+                return true;
             }
-            res.json(this.staticCache.get(command)?.get(game_id));
-            return true;
+        } else {
+            if (this.staticCache.get(command)?.get(game_id)) {
+                res.json(this.staticCache.get(command)?.get(game_id));
+                return true;
+            } else if (this.processingStatic.get(command)?.has(game_id)) {
+                while (!this.staticCache.get(command)?.get(game_id)) {
+                    setTimeout(() => {}, 2000);
+                }
+                res.json(this.staticCache.get(command)?.get(game_id));
+                return true;
+            }
+            return false;
         }
         return false;
     }
@@ -152,6 +166,29 @@ export class GameInfoController {
             })
             .finally(() => {
                 this.processingStatic.delete(game_id);
+            });
+    }
+
+    public getAllMemoryCells(req: Request, res: Response): void {
+        const { game_id } = req.params;
+        if (!game_id) {
+            res.status(400).send('Missing game_id');
+            return;
+        }
+        if (this.checkCache(game_id, "all_memory_cells", res)) {
+            return
+        }
+        this.processingDynamic.get("all_memory_cells")?.add(game_id);
+        this.gameInfoService.getAllMemoryCells(game_id)
+            .then((memoryCells: any) => {
+                this.dynamicCache.get("all_memory_cells")?.set(game_id, memoryCells);
+                res.json(memoryCells);
+            })
+            .catch((error: any) => {
+                res.status(500).send(error);
+            })
+            .finally(() => {
+                this.processingDynamic.delete(game_id);
             });
     }
 }
