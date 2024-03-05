@@ -63,4 +63,16 @@ export class GameInfoService {
                 });
         });
     }
+
+    public entitiesInfo(game_id: string): Promise<any> {
+        return new Promise((resolve, reject) => {
+            axios.get(`${GAME_SERVER_URL}/${game_id}/entities_info`)
+                .then(response => {
+                    resolve(response.data);
+                })
+                .catch(error => {
+                    reject(error);
+                });
+        });
+    }
 }

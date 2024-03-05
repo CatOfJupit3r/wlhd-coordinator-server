@@ -5,8 +5,12 @@ import {Request, Response} from "express";
 export class GameSocketController {
     private gameSocketService: GameSocketService;
 
-    constructor() {
-        this.gameSocketService = new GameSocketService();
+    constructor(
+        clearDynamicCache: (game_id: string) => void
+    ) {
+        this.gameSocketService = new GameSocketService(
+            clearDynamicCache
+        );
     }
 
     public handlePlayer(gameId: string, userToken: string, playerSocket: Socket): void {

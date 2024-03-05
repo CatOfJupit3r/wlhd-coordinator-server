@@ -25,7 +25,10 @@ const io = new SocketIOServer(server, {
 
 const translationController = new TranslationController();
 const gameInfoController = new GameInfoController();
-const gameSocketController = new GameSocketController();
+const gameSocketController = new GameSocketController(
+    gameInfoController.clearDynamicCache.bind(gameInfoController)
+);
+
 
 app.use(express.json());
 app.use(authenticationMiddleware);
@@ -39,6 +42,8 @@ app.get('/:game_id/game_field', gameInfoController.getGameField.bind(gameInfoCon
 app.get('/:game_id/action_options/:entity_id', gameInfoController.getActionOptions.bind(gameInfoController));
 app.get('/:game_id/memory_cell/:memory_cell', gameInfoController.getMemoryCell.bind(gameInfoController));
 app.get('/:game_id/all_messages', gameInfoController.getAllMemoryCells.bind(gameInfoController));
+app.get('/:game_id/entities_info', gameInfoController.entitiesInfo.bind(gameInfoController));
+
 app.get('/:game_id/create_game', gameSocketController.createGame.bind(gameSocketController));
 
 
@@ -52,5 +57,7 @@ io.on('connection', (socket) => {
     }
     gameSocketController.handlePlayer(gameId as string, userToken as string, socket);
 });
+
+// {"command": "authentication_result", "payload": {"result": "Game with ID 555 not found!", "code": 404}}
 
 export default server;
