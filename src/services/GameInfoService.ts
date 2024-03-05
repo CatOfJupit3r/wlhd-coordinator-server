@@ -4,21 +4,9 @@ import axios from "axios";
 export class GameInfoService {
     constructor() {}
 
-    public getGameState(game_id: string): Promise<any> {
-        return new Promise((resolve, reject) => {
-            axios.get(`${GAME_SERVER_URL}/${game_id}/get_game_state`)
-                .then(response => {
-                    resolve(response.data);
-                })
-                .catch(error => {
-                    reject(error);
-                });
-        });
-    }
-
     public getGameField(game_id: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            axios.get(`${GAME_SERVER_URL}/${game_id}/field`)
+            axios.get(`${GAME_SERVER_URL}/${game_id}/battlefield`)
                 .then(response => {
                     resolve(response.data);
                 })
@@ -55,18 +43,6 @@ export class GameInfoService {
     public getAllMemoryCells(game_id: string): Promise<any> {
         return new Promise((resolve, reject) => {
             axios.get(`${GAME_SERVER_URL}/${game_id}/all_messages`)
-                .then(response => {
-                    resolve(response.data);
-                })
-                .catch(error => {
-                    reject(error);
-                });
-        });
-    }
-
-    public entitiesInfo(game_id: string): Promise<any> {
-        return new Promise((resolve, reject) => {
-            axios.get(`${GAME_SERVER_URL}/${game_id}/entities_info`)
                 .then(response => {
                     resolve(response.data);
                 })
