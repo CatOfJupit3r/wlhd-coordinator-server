@@ -13,8 +13,16 @@ export class GameSocket {
     private socket: GameServerSocket;
     private active: boolean = false;
 
-    constructor() {
+    private readonly clearDynamicCache?: (gameId: string) => void;
+    private readonly gameId: string;
+
+    constructor(
+        gameId: string,
+        clearDynamicCache?: (game_id: string) => void
+    ) {
         this.socket = new GameServerSocket();
+        this.gameId = gameId;
+        this.clearDynamicCache = clearDynamicCache;
         this.activePlayers = new Map();
         this.setupListeners();
         try {
@@ -77,6 +85,7 @@ export class GameSocket {
                 this.sendToAllPlayers("round_update", data)
                 break;
             case "state_updated":
+                this.clearDynamicCache && this.clearDynamicCache(this.gameId);
                 this.sendToAllPlayers("state_updated", data)
                 break;
             case "take_action":
@@ -91,7 +100,7 @@ export class GameSocket {
                         "payload": {
                             "user_token": userToken,
                             "action": {
-                                "action": "skip_turn"
+                                "action": "skip"
                             }
                         }
                     })
@@ -109,7 +118,7 @@ export class GameSocket {
                 this.sendToServer({
                     "command": "verify_socket",
                     "payload": {
-                        "game_id": "555",
+                        "game_id": this.gameId,
                         "species": "web",
                         "players": ["ADMIN"]
                     }
@@ -162,23 +171,31 @@ export class GameSocket {
         try {
             const parsedObjects: GameCommand[] = [];
             let buffer = data.toString().replace(/'/g, '"');
-            while (buffer.includes('}')) {
-                const startIdx = buffer.indexOf('{');
-                const endIdx = buffer.indexOf('}');
-                if (startIdx !== -1 && endIdx !== -1) {
-                    const jsonStr = buffer.slice(startIdx, endIdx + 1);
-                    const parsedData = JSON.parse(jsonStr);
-                    parsedObjects.push(parsedData);
-                    buffer = buffer.slice(endIdx + 1);
-                } else {
-                    break;
+            let depth = 0;
+            let startIdx = -1;
+
+            for (let i = 0; i < buffer.length; i++) {
+                if (buffer[i] === '{') {
+                    if (depth === 0) {
+                        startIdx = i;
+                    }
+                    depth++;
+                } else if (buffer[i] === '}') {
+                    depth--;
+                    if (depth === 0 && startIdx !== -1) {
+                        const jsonStr = buffer.substring(startIdx, i + 1);
+                        const parsedData = JSON.parse(jsonStr);
+                        parsedObjects.push(parsedData);
+                        startIdx = -1;
+                    }
                 }
             }
-            return parsedObjects
+
+            return parsedObjects;
         } catch (e: any) {
             console.log('Error parsing data from game server', e.message);
             console.log(data.toString());
-            return []
+            return [];
         }
     }
 
