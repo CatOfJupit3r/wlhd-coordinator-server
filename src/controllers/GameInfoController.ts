@@ -42,13 +42,20 @@ export class GameInfoController {
     }
 
     private checkCache(game_id: string, command: string, res: Response): boolean {
+        const maxAttempts = 5;
+        let attempts = 0;
+
         if (this.dynamicCommands.includes(command)) {
             if (this.dynamicCache.get(command)?.get(game_id)) {
                 res.json(this.dynamicCache.get(command)?.get(game_id));
                 return true;
             } else if (this.processingDynamic.get(command)?.has(game_id)) {
-                while (!this.dynamicCache.get(command)?.get(game_id)) {
-                    setTimeout(() => {}, 2000);
+                while (!this.dynamicCache.get(command)?.get(game_id) && attempts < maxAttempts) {
+                    setTimeout(() => {}, 5000);
+                    attempts++;
+                }
+                if (attempts === maxAttempts) {
+                    throw new Error('Cache could not be filled');
                 }
                 res.json(this.dynamicCache.get(command)?.get(game_id));
                 return true;
@@ -58,8 +65,12 @@ export class GameInfoController {
                 res.json(this.staticCache.get(command)?.get(game_id));
                 return true;
             } else if (this.processingStatic.get(command)?.has(game_id)) {
-                while (!this.staticCache.get(command)?.get(game_id)) {
-                    setTimeout(() => {}, 2000);
+                while (!this.staticCache.get(command)?.get(game_id) && attempts < maxAttempts) {
+                    setTimeout(() => {}, 5000);
+                    attempts++;
+                }
+                if (attempts === maxAttempts) {
+                    throw new Error('Cache could not be filled');
                 }
                 res.json(this.staticCache.get(command)?.get(game_id));
                 return true;
