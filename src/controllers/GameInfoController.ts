@@ -51,7 +51,7 @@ export class GameInfoController {
                 return true;
             } else if (this.processingDynamic.get(command)?.has(game_id)) {
                 while (!this.dynamicCache.get(command)?.get(game_id) && attempts < maxAttempts) {
-                    setTimeout(() => {}, 5000);
+                    setTimeout(() => {}, 2000);
                     attempts++;
                 }
                 if (attempts === maxAttempts) {
@@ -66,7 +66,7 @@ export class GameInfoController {
                 return true;
             } else if (this.processingStatic.get(command)?.has(game_id)) {
                 while (!this.staticCache.get(command)?.get(game_id) && attempts < maxAttempts) {
-                    setTimeout(() => {}, 5000);
+                    setTimeout(() => {}, 2000);
                     attempts++;
                 }
                 if (attempts === maxAttempts) {
@@ -116,6 +116,7 @@ export class GameInfoController {
         this.gameInfoService.getActionOptions(game_id, entity_id)
             .then((actionOptions: any) => {
                 this.dynamicCache.get("options")?.set(game_id, actionOptions);
+                console.log(actionOptions)
                 res.json(actionOptions);
             })
             .catch((error: any) => {

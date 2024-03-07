@@ -12,6 +12,9 @@ export class GameSocket {
     private activePlayers: Map<string, PlayerSocket>;
     private socket: GameServerSocket;
     private active: boolean = false;
+    private gameInProgress: boolean = false;
+    private currentPlayer: string = "";
+    private takeActionCommand: any;
 
     private readonly clearDynamicCache?: (gameId: string) => void;
     private readonly gameId: string;
@@ -20,6 +23,7 @@ export class GameSocket {
         gameId: string,
         clearDynamicCache?: (game_id: string) => void
     ) {
+        this.gameInProgress = false;
         this.socket = new GameServerSocket();
         this.gameId = gameId;
         this.clearDynamicCache = clearDynamicCache;
@@ -56,6 +60,12 @@ export class GameSocket {
         // try {
         //     this.sendNewPlayerToServer(userToken, playerSocket);
         // }
+        if (this.gameInProgress) {
+            playerSocket.emit('game_started')
+        }
+        if (this.currentPlayer === userToken) {
+            playerSocket.emit('take_action', this.takeActionCommand);
+        }
         playerSocket.on('take_action', (data: any) => {
             console.log("Received message from Player. Sending to server...")
             if (data === undefined) {
@@ -73,12 +83,14 @@ export class GameSocket {
             console.log('Invalid event');
             playerSocket.emit('error', 'Invalid event');
         })
+
         this.activePlayers.set(userToken, playerSocket);
     }
 
     private handleCommand(data: GameCommand) {
         switch (data.command) {
             case "game_started":
+                this.gameInProgress = true;
                 this.sendToAllPlayers("game_started")
                 break;
             case "round_update":
@@ -91,6 +103,8 @@ export class GameSocket {
             case "take_action":
                 const actionData = data as TakeActionCommand;
                 const userToken = actionData.payload.user_token;
+                this.currentPlayer = userToken;
+                this.takeActionCommand = actionData;
                 if (this.activePlayers.has(userToken)) {
                     this.sendToPlayer(userToken, "take_action", actionData);
                 } else {

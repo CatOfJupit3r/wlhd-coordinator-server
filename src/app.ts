@@ -56,6 +56,5 @@ io.on('connection', (socket) => {
     gameSocketController.handlePlayer(gameId as string, userToken as string, socket);
 });
 
-// {"command": "authentication_result", "payload": {"result": "Game with ID 555 not found!", "code": 404}}
 
 export default server;
