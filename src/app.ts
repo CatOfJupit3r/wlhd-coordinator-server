@@ -38,8 +38,10 @@ app.post('/reload-translations', translationController.reloadTranslations.bind(t
 
 app.get('/:game_id/battlefield', gameInfoController.getGameField.bind(gameInfoController));
 app.get('/:game_id/action_options/:entity_id', gameInfoController.getActionOptions.bind(gameInfoController));
-app.get('/:game_id/memory_cell/:memory_cell', gameInfoController.getMemoryCell.bind(gameInfoController));
+app.get('/:game_id/message/:memory_cell', gameInfoController.getMemoryCell.bind(gameInfoController));
 app.get('/:game_id/all_messages', gameInfoController.getAllMemoryCells.bind(gameInfoController));
+app.get('/:game_id/entity/<:entity_id>', gameInfoController.getEntityInfo.bind(gameInfoController));
+app.get('/:game_id/entities_info', gameInfoController.getAllEntityInfo.bind(gameInfoController));
 
 app.get('/:game_id/create_game', gameSocketController.createGame.bind(gameSocketController));
 

@@ -51,4 +51,28 @@ export class GameInfoService {
                 });
         });
     }
+
+    public getEntityInfo(game_id: string, entity_id: string): Promise<any> {
+        return new Promise((resolve, reject) => {
+            axios.get(`${GAME_SERVER_URL}/${game_id}/entity/${entity_id}`)
+                .then(response => {
+                    resolve(response.data);
+                })
+                .catch(error => {
+                    reject(error);
+                });
+        });
+    }
+
+    public getAllEntityInfo(game_id: string): Promise<any> {
+        return new Promise((resolve, reject) => {
+            axios.get(`${GAME_SERVER_URL}/${game_id}/entities_info`)
+                .then(response => {
+                    resolve(response.data);
+                })
+                .catch(error => {
+                    reject(error);
+                });
+        });
+    }
 }
