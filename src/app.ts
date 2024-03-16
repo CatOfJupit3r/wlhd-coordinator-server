@@ -3,7 +3,6 @@ import express from 'express';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
-// import "../prelaunch"; // this triggers the prelaunch code
 
 import { TranslationController } from './controllers/TranslationController';
 import { authenticationMiddleware } from './middleware/AuthenticationMiddleware';

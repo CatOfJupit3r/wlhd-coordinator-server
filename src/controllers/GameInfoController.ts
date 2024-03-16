@@ -116,7 +116,6 @@ export class GameInfoController {
         this.gameInfoService.getActionOptions(game_id, entity_id)
             .then((actionOptions: any) => {
                 this.dynamicCache.get("options")?.set(game_id, actionOptions);
-                console.log(actionOptions)
                 res.json(actionOptions);
             })
             .catch((error: any) => {

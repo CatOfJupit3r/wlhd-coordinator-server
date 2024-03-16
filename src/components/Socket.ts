@@ -1,16 +1,17 @@
-import {Socket as GameServerSocket} from 'net';
 import {Socket as PlayerSocket} from 'socket.io';
-import {GAME_SOCKET_HOST, GAME_SOCKET_PORT} from "../configs/config";
-import {
-    GameCommand,
-    ActionResultCommand,
-    GameFinishedCommand,
-    TakeActionCommand,
-} from "../models/GameCommand";
+import io from 'socket.io-client';
+import {GAME_SERVER_HOST, GAME_SERVER_PORT, SECRET_TOKEN} from "../configs/config";
+// import {
+//     GameCommand,
+//     ActionResultCommand,
+//     GameFinishedCommand,
+//     TakeActionCommand,
+// } from "../models/GameCommand";
+
 
 export class GameSocket {
     private activePlayers: Map<string, PlayerSocket>;
-    private socket: GameServerSocket;
+    private socket: any;
     private active: boolean = false;
     private gameInProgress: boolean = false;
     private currentPlayer: string = "";
@@ -24,11 +25,21 @@ export class GameSocket {
         clearDynamicCache?: (game_id: string) => void
     ) {
         this.gameInProgress = false;
-        this.socket = new GameServerSocket();
         this.gameId = gameId;
         this.clearDynamicCache = clearDynamicCache;
         this.activePlayers = new Map();
-        this.setupListeners();
+        this.socket = io(
+            `http://${GAME_SERVER_HOST}:${GAME_SERVER_PORT}`,
+            {
+                path: '/sockets',
+                retries: 3,
+                autoConnect: false,
+                query: {
+                    lobby_id: gameId,
+                    token: SECRET_TOKEN
+                }
+            }
+        );
         try {
             this.connect();
         } catch (e: any) {
@@ -44,8 +55,8 @@ export class GameSocket {
         /**
         * @throws {Error} if connection to game server fails
          */
-        this.socket.connect(parseInt(GAME_SOCKET_PORT.toString()), GAME_SOCKET_HOST);
-        this.active = true;
+        this.setupListeners();
+        this.socket.connect();
     }
 
     public handlePlayer (userToken: string, playerSocket: PlayerSocket) {
@@ -55,11 +66,6 @@ export class GameSocket {
             return
         }
         console.log('Player connected', userToken)
-        // we set up players BEFORE we add players to active sockets.
-        // I DON'T KNOW WHY IT DOESN'T WORK OTHERWISE
-        // try {
-        //     this.sendNewPlayerToServer(userToken, playerSocket);
-        // }
         if (this.gameInProgress) {
             playerSocket.emit('game_started')
         }
@@ -71,13 +77,14 @@ export class GameSocket {
             if (data === undefined) {
                 playerSocket.emit('error', 'Invalid payload');
             }
-            this.sendToServer({
-                "command": "take_action",
-                "payload": {
+            this.sendToServer(
+                "player_choice",
+                {
+                    "game_id": this.gameId,
                     "user_token": userToken,
                     "action": data
                 }
-            })
+            )
         })
         playerSocket.on("error", () => {
             console.log('Invalid event');
@@ -87,88 +94,77 @@ export class GameSocket {
         this.activePlayers.set(userToken, playerSocket);
     }
 
-    private handleCommand(data: GameCommand) {
-        switch (data.command) {
-            case "game_started":
-                this.gameInProgress = true;
-                this.sendToAllPlayers("game_started")
-                break;
-            case "round_update":
-                this.sendToAllPlayers("round_update", data)
-                break;
-            case "state_updated":
-                this.clearDynamicCache && this.clearDynamicCache(this.gameId);
-                this.sendToAllPlayers("state_updated", data)
-                break;
-            case "take_action":
-                const actionData = data as TakeActionCommand;
-                const userToken = actionData.payload.user_token;
-                this.currentPlayer = userToken;
-                this.takeActionCommand = actionData;
-                if (this.activePlayers.has(userToken)) {
-                    this.sendToPlayer(userToken, "take_action", actionData);
-                } else {
-                    console.log('Player not found', userToken);
-                    this.sendToServer({
-                        "command": "take_action",
-                        "payload": {
-                            "user_token": userToken,
-                            "action": {
-                                "action": "skip"
-                            }
-                        }
-                    })
-                }
-                break;
-            case "action_result":
-                const resultData = data as ActionResultCommand;
-                this.sendToPlayer(resultData.payload.user_token, "action_result", resultData.payload);
-                break;
-            case "game_finished":
-                const finishedData = data as GameFinishedCommand;
-                this.sendToAllPlayers("game_finished", finishedData);
-                break;
-            case "request_authentication":
-                this.sendToServer({
-                    "command": "verify_socket",
-                    "payload": {
-                        "game_id": this.gameId,
-                        "species": "web",
-                        "players": ["ADMIN"]
-                    }
-                })
-                break;
-            case "authentication_result":
-                if (data.payload?.code === 200) {
-                    console.log('Game server verified');
-                } else {
-                    console.log('Game server verification failed');
-                    console.log(data);
-                    this.onClose();
-                }
-                break;
-            default:
-                console.log('Unknown command', data.command);
-        }
-    }
-
     private setupListeners() {
-        this.socket.on('open', () => {
-            console.log('Connected to game server');
+        this.socket.on('connect', () => {
+            this.active = true;
         });
-        this.socket.on('data', (data) => {
-            try {
-                const parsedData = this.parseData(data);
-                parsedData.forEach((data) => {
-                    this.handleCommand(data);
-                })
-            } catch (e: any) {
-                console.log('Error parsing data from game server', e.message);
-                console.log(data.toString());
-                return;
+        this.socket.on('request_authentication', () => {
+            console.log('Game server requested authentication')
+            this.sendToServer(
+                "verify_socket",
+                {
+                    "lobby_id": this.gameId,
+                    "token": SECRET_TOKEN
+                }
+            )
+        })
+        this.socket.on('authentication_result', (data: any) => {
+            if (data.code === 200) {
+                console.log('Game server verified');
+            } else {
+                console.log('Game server verification failed');
+                console.log(data);
+                this.onClose();
             }
         })
-        this.socket.on('error', (err) => {
+        this.socket.on("battle_started", () => {
+            this.gameInProgress = true;
+            this.sendToAllPlayers("game_started")
+        })
+        this.socket.on("round_update", (data: any) => {
+            this.sendToAllPlayers("round_update", data)
+        })
+        this.socket.on("state_updated", (data: any) => {
+            this.clearDynamicCache && this.clearDynamicCache(this.gameId);
+            const { has_new_message, battlefield_updated } = data
+            if (has_new_message) {
+                this.sendToAllPlayers("new_message", {
+                    "game_id": this.gameId,
+                    "message": has_new_message
+                })
+            }
+            if (battlefield_updated) {
+                this.sendToAllPlayers("battlefield_updated")
+            }
+        })
+        this.socket.on("take_action", (data: any) => {
+            const { user_token, entity_id } = data
+            this.currentPlayer = user_token;
+            this.takeActionCommand = data;
+            if (this.activePlayers.has(user_token)) {
+                this.sendToPlayer(user_token, "take_action", {
+                    "lobby_id": this.gameId,
+                    "user_token": user_token,
+                    "entity_id": entity_id
+                });
+            } else {
+                console.log('Player not found', user_token);
+                this.sendToServer("player_choice", {
+                    "game_id": this.gameId,
+                    "user_token": user_token,
+                    "action": {
+                        "action": "skip"
+                    }
+                })
+            }
+        })
+        this.socket.on("action_result", (data: any) => {
+            this.sendToPlayer(data.user_token, "action_result", data);
+        })
+        this.socket.on("battle_ended", (data: any) => {
+            this.sendToAllPlayers("game_finished", data);
+        })
+        this.socket.on('error', (err: any) => {
             if (err.message === 'read ECONNRESET') {
                 this.onClose('Game server connection lost');
                 return;
@@ -179,38 +175,9 @@ export class GameSocket {
             console.log('Game server connection closed');
             this.onClose();
         });
-    }
-
-    private parseData(data: Buffer): GameCommand[] {
-        try {
-            const parsedObjects: GameCommand[] = [];
-            let buffer = data.toString().replace(/'/g, '"');
-            let depth = 0;
-            let startIdx = -1;
-
-            for (let i = 0; i < buffer.length; i++) {
-                if (buffer[i] === '{') {
-                    if (depth === 0) {
-                        startIdx = i;
-                    }
-                    depth++;
-                } else if (buffer[i] === '}') {
-                    depth--;
-                    if (depth === 0 && startIdx !== -1) {
-                        const jsonStr = buffer.substring(startIdx, i + 1);
-                        const parsedData = JSON.parse(jsonStr);
-                        parsedObjects.push(parsedData);
-                        startIdx = -1;
-                    }
-                }
-            }
-
-            return parsedObjects;
-        } catch (e: any) {
-            console.log('Error parsing data from game server', e.message);
-            console.log(data.toString());
-            return [];
-        }
+        this.socket.on('*', function(packet: any){
+            console.log('Received', packet);
+        });
     }
 
     private sendToAllPlayers(event: string, payload?: object) {
@@ -226,12 +193,11 @@ export class GameSocket {
         }
     }
 
-    private sendToServer(data: GameCommand) {
-        try {
-            this.socket.write(JSON.stringify(data));
-        } catch (e: any) {
-            console.log('Error sending data to game server', e.message);
-            this.onClose('Game server connection lost');
+    private sendToServer(event: string, payload?: object) {
+        if (this.socket.connected) {
+            this.socket.emit(event, payload);
+        } else {
+            console.log('Game server not connected');
         }
     }
 
@@ -243,8 +209,4 @@ export class GameSocket {
         this.activePlayers.clear();
         this.active = false;
     }
-
-    // private addNewPlayer(userToken: string, playerSocket: PlayerSocket) {
-    //
-    // }
 }
