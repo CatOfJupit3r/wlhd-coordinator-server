@@ -15,7 +15,6 @@ export class GameSocketService {
     ) {
         this.clearDynamicCache = clearDynamicCache;
         this.servingSockets = new Map();
-        this.servingSockets.set("test", new GameSocket("test", this.clearDynamicCache));
     }
 
     public connectToGame(gameId: string, userToken: string): void {

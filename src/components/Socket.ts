@@ -32,7 +32,6 @@ export class GameSocket {
             `http://${GAME_SERVER_HOST}:${GAME_SERVER_PORT}`,
             {
                 path: '/sockets',
-                retries: 3,
                 autoConnect: false,
                 query: {
                     lobby_id: gameId,
@@ -86,6 +85,21 @@ export class GameSocket {
                 }
             )
         })
+        playerSocket.on("debug", () => {
+            this.sendToServer(
+                "player_choice",
+                {
+                    "game_id": this.gameId,
+                    "user_token": userToken,
+                    "action": {
+                        "action": "builtins:skip"
+                    }
+                }
+            )
+        })
+        playerSocket.on("start_combat", () => {
+            this.sendToServer("start_game")
+        })
         playerSocket.on("error", () => {
             console.log('Invalid event');
             playerSocket.emit('error', 'Invalid event');
@@ -96,6 +110,7 @@ export class GameSocket {
 
     private setupListeners() {
         this.socket.on('connect', () => {
+            console.log('Connected to game server')
             this.active = true;
         });
         this.socket.on('request_authentication', () => {
@@ -118,18 +133,20 @@ export class GameSocket {
             }
         })
         this.socket.on("battle_started", () => {
+            console.log("Game has started")
             this.gameInProgress = true;
             this.sendToAllPlayers("game_started")
         })
         this.socket.on("round_update", (data: any) => {
+            console.log("Round updated", data)
             this.sendToAllPlayers("round_update", data)
         })
         this.socket.on("state_updated", (data: any) => {
+            console.log("State updated", data)
             this.clearDynamicCache && this.clearDynamicCache(this.gameId);
             const { has_new_message, battlefield_updated } = data
             if (has_new_message) {
                 this.sendToAllPlayers("new_message", {
-                    "game_id": this.gameId,
                     "message": has_new_message
                 })
             }
@@ -137,7 +154,8 @@ export class GameSocket {
                 this.sendToAllPlayers("battlefield_updated")
             }
         })
-        this.socket.on("take_action", (data: any) => {
+        this.socket.on("player_turn", (data: any) => {
+            console.log("Player turn", data)
             const { user_token, entity_id } = data
             this.currentPlayer = user_token;
             this.takeActionCommand = data;
@@ -150,30 +168,31 @@ export class GameSocket {
             } else {
                 console.log('Player not found', user_token);
                 this.sendToServer("player_choice", {
-                    "game_id": this.gameId,
+                    "lobby_id": this.gameId,
                     "user_token": user_token,
                     "action": {
-                        "action": "skip"
+                        "action": "builtins:skip"
                     }
                 })
             }
         })
         this.socket.on("action_result", (data: any) => {
+            console.log("Action result", data)
             this.sendToPlayer(data.user_token, "action_result", data);
         })
         this.socket.on("battle_ended", (data: any) => {
-            this.sendToAllPlayers("game_finished", data);
+            console.log("Game has ended", data)
+            this.sendToAllPlayers("battle_ended", data);
         })
         this.socket.on('error', (err: any) => {
-            if (err.message === 'read ECONNRESET') {
-                this.onClose('Game server connection lost');
-                return;
-            }
             console.log('Error from game server', err.message);
         });
         this.socket.on('close', () => {
             console.log('Game server connection closed');
             this.onClose();
+        });
+        this.socket.on('ping', () => {
+            console.log('Ping received');
         });
         this.socket.on('*', function(packet: any){
             console.log('Received', packet);

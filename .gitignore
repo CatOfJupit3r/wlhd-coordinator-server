@@ -43,3 +43,4 @@ data/translations/*
 /.idea/modules.xml
 /.idea/inspectionProfiles/Project_Default.xml
 /.idea/walenholde-backend-web.iml
+use_cases.txt

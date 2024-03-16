@@ -55,7 +55,8 @@ export class GameInfoController {
                     attempts++;
                 }
                 if (attempts === maxAttempts) {
-                    throw new Error('Cache could not be filled');
+                    res.status(500).send('Cache could not be filled');
+                    return true;
                 }
                 res.json(this.dynamicCache.get(command)?.get(game_id));
                 return true;
@@ -70,7 +71,7 @@ export class GameInfoController {
                     attempts++;
                 }
                 if (attempts === maxAttempts) {
-                    throw new Error('Cache could not be filled');
+                    res.status(500).send('Cache could not be filled');
                 }
                 res.json(this.staticCache.get(command)?.get(game_id));
                 return true;

@@ -6,7 +6,7 @@ export class GameInfoService {
 
     public getGameField(game_id: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            axios.get(`${GAME_SERVER_URL}/${game_id}/battlefield`)
+            axios.get(`${GAME_SERVER_URL}/api/${game_id}/battlefield`)
                 .then(response => {
                     resolve(response.data);
                 })
@@ -18,7 +18,7 @@ export class GameInfoService {
 
     public getActionOptions(game_id: string, entity_id: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            axios.get(`${GAME_SERVER_URL}/${game_id}/action_info/${entity_id}`)
+            axios.get(`${GAME_SERVER_URL}/api/${game_id}/action_info/${entity_id}`)
                 .then(response => {
                     resolve(response.data);
                 })
@@ -30,7 +30,7 @@ export class GameInfoService {
 
     public getMemoryCell(game_id: string, memory_cell: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            axios.get(`${GAME_SERVER_URL}/${game_id}/message/${memory_cell}`)
+            axios.get(`${GAME_SERVER_URL}/api/${game_id}/message/${memory_cell}`)
                 .then(response => {
                     resolve(response.data);
                 })
@@ -42,7 +42,7 @@ export class GameInfoService {
 
     public getAllMemoryCells(game_id: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            axios.get(`${GAME_SERVER_URL}/${game_id}/all_messages`)
+            axios.get(`${GAME_SERVER_URL}/api/${game_id}/all_messages`)
                 .then(response => {
                     resolve(response.data);
                 })
@@ -54,7 +54,7 @@ export class GameInfoService {
 
     public getEntityInfo(game_id: string, entity_id: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            axios.get(`${GAME_SERVER_URL}/${game_id}/entity/${entity_id}`)
+            axios.get(`${GAME_SERVER_URL}/api/${game_id}/entity/${entity_id}`)
                 .then(response => {
                     resolve(response.data);
                 })
@@ -66,7 +66,7 @@ export class GameInfoService {
 
     public getAllEntityInfo(game_id: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            axios.get(`${GAME_SERVER_URL}/${game_id}/entities_info`)
+            axios.get(`${GAME_SERVER_URL}/api/${game_id}/entities_info`)
                 .then(response => {
                     resolve(response.data);
                 })
