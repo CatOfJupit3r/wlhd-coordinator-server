@@ -135,7 +135,7 @@ export class GameSocket {
         this.socket.on("battle_started", () => {
             console.log("Game has started")
             this.gameInProgress = true;
-            this.sendToAllPlayers("game_started")
+            this.sendToAllPlayers("battle_started")
         })
         this.socket.on("round_update", (data: any) => {
             console.log("Round updated", data)
