@@ -1,4 +1,5 @@
 import {Translation} from "../models/Translation";
+// @ts-ignore
 import fs from "fs";
 import {DLCManifest} from "../models/DLCManifest";
 
