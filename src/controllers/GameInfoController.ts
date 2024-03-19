@@ -6,7 +6,7 @@ export class GameInfoController {
 
     private gameInfoService: GameInfoService;
     private staticCommands: string[] = ["message"];
-    private dynamicCommands: string[] = ["field", "options", "all_memory_cells"];
+    private dynamicCommands: string[] = ["field", "options", "all_memory_cells", "entity", "entities_info"];
 
     private staticCache: Map<string, Cache>;
     private dynamicCache: Map<string, Cache>;
@@ -42,13 +42,21 @@ export class GameInfoController {
     }
 
     private checkCache(game_id: string, command: string, res: Response): boolean {
+        const maxAttempts = 5;
+        let attempts = 0;
+
         if (this.dynamicCommands.includes(command)) {
             if (this.dynamicCache.get(command)?.get(game_id)) {
                 res.json(this.dynamicCache.get(command)?.get(game_id));
                 return true;
             } else if (this.processingDynamic.get(command)?.has(game_id)) {
-                while (!this.dynamicCache.get(command)?.get(game_id)) {
+                while (!this.dynamicCache.get(command)?.get(game_id) && attempts < maxAttempts) {
                     setTimeout(() => {}, 2000);
+                    attempts++;
+                }
+                if (attempts === maxAttempts) {
+                    res.status(500).send('Cache could not be filled');
+                    return true;
                 }
                 res.json(this.dynamicCache.get(command)?.get(game_id));
                 return true;
@@ -58,8 +66,12 @@ export class GameInfoController {
                 res.json(this.staticCache.get(command)?.get(game_id));
                 return true;
             } else if (this.processingStatic.get(command)?.has(game_id)) {
-                while (!this.staticCache.get(command)?.get(game_id)) {
+                while (!this.staticCache.get(command)?.get(game_id) && attempts < maxAttempts) {
                     setTimeout(() => {}, 2000);
+                    attempts++;
+                }
+                if (attempts === maxAttempts) {
+                    res.status(500).send('Cache could not be filled');
                 }
                 res.json(this.staticCache.get(command)?.get(game_id));
                 return true;
@@ -160,4 +172,51 @@ export class GameInfoController {
                 this.processingDynamic.delete(game_id);
             });
     }
+
+    public getEntityInfo(req: Request, res: Response): void {
+        const { game_id, entity_id } = req.params;
+        if (!game_id || !entity_id) {
+            res.status(400).send('Missing game_id or entity_id');
+            return;
+        }
+        if (this.checkCache(game_id, "entity", res)) {
+            return
+        }
+        this.processingDynamic.get("entity")?.add(game_id);
+        this.gameInfoService.getEntityInfo(game_id, entity_id)
+            .then((entityInfo: any) => {
+                this.dynamicCache.get("entity")?.set(game_id, entityInfo);
+                res.json(entityInfo);
+            })
+            .catch((error: any) => {
+                res.status(500).send(error);
+            })
+            .finally(() => {
+                this.processingDynamic.delete(game_id);
+            });
+    }
+
+public getAllEntityInfo(req: Request, res: Response): void {
+        const { game_id } = req.params;
+        if (!game_id) {
+            res.status(400).send('Missing game_id');
+            return;
+        }
+        if (this.checkCache(game_id, "entities_info", res)) {
+            return
+        }
+        this.processingDynamic.get("entities_info")?.add(game_id);
+        this.gameInfoService.getAllEntityInfo(game_id)
+            .then((entitiesInfo: any) => {
+                this.dynamicCache.get("entities_info")?.set(game_id, entitiesInfo);
+                res.json(entitiesInfo);
+            })
+            .catch((error: any) => {
+                res.status(500).send(error);
+            })
+            .finally(() => {
+                this.processingDynamic.delete(game_id);
+            });
+    }
+
 }

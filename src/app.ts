@@ -3,7 +3,6 @@ import express from 'express';
 import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import cors from 'cors';
-// import "../prelaunch"; // this triggers the prelaunch code
 
 import { TranslationController } from './controllers/TranslationController';
 import { authenticationMiddleware } from './middleware/AuthenticationMiddleware';
@@ -39,8 +38,10 @@ app.post('/reload-translations', translationController.reloadTranslations.bind(t
 
 app.get('/:game_id/battlefield', gameInfoController.getGameField.bind(gameInfoController));
 app.get('/:game_id/action_options/:entity_id', gameInfoController.getActionOptions.bind(gameInfoController));
-app.get('/:game_id/memory_cell/:memory_cell', gameInfoController.getMemoryCell.bind(gameInfoController));
+app.get('/:game_id/message/:memory_cell', gameInfoController.getMemoryCell.bind(gameInfoController));
 app.get('/:game_id/all_messages', gameInfoController.getAllMemoryCells.bind(gameInfoController));
+app.get('/:game_id/entity/<:entity_id>', gameInfoController.getEntityInfo.bind(gameInfoController));
+app.get('/:game_id/entities_info', gameInfoController.getAllEntityInfo.bind(gameInfoController));
 
 app.get('/:game_id/create_game', gameSocketController.createGame.bind(gameSocketController));
 
@@ -56,6 +57,5 @@ io.on('connection', (socket) => {
     gameSocketController.handlePlayer(gameId as string, userToken as string, socket);
 });
 
-// {"command": "authentication_result", "payload": {"result": "Game with ID 555 not found!", "code": 404}}
 
 export default server;
