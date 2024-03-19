@@ -86,7 +86,7 @@ export class GameSocket {
             )
         })
         playerSocket.on("debug", () => {
-            this.sendToServer(
+            this.currentPlayer === userToken && this.sendToServer(
                 "player_choice",
                 {
                     "game_id": this.gameId,
@@ -96,9 +96,22 @@ export class GameSocket {
                     }
                 }
             )
+            this.currentPlayer = "";
         })
         playerSocket.on("start_combat", () => {
             this.sendToServer("start_game")
+        })
+        playerSocket.on("unable_to_take_action", () => {
+            this.currentPlayer === userToken && this.sendToServer(
+                "player_choice",
+                {
+                    "game_id": this.gameId,
+                    "user_token": userToken,
+                    "action": {
+                        "action": "builtins:skip"
+                    }
+                }
+            )
         })
         playerSocket.on("error", () => {
             console.log('Invalid event');
