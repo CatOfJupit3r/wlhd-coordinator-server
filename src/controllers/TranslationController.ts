@@ -34,7 +34,7 @@ export class TranslationController {
 
     public getTranslationSnippet(req: Request, res: Response): void {
         const { language, dlc, keys } = req.query;
-        if (!language || !dlc || !keys || !keys.toString().split(',' || keys.toString().split(',').length === 0)) {
+        if (!language || !dlc || !keys || keys.toString().split(',').length === 0) {
             res.status(400).send('Missing language, dlc or keys');
             return;
         }
