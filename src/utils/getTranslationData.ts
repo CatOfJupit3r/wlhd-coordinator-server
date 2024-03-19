@@ -9,6 +9,9 @@ export const getTranslationData = (): Translation => {
     try {
         const translationsFiles = fs.readdirSync(dlcFolderPath);
         translationsFiles.forEach(file => {
+            if (file === '.DS_Store') {
+                return;
+            }
             if (fs.lstatSync(`${dlcFolderPath}/${file}`).isFile()) {
                 return;
             }
@@ -17,6 +20,9 @@ export const getTranslationData = (): Translation => {
             const dlcDescriptor = (JSON.parse(manifest) as DLCManifest).descriptor;
             const dlcContent = fs.readdirSync(`${dlcFolderPath}/${file}`);
             dlcContent.forEach((translationDir: string) => {
+                if (translationDir === '.DS_Store') {
+                    return;
+                }
                 if (translationDir === 'manifest.json') {
                     return;
                 }
@@ -25,6 +31,9 @@ export const getTranslationData = (): Translation => {
                 result[language] = {...result[language]}
                 result[language][dlcDescriptor] = {...result[language][dlcDescriptor]}
                 languageData.forEach((translationFile: string) => {
+                    if (translationFile === '.DS_Store') {
+                        return;
+                    }
                     const translation = fs.readFileSync(`${dlcFolderPath}/${file}/${language}/${translationFile}`, 'utf8');
                     result[language][dlcDescriptor] = {...result[language][dlcDescriptor], ...JSON.parse(translation)}
                 })
