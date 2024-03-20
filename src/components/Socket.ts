@@ -65,13 +65,7 @@ export class GameSocket {
             return
         }
         console.log('Player connected', userToken)
-        if (this.gameInProgress) {
-            playerSocket.emit('game_started')
-        }
-        if (this.currentPlayer === userToken) {
-            playerSocket.emit('take_action', this.takeActionCommand);
-        }
-        playerSocket.on('take_action', (data: any) => {
+        playerSocket.on('take_action', (data: {[key: string]: string}) => {
             console.log("Received message from Player. Sending to server...")
             if (data === undefined) {
                 playerSocket.emit('error', 'Invalid payload');
@@ -81,7 +75,7 @@ export class GameSocket {
                 {
                     "game_id": this.gameId,
                     "user_token": userToken,
-                    "action": data
+                    "choices": data
                 }
             )
         })
@@ -91,7 +85,7 @@ export class GameSocket {
                 {
                     "game_id": this.gameId,
                     "user_token": userToken,
-                    "action": {
+                    "choices": {
                         "action": "builtins:skip"
                     }
                 }
@@ -107,7 +101,7 @@ export class GameSocket {
                 {
                     "game_id": this.gameId,
                     "user_token": userToken,
-                    "action": {
+                    "choices": {
                         "action": "builtins:skip"
                     }
                 }
@@ -117,8 +111,13 @@ export class GameSocket {
             console.log('Invalid event');
             playerSocket.emit('error', 'Invalid event');
         })
-
         this.activePlayers.set(userToken, playerSocket);
+        if (this.gameInProgress) {
+            playerSocket.emit('game_started')
+        }
+        if (this.currentPlayer === userToken) {
+            playerSocket.emit('take_action', this.takeActionCommand);
+        }
     }
 
     private setupListeners() {
@@ -126,6 +125,10 @@ export class GameSocket {
             console.log('Connected to game server')
             this.active = true;
         });
+        this.socket.on('disconnect', () => {
+            console.log('Disconnected from game server')
+            this.onClose();
+        })
         this.socket.on('request_authentication', () => {
             console.log('Game server requested authentication')
             this.sendToServer(
@@ -183,7 +186,7 @@ export class GameSocket {
                 this.sendToServer("player_choice", {
                     "lobby_id": this.gameId,
                     "user_token": user_token,
-                    "action": {
+                    "choices": {
                         "action": "builtins:skip"
                     }
                 })
@@ -203,6 +206,10 @@ export class GameSocket {
         this.socket.on('close', () => {
             console.log('Game server connection closed');
             this.onClose();
+            for (const player of this.activePlayers.values()) {
+                player.emit('close', 'Game server connection closed');
+                player.disconnect();
+            }
         });
         this.socket.on('ping', () => {
             console.log('Ping received');
