@@ -152,6 +152,7 @@ export class GameSocket {
             console.log("Game has started")
             this.gameInProgress = true;
             this.sendToAllPlayers("battle_started")
+            this.clearDynamicCache && this.clearDynamicCache(this.gameId);
         })
         this.socket.on("round_update", (data: any) => {
             console.log("Round updated", data)

@@ -90,17 +90,17 @@ export class GameInfoController {
         if (this.checkCache(game_id, "field", res)) {
             return
         }
-        this.processingDynamic.get("field")?.add(game_id);
+        // this.processingDynamic.get("field")?.add(game_id);
         this.gameInfoService.getGameField(game_id)
             .then((gameField: any) => {
-                this.dynamicCache.get("field")?.set(game_id, gameField);
+                // this.dynamicCache.get("field")?.set(game_id, gameField);
                 res.json(gameField);
             })
             .catch((error: any) => {
                 res.status(500).send(error);
             })
             .finally(() => {
-                this.processingDynamic.delete(game_id);
+                // this.processingDynamic.delete(game_id);
             });
     }
 

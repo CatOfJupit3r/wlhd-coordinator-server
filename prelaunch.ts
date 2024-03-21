@@ -53,13 +53,13 @@ const downloadDlc = async (installed_packages: string[] = []): Promise<void> => 
                         });
                     }
                 } catch (error) {
-                    console.error(`Something went wrong when working with repo from ${dlc_source}`);
-                    console.error(error);
+                    console.log(`Something went wrong when working with repo from ${dlc_source}`);
+                    console.log(error);
                 }
             }
         }
     } catch (error) {
-        console.error(`Error while reaching API server: ${error}`);
+        console.log(`Error while reaching API server: ${error}`);
         return;
     }
 };

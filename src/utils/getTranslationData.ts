@@ -41,7 +41,7 @@ export const getTranslationData = (): Translation => {
             })
         });
     } catch (e) {
-        console.error('Error reading translations', e);
+        console.log('Error reading translations', e);
     }
     return result
 }
