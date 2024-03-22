@@ -81,6 +81,24 @@ export class GameInfoController {
         return false;
     }
 
+    private checkMessageInCache(game_id: string, command: string, memory_cell: string, res: Response): boolean {
+        if (this.staticCache.get(command)?.get(game_id)) {
+            const memoryCells = this.staticCache.get(command)?.get(game_id);
+            if (memoryCells[memory_cell]) {
+                res.json(memoryCells[memory_cell]);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private addMessageToCache(game_id: string, command: string, memory_cell: string, message: any): void {
+        if (this.staticCache.get(command)?.get(game_id)) {
+            const memoryCells = this.staticCache.get(command)?.get(game_id);
+            memoryCells[memory_cell] = message;
+        }
+    }
+
     public getGameField(req: Request, res: Response): void {
         const { game_id } = req.params;
         if (!game_id) {
@@ -90,17 +108,17 @@ export class GameInfoController {
         if (this.checkCache(game_id, "field", res)) {
             return
         }
-        // this.processingDynamic.get("field")?.add(game_id);
+        this.processingDynamic.get("field")?.add(game_id);
         this.gameInfoService.getGameField(game_id)
             .then((gameField: any) => {
-                // this.dynamicCache.get("field")?.set(game_id, gameField);
+                this.dynamicCache.get("field")?.set(game_id, gameField);
                 res.json(gameField);
             })
             .catch((error: any) => {
                 res.status(500).send(error);
             })
             .finally(() => {
-                // this.processingDynamic.delete(game_id);
+                this.processingDynamic.delete(game_id);
             });
     }
 
@@ -133,13 +151,13 @@ export class GameInfoController {
             res.status(400).send('Missing game_id or memory_cell');
             return;
         }
-        if (this.checkCache(game_id, "message", res)) {
+        if (this.checkMessageInCache(game_id, "message", memory_cell, res)) {
             return
         }
         this.processingStatic.get("message")?.add(game_id);
         this.gameInfoService.getMemoryCell(game_id, memory_cell)
             .then((memoryCell: any) => {
-                this.staticCache.get("message")?.set(game_id, memoryCell);
+                this.addMessageToCache(game_id, "message", memory_cell, memoryCell);
                 res.json(memoryCell);
             })
             .catch((error: any) => {

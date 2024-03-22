@@ -92,9 +92,6 @@ export class GameSocket {
             )
             this.currentPlayer = "";
         })
-        playerSocket.on("start_combat", () => {
-            this.sendToServer("start_game")
-        })
         playerSocket.on("unable_to_take_action", () => {
             this.currentPlayer === userToken && this.sendToServer(
                 "player_choice",
@@ -113,7 +110,7 @@ export class GameSocket {
         })
         this.activePlayers.set(userToken, playerSocket);
         if (this.gameInProgress) {
-            playerSocket.emit('game_started')
+            playerSocket.emit('battle_started')
         }
         if (this.currentPlayer === userToken) {
             playerSocket.emit('take_action', this.takeActionCommand);
@@ -161,10 +158,10 @@ export class GameSocket {
         this.socket.on("state_updated", (data: any) => {
             console.log("State updated", data)
             this.clearDynamicCache && this.clearDynamicCache(this.gameId);
-            const { has_new_message, battlefield_updated } = data
-            if (has_new_message) {
+            const { message, battlefield_updated } = data
+            if (message) {
                 this.sendToAllPlayers("new_message", {
-                    "message": has_new_message
+                    "message": message
                 })
             }
             if (battlefield_updated) {

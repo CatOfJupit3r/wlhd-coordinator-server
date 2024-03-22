@@ -30,7 +30,7 @@ export class GameInfoService {
 
     public getMemoryCell(game_id: string, memory_cell: string): Promise<any> {
         return new Promise((resolve, reject) => {
-            axios.get(`${GAME_SERVER_URL}/api/${game_id}/message/${memory_cell}`)
+            axios.get(`${GAME_SERVER_URL}/api/${game_id}/message/${memory_cell.toString()}`)
                 .then(response => {
                     resolve(response.data);
                 })
