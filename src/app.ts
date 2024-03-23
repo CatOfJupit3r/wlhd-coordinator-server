@@ -16,8 +16,7 @@ app.use(cors());
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
     cors: {
-        origin: "http://localhost:3000",
-        methods: ["GET", "POST"]
+        origin: '*',
     }
 });
 
@@ -32,6 +31,7 @@ const gameSocketController = new GameSocketController(
 app.use(express.json());
 app.use(authenticationMiddleware);
 
+app.get('/', (req, res) => {res.send('Welcome. Actually, you are not!')})
 app.get('/translation', translationController.getTranslation.bind(translationController));
 app.get('/translation-snippet', translationController.getTranslationSnippet.bind(translationController));
 app.post('/reload-translations', translationController.reloadTranslations.bind(translationController));
