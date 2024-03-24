@@ -1,34 +1,34 @@
 export interface GameCommand {
-    command: string;
+    command: string
     payload?: {
-        [key: string]: any;
-    };
+        [key: string]: any
+    }
 }
 
 export interface TakeActionCommand extends GameCommand {
     payload: {
-        game_id: string;
-        entity_id: string;
-        user_token: string;
-        action: string;
-    };
+        game_id: string
+        entity_id: string
+        user_token: string
+        action: string
+    }
 }
 
 export interface GameFinishedCommand extends GameCommand {
     payload: {
-        result: string;
-        code: 420 | 500;
-    };
+        result: string
+        code: 420 | 500
+    }
 }
 
 export interface ActionResultCommand extends GameCommand {
     payload: {
-        user_token: string;
-        result: string;
-        code: 200 | 400 | 406 | 500;
-    };
+        user_token: string
+        result: string
+        code: 200 | 400 | 406 | 500
+    }
 }
 
 export interface ActionOutput {
-    [key: string]: string;
+    [key: string]: string
 }
