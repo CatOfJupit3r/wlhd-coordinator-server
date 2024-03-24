@@ -1,5 +1,5 @@
 import { Translation } from '../models/Translation';
-import {getTranslationData} from "../utils/getTranslationData";
+import { getTranslationData } from '../utils/getTranslationData';
 
 export class TranslationService {
     private translations: Translation = {};
@@ -22,7 +22,7 @@ export class TranslationService {
 
     public getTranslationSnippet(language: string, dlc: string, keys: string[]): { [p: string]: string } {
         const result: { [p: string]: string } = {};
-        keys.forEach(key => {
+        keys.forEach((key) => {
             result[key] = this.translations[language][dlc][key];
         });
         return result;

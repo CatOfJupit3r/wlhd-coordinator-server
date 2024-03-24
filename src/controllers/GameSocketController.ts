@@ -1,16 +1,12 @@
-import {GameSocketService} from "../services/GameSocketService";
-import {Socket} from "socket.io";
-import {Request, Response} from "express";
+import { Request, Response } from 'express';
+import { Socket } from 'socket.io';
+import { GameSocketService } from '../services/GameSocketService';
 
 export class GameSocketController {
     private gameSocketService: GameSocketService;
 
-    constructor(
-        clearDynamicCache: (game_id: string) => void
-    ) {
-        this.gameSocketService = new GameSocketService(
-            clearDynamicCache
-        );
+    constructor(clearDynamicCache: (game_id: string) => void) {
+        this.gameSocketService = new GameSocketService(clearDynamicCache);
     }
 
     public handlePlayer(gameId: string, userToken: string, playerSocket: Socket): void {
@@ -18,8 +14,8 @@ export class GameSocketController {
     }
 
     public createGame(req: Request, res: Response) {
-        const {game_id} = req.params;
+        const { game_id } = req.params;
         this.gameSocketService.createGame(game_id);
-        res.json({status: 'ok'});
+        res.json({ status: 'ok' });
     }
 }

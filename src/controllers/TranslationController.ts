@@ -42,7 +42,11 @@ export class TranslationController {
             res.json(this.cache.get(`${language}-${dlc}-${keys}`));
             return;
         }
-        const translation = this.translationService.getTranslationSnippet(language.toString(), dlc.toString(), keys.toString().split(','));
+        const translation = this.translationService.getTranslationSnippet(
+            language.toString(),
+            dlc.toString(),
+            keys.toString().split(',')
+        );
         this.cache.set(`${language}-${dlc}-${keys}`, translation);
         res.json(translation);
     }

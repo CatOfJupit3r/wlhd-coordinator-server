@@ -1,4 +1,3 @@
 export class Lobby {
-    private GMToken: string = "ADMIN";
-
+    private GMToken: string = 'ADMIN';
 }

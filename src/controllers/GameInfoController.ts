@@ -3,10 +3,9 @@ import { GameInfoService } from '../services/GameInfoService';
 import { Cache } from '../utils/Cache';
 
 export class GameInfoController {
-
     private gameInfoService: GameInfoService;
-    private staticCommands: string[] = ["message"];
-    private dynamicCommands: string[] = ["field", "options", "all_memory_cells", "entity", "entities_info"];
+    private staticCommands: string[] = ['message'];
+    private dynamicCommands: string[] = ['field', 'options', 'all_memory_cells', 'entity', 'entities_info'];
 
     private staticCache: Map<string, Cache>;
     private dynamicCache: Map<string, Cache>;
@@ -20,11 +19,15 @@ export class GameInfoController {
         this.processingDynamic = new Map();
         this.processingStatic = new Map();
 
-        const populate = (iter: string[], obj: Map<string, Cache> | Map<string, Set<string>>, innerObjConstructor: any) => {
+        const populate = (
+            iter: string[],
+            obj: Map<string, Cache> | Map<string, Set<string>>,
+            innerObjConstructor: any
+        ) => {
             iter.forEach((command: string) => {
                 obj.set(command, new innerObjConstructor());
             });
-        }
+        };
         populate(this.dynamicCommands, this.dynamicCache, Cache);
         populate(this.staticCommands, this.staticCache, Cache);
         populate(this.dynamicCommands, this.processingDynamic, Set);
@@ -32,12 +35,12 @@ export class GameInfoController {
     }
 
     public clearDynamicCache(game_id: string): void {
-        this.dynamicCache.forEach(cached => {
+        this.dynamicCache.forEach((cached) => {
             cached.pop(game_id);
         });
         this.processingDynamic.forEach((set) => {
             set.delete(game_id);
-        })
+        });
         return;
     }
 
@@ -105,13 +108,14 @@ export class GameInfoController {
             res.status(400).send('Missing game_id');
             return;
         }
-        if (this.checkCache(game_id, "field", res)) {
-            return
+        if (this.checkCache(game_id, 'field', res)) {
+            return;
         }
-        this.processingDynamic.get("field")?.add(game_id);
-        this.gameInfoService.getGameField(game_id)
+        this.processingDynamic.get('field')?.add(game_id);
+        this.gameInfoService
+            .getGameField(game_id)
             .then((gameField: any) => {
-                this.dynamicCache.get("field")?.set(game_id, gameField);
+                this.dynamicCache.get('field')?.set(game_id, gameField);
                 res.json(gameField);
             })
             .catch((error: any) => {
@@ -128,13 +132,14 @@ export class GameInfoController {
             res.status(400).send('Missing game_id or entity_id');
             return;
         }
-        if (this.checkCache(game_id, "options", res)) {
-            return
+        if (this.checkCache(game_id, 'options', res)) {
+            return;
         }
-        this.processingDynamic.get("options")?.add(game_id);
-        this.gameInfoService.getActionOptions(game_id, entity_id)
+        this.processingDynamic.get('options')?.add(game_id);
+        this.gameInfoService
+            .getActionOptions(game_id, entity_id)
             .then((actionOptions: any) => {
-                this.dynamicCache.get("options")?.set(game_id, actionOptions);
+                this.dynamicCache.get('options')?.set(game_id, actionOptions);
                 res.json(actionOptions);
             })
             .catch((error: any) => {
@@ -151,13 +156,14 @@ export class GameInfoController {
             res.status(400).send('Missing game_id or memory_cell');
             return;
         }
-        if (this.checkMessageInCache(game_id, "message", memory_cell, res)) {
-            return
+        if (this.checkMessageInCache(game_id, 'message', memory_cell, res)) {
+            return;
         }
-        this.processingStatic.get("message")?.add(game_id);
-        this.gameInfoService.getMemoryCell(game_id, memory_cell)
+        this.processingStatic.get('message')?.add(game_id);
+        this.gameInfoService
+            .getMemoryCell(game_id, memory_cell)
             .then((memoryCell: any) => {
-                this.addMessageToCache(game_id, "message", memory_cell, memoryCell);
+                this.addMessageToCache(game_id, 'message', memory_cell, memoryCell);
                 res.json(memoryCell);
             })
             .catch((error: any) => {
@@ -174,13 +180,14 @@ export class GameInfoController {
             res.status(400).send('Missing game_id');
             return;
         }
-        if (this.checkCache(game_id, "all_memory_cells", res)) {
-            return
+        if (this.checkCache(game_id, 'all_memory_cells', res)) {
+            return;
         }
-        this.processingDynamic.get("all_memory_cells")?.add(game_id);
-        this.gameInfoService.getAllMemoryCells(game_id)
+        this.processingDynamic.get('all_memory_cells')?.add(game_id);
+        this.gameInfoService
+            .getAllMemoryCells(game_id)
             .then((memoryCells: any) => {
-                this.dynamicCache.get("all_memory_cells")?.set(game_id, memoryCells);
+                this.dynamicCache.get('all_memory_cells')?.set(game_id, memoryCells);
                 res.json(memoryCells);
             })
             .catch((error: any) => {
@@ -197,13 +204,14 @@ export class GameInfoController {
             res.status(400).send('Missing game_id or entity_id');
             return;
         }
-        if (this.checkCache(game_id, "entity", res)) {
-            return
+        if (this.checkCache(game_id, 'entity', res)) {
+            return;
         }
-        this.processingDynamic.get("entity")?.add(game_id);
-        this.gameInfoService.getEntityInfo(game_id, entity_id)
+        this.processingDynamic.get('entity')?.add(game_id);
+        this.gameInfoService
+            .getEntityInfo(game_id, entity_id)
             .then((entityInfo: any) => {
-                this.dynamicCache.get("entity")?.set(game_id, entityInfo);
+                this.dynamicCache.get('entity')?.set(game_id, entityInfo);
                 res.json(entityInfo);
             })
             .catch((error: any) => {
@@ -214,19 +222,20 @@ export class GameInfoController {
             });
     }
 
-public getAllEntityInfo(req: Request, res: Response): void {
+    public getAllEntityInfo(req: Request, res: Response): void {
         const { game_id } = req.params;
         if (!game_id) {
             res.status(400).send('Missing game_id');
             return;
         }
-        if (this.checkCache(game_id, "entities_info", res)) {
-            return
+        if (this.checkCache(game_id, 'entities_info', res)) {
+            return;
         }
-        this.processingDynamic.get("entities_info")?.add(game_id);
-        this.gameInfoService.getAllEntityInfo(game_id)
+        this.processingDynamic.get('entities_info')?.add(game_id);
+        this.gameInfoService
+            .getAllEntityInfo(game_id)
             .then((entitiesInfo: any) => {
-                this.dynamicCache.get("entities_info")?.set(game_id, entitiesInfo);
+                this.dynamicCache.get('entities_info')?.set(game_id, entitiesInfo);
                 res.json(entitiesInfo);
             })
             .catch((error: any) => {
@@ -236,5 +245,4 @@ public getAllEntityInfo(req: Request, res: Response): void {
                 this.processingDynamic.delete(game_id);
             });
     }
-
 }

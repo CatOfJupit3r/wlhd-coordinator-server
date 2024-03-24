@@ -1,92 +1,56 @@
-import express from 'express'
-import http from 'http'
-import { Server as SocketIOServer } from 'socket.io'
-import cors from 'cors'
+import cors from 'cors';
+import express from 'express';
+import http from 'http';
+import { Server as SocketIOServer } from 'socket.io';
 
-import { TranslationController } from './controllers/TranslationController'
-import { authenticationMiddleware } from './middleware/AuthenticationMiddleware'
-import { GameInfoController } from './controllers/GameInfoController'
-import { GameSocketController } from './controllers/GameSocketController'
+import { GameInfoController } from './controllers/GameInfoController';
+import { GameSocketController } from './controllers/GameSocketController';
+import { TranslationController } from './controllers/TranslationController';
+import { authenticationMiddleware } from './middleware/AuthenticationMiddleware';
 
-const app = express()
-app.use(cors())
+const app = express();
+app.use(cors());
 
 // both socket and http server are created on the same port
-const server = http.createServer(app)
+const server = http.createServer(app);
 const io = new SocketIOServer(server, {
     cors: {
         origin: '*',
     },
-})
+});
 
-const translationController = new TranslationController()
-const gameInfoController = new GameInfoController()
-const gameSocketController = new GameSocketController(
-    gameInfoController.clearDynamicCache.bind(gameInfoController)
-)
+const translationController = new TranslationController();
+const gameInfoController = new GameInfoController();
+const gameSocketController = new GameSocketController(gameInfoController.clearDynamicCache.bind(gameInfoController));
 
-app.use(express.json())
-app.use(authenticationMiddleware)
+app.use(express.json());
+app.use(authenticationMiddleware);
 
 app.get('/', (req, res) => {
-    res.send('Welcome. Actually, you are not!')
-})
-app.get(
-    '/translation',
-    translationController.getTranslation.bind(translationController)
-)
-app.get(
-    '/translation-snippet',
-    translationController.getTranslationSnippet.bind(translationController)
-)
-app.post(
-    '/reload-translations',
-    translationController.reloadTranslations.bind(translationController)
-)
+    res.send('Welcome. Actually, you are not!');
+});
+app.get('/translation', translationController.getTranslation.bind(translationController));
+app.get('/translation-snippet', translationController.getTranslationSnippet.bind(translationController));
+app.post('/reload-translations', translationController.reloadTranslations.bind(translationController));
 
-app.get(
-    '/:game_id/battlefield',
-    gameInfoController.getGameField.bind(gameInfoController)
-)
-app.get(
-    '/:game_id/action_options/:entity_id',
-    gameInfoController.getActionOptions.bind(gameInfoController)
-)
-app.get(
-    '/:game_id/message/:memory_cell',
-    gameInfoController.getMemoryCell.bind(gameInfoController)
-)
-app.get(
-    '/:game_id/all_messages',
-    gameInfoController.getAllMemoryCells.bind(gameInfoController)
-)
-app.get(
-    '/:game_id/entity/<:entity_id>',
-    gameInfoController.getEntityInfo.bind(gameInfoController)
-)
-app.get(
-    '/:game_id/entities_info',
-    gameInfoController.getAllEntityInfo.bind(gameInfoController)
-)
+app.get('/:game_id/battlefield', gameInfoController.getGameField.bind(gameInfoController));
+app.get('/:game_id/action_options/:entity_id', gameInfoController.getActionOptions.bind(gameInfoController));
+app.get('/:game_id/message/:memory_cell', gameInfoController.getMemoryCell.bind(gameInfoController));
+app.get('/:game_id/all_messages', gameInfoController.getAllMemoryCells.bind(gameInfoController));
+app.get('/:game_id/entity/<:entity_id>', gameInfoController.getEntityInfo.bind(gameInfoController));
+app.get('/:game_id/entities_info', gameInfoController.getAllEntityInfo.bind(gameInfoController));
 
-app.get(
-    '/:game_id/create_game',
-    gameSocketController.createGame.bind(gameSocketController)
-)
+app.get('/:game_id/create_game', gameSocketController.createGame.bind(gameSocketController));
 
 io.on('connection', (socket) => {
-    const gameId = socket.handshake.query.game_id
-    const userToken = socket.handshake.query.user_token
-    console.log('Connected', gameId, userToken)
+    const gameId = socket.handshake.query.game_id;
+    const userToken = socket.handshake.query.user_token;
+    console.log('Connected', gameId, userToken);
     if (!gameId || !userToken) {
-        console.log('Invalid connection')
-        return
+        console.log('Invalid connection');
+        return;
     }
-    gameSocketController.handlePlayer(
-        gameId as string,
-        userToken as string,
-        socket
-    )
-})
+    gameSocketController.handlePlayer(gameId as string, userToken as string, socket);
+});
 
-export default server
+export default server;

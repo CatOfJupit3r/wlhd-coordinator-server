@@ -1,12 +1,12 @@
 export interface GameState {
-    battlefield: string[][],
+    battlefield: string[][];
     game_descriptors: {
-        lines: string[],
-        columns: string[],
+        lines: string[];
+        columns: string[];
         field_components: {
-            [key: string]: string
-        },
-        separators: string,
-        connectors: string
-    }
+            [key: string]: string;
+        };
+        separators: string;
+        connectors: string;
+    };
 }
