@@ -12,7 +12,7 @@ export class TranslationService {
         this.translations = getTranslationData()
     }
 
-    public getTranslation(language: string, dlc: string): { [p: string]: string } {
+    public getTranslation(language: string, dlc: string): { [translation: string]: string } {
         if (language in this.translations && dlc in this.translations[language]) {
             return this.translations[language][dlc]
         } else {
@@ -21,7 +21,7 @@ export class TranslationService {
     }
 
     public getTranslationSnippet(language: string, dlc: string, keys: string[]): { [p: string]: string } {
-        const result: { [p: string]: string } = {}
+        const result: { [translation: string]: string } = {}
         keys.forEach((key) => {
             result[key] = this.translations[language][dlc][key]
         })

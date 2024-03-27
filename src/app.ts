@@ -3,13 +3,19 @@ import express from 'express'
 import http from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 
-import { GameInfoController } from './controllers/GameInfoController'
-import { GameSocketController } from './controllers/GameSocketController'
+import mongoose, { ConnectOptions } from 'mongoose'
+import { LobbyCombatController } from './controllers/LobbyCombatController'
 import { TranslationController } from './controllers/TranslationController'
 import { authenticationMiddleware } from './middleware/AuthenticationMiddleware'
+import { createNewLobby } from './services/DatabaseService'
 
 const app = express()
 app.use(cors())
+
+mongoose.connect('mongodb://localhost:27017/game', {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+} as ConnectOptions)
 
 // both socket and http server are created on the same port
 const server = http.createServer(app)
@@ -20,8 +26,7 @@ const io = new SocketIOServer(server, {
 })
 
 const translationController = new TranslationController()
-const gameInfoController = new GameInfoController()
-const gameSocketController = new GameSocketController(gameInfoController.clearDynamicCache.bind(gameInfoController))
+const lobbyCombatController = new LobbyCombatController()
 
 app.use(express.json())
 app.use(authenticationMiddleware)
@@ -33,14 +38,17 @@ app.get('/translation', translationController.getTranslation.bind(translationCon
 app.get('/translation-snippet', translationController.getTranslationSnippet.bind(translationController))
 app.post('/reload-translations', translationController.reloadTranslations.bind(translationController))
 
-app.get('/:game_id/battlefield', gameInfoController.getGameField.bind(gameInfoController))
-app.get('/:game_id/action_options/:entity_id', gameInfoController.getActionOptions.bind(gameInfoController))
-app.get('/:game_id/message/:memory_cell', gameInfoController.getMemoryCell.bind(gameInfoController))
-app.get('/:game_id/all_messages', gameInfoController.getAllMemoryCells.bind(gameInfoController))
-app.get('/:game_id/entity/<:entity_id>', gameInfoController.getEntityInfo.bind(gameInfoController))
-app.get('/:game_id/entities_info', gameInfoController.getAllEntityInfo.bind(gameInfoController))
+app.post('/create_lobby', async (req, res) => {
+    console.log('Creating lobby. Params:', req.body)
+    const { lobby_name, gmHandle } = req.body
+    const lobby_id = await createNewLobby(lobby_name, gmHandle)
+    console.log('Lobby created', lobby_id)
+    res.json({ result: 'ok', lobby_id })
+})
 
-app.get('/:game_id/create_game', gameSocketController.createGame.bind(gameSocketController))
+app.get('/lobbies/:lobby_id', lobbyCombatController.getLobbyCombats.bind(lobbyCombatController))
+app.post('/lobbies/:lobby_id/create_combat', lobbyCombatController.createLobbyCombat.bind(lobbyCombatController))
+app.post('/lobbies/:lobby_id/', lobbyCombatController.getAllNicknames.bind(lobbyCombatController))
 
 io.on('connection', (socket) => {
     const gameId = socket.handshake.query.game_id
@@ -50,7 +58,6 @@ io.on('connection', (socket) => {
         console.log('Invalid connection')
         return
     }
-    gameSocketController.handlePlayer(gameId as string, userToken as string, socket)
 })
 
 export default server
