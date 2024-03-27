@@ -20,4 +20,6 @@ export class LobbyClass {
     relatedPresets: string[] // id of preset in `combat_presets` collection
 }
 
-export const LobbyModel = getModelForClass(LobbyClass)
+export const LobbyModel = getModelForClass(LobbyClass, {
+    schemaOptions: { collection: 'lobbies' },
+})

@@ -32,7 +32,9 @@ export const createNewLobby = async (lobbyName: string, handle: string): Promise
         },
         relatedPresets: [],
     })
-    await lobby.save()
+    await lobby.save({
+        validateBeforeSave: true,
+    })
     return lobby._id
 }
 

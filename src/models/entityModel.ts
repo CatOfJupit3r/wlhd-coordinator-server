@@ -10,4 +10,6 @@ export class EntityClass {
     }
 }
 
-export const EntityModel = getModelForClass(EntityClass)
+export const EntityModel = getModelForClass(EntityClass, {
+    schemaOptions: { collection: 'entities' },
+})
