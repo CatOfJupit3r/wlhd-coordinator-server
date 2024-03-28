@@ -40,7 +40,5 @@ next-env.d.ts
 data/translations/
 data/translations/*
 !data/translations/put_translations_here.txt
-/.idea/modules.xml
-/.idea/inspectionProfiles/Project_Default.xml
-/.idea/walenholde-backend-web.iml
+/.idea
 use_cases.txt

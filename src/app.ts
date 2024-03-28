@@ -4,10 +4,12 @@ import http from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 
 import mongoose from 'mongoose'
-import { LobbyCombatController } from './controllers/LobbyCombatController'
-import { TranslationController } from './controllers/TranslationController'
 import { authenticationMiddleware } from './middleware/AuthenticationMiddleware'
-import { addPlayerToLobby, createNewEntity, createNewLobby } from './services/DatabaseService'
+
+import combatRoutes from './routes/combatRoutes'
+import entityRoutes from './routes/entityRoutes'
+import lobbyRoutes from './routes/lobbyRoutes'
+import translationRoutes from './routes/translationRoutes'
 
 const app = express()
 app.use(cors())
@@ -22,45 +24,16 @@ const io = new SocketIOServer(server, {
     },
 })
 
-const translationController = new TranslationController()
-const lobbyCombatController = new LobbyCombatController()
-
 app.use(express.json())
 app.use(authenticationMiddleware)
+app.use('/', translationRoutes)
+app.use('/lobby', lobbyRoutes)
+app.use('/combat', combatRoutes)
+app.use('/entity', entityRoutes)
 
 app.get('/', (req, res) => {
     res.send('Welcome. Actually, you are not!')
 })
-app.get('/translation', translationController.getTranslation.bind(translationController))
-app.get('/translation-snippet', translationController.getTranslationSnippet.bind(translationController))
-app.post('/reload-translations', translationController.reloadTranslations.bind(translationController))
-
-app.post('/create_lobby', async (req, res) => {
-    console.log('Creating lobby. Params:', req.body)
-    const { lobby_name, gm_id } = req.body
-    const lobby_id = await createNewLobby(lobby_name, gm_id)
-    console.log('Lobby created', lobby_id)
-    res.json({ result: 'ok', lobby_id })
-})
-
-app.post('/entities/create', async (req, res) => {
-    console.log('Creating entity. Params:', req.body)
-    const { descriptor, attributes, customAttributes } = req.body
-    const entity_id = await createNewEntity(descriptor, attributes, customAttributes)
-    res.json({ result: 'ok', entity_id })
-})
-
-app.post('/lobbies/:lobby_id/add_player', async (req, res) => {
-    console.log('Adding player to lobby. Params:', req.body)
-    const { lobby_id } = req.params
-    const { player_id, nickname, mainCharacter } = req.body
-    await addPlayerToLobby(lobby_id, player_id, nickname, mainCharacter)
-    res.json({ result: 'ok', player_id })
-})
-
-app.get('/lobbies/:lobby_id', lobbyCombatController.getLobbyCombats.bind(lobbyCombatController))
-app.post('/lobbies/:lobby_id/create_combat', lobbyCombatController.createLobbyCombat.bind(lobbyCombatController))
-app.post('/lobbies/:lobby_id/', lobbyCombatController.getAllNicknames.bind(lobbyCombatController))
 
 io.on('connection', (socket) => {
     const gameId = socket.handshake.query.game_id
