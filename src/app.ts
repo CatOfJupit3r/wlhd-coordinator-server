@@ -14,7 +14,7 @@ import translationRoutes from './routes/translationRoutes'
 const app = express()
 app.use(cors())
 
-mongoose.connect('mongodb://localhost:27017/game')
+mongoose.connect('mongodb://localhost:27017/gameDB')
 
 // both socket and http server are created on the same port
 const server = http.createServer(app)

@@ -1,4 +1,5 @@
 import mongoose, { Types } from 'mongoose'
+import { CombatModel } from '../models/combatModel'
 import { EntityClass, EntityModel } from '../models/entityModel'
 import { LobbyClass, LobbyModel } from '../models/lobbyModel'
 import { UserClass, UserModel } from '../models/userModel'
@@ -73,4 +74,23 @@ export const createNewEntity = async (
         validateBeforeSave: true,
     })
     return entity._id
+}
+
+export const createNewCombatPreset = async (
+    field: Array<{ path: string; square: string; source: 'embedded' | 'dlc' }>
+): Promise<Types.ObjectId> => {
+    ;(() => {
+        const occupiedSquares: Array<string> = []
+        for (const pawn of field) {
+            if (occupiedSquares.includes(pawn.square)) {
+                throw new Error('Square is already occupied')
+            }
+            occupiedSquares.push(pawn.square)
+        }
+    })()
+    const combatPreset = new CombatModel({ field })
+    await combatPreset.save({
+        validateBeforeSave: true,
+    })
+    return combatPreset._id
 }
