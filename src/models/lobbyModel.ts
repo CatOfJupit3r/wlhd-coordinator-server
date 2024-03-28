@@ -1,23 +1,29 @@
-import { getModelForClass, prop } from '@typegoose/typegoose'
+import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose'
 
+@modelOptions({ schemaOptions: { collection: 'lobbies' } })
 export class LobbyClass {
     @prop({ required: true })
     name: string
 
     @prop({ required: true })
-    gmHandle: string // id of user in `Users` collection
+    gm_id: string // id of user in `Users` collection
+
+    @prop({ required: true, type: () => [PlayerClass] })
+    players: Array<PlayerClass>
+
+    @prop({ required: true, type: () => [String] })
+    relatedPresets: Array<string> // id of preset in `combat_presets` collection
+}
+
+class PlayerClass {
+    @prop({ required: true })
+    userId: string // id of user in `Users` collection
 
     @prop({ required: true })
-    players: {
-        [user_id: string]: {
-            // id of user in `Users` collection
-            nickname: string
-            mainCharacter: string // id of character in `Characters` collection
-        }
-    }
+    nickname: string
 
-    @prop({ required: true })
-    relatedPresets: string[] // id of preset in `combat_presets` collection
+    @prop({ default: null })
+    mainCharacter?: string
 }
 
 export const LobbyModel = getModelForClass(LobbyClass, {

@@ -3,19 +3,16 @@ import express from 'express'
 import http from 'http'
 import { Server as SocketIOServer } from 'socket.io'
 
-import mongoose, { ConnectOptions } from 'mongoose'
+import mongoose from 'mongoose'
 import { LobbyCombatController } from './controllers/LobbyCombatController'
 import { TranslationController } from './controllers/TranslationController'
 import { authenticationMiddleware } from './middleware/AuthenticationMiddleware'
-import { createNewLobby } from './services/DatabaseService'
+import { addPlayerToLobby, createNewEntity, createNewLobby } from './services/DatabaseService'
 
 const app = express()
 app.use(cors())
 
-mongoose.connect('mongodb://localhost:27017/game', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-} as ConnectOptions)
+mongoose.connect('mongodb://localhost:27017/game')
 
 // both socket and http server are created on the same port
 const server = http.createServer(app)
@@ -40,10 +37,25 @@ app.post('/reload-translations', translationController.reloadTranslations.bind(t
 
 app.post('/create_lobby', async (req, res) => {
     console.log('Creating lobby. Params:', req.body)
-    const { lobby_name, gmHandle } = req.body
-    const lobby_id = await createNewLobby(lobby_name, gmHandle)
+    const { lobby_name, gm_id } = req.body
+    const lobby_id = await createNewLobby(lobby_name, gm_id)
     console.log('Lobby created', lobby_id)
     res.json({ result: 'ok', lobby_id })
+})
+
+app.post('/entities/create', async (req, res) => {
+    console.log('Creating entity. Params:', req.body)
+    const { descriptor, attributes, customAttributes } = req.body
+    const entity_id = await createNewEntity(descriptor, attributes, customAttributes)
+    res.json({ result: 'ok', entity_id })
+})
+
+app.post('/lobbies/:lobby_id/add_player', async (req, res) => {
+    console.log('Adding player to lobby. Params:', req.body)
+    const { lobby_id } = req.params
+    const { player_id, nickname, mainCharacter } = req.body
+    await addPlayerToLobby(lobby_id, player_id, nickname, mainCharacter)
+    res.json({ result: 'ok', player_id })
 })
 
 app.get('/lobbies/:lobby_id', lobbyCombatController.getLobbyCombats.bind(lobbyCombatController))

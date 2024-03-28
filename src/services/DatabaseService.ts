@@ -7,8 +7,8 @@ export const getLobby = async (lobbyId: string): Promise<LobbyClass | null> => {
     return LobbyModel.findOne({ _id: new Types.ObjectId(lobbyId) })
 }
 
-export const getUser = async (handle: string): Promise<UserClass | null> => {
-    return UserModel.findOne({ handle })
+export const getUser = async (userId: string): Promise<UserClass | null> => {
+    return UserModel.findOne({ _id: new Types.ObjectId(userId) })
 }
 
 export const getEntity = async (entityId: string): Promise<EntityClass | null> => {
@@ -17,19 +17,19 @@ export const getEntity = async (entityId: string): Promise<EntityClass | null> =
 
 export const createNewLobby = async (lobbyName: string, handle: string): Promise<Types.ObjectId> => {
     const gm = await getUser(handle)
-    console.log(gm)
     if (!gm) {
         throw new Error('User not found')
     }
     const lobby = new LobbyModel({
         name: lobbyName,
-        gmHandle: handle,
-        players: {
-            [handle]: {
-                nickname: 'GM',
-                mainCharacter: '',
+        gm_id: gm._id,
+        players: [
+            {
+                userId: gm._id,
+                nickname: gm.handle,
+                mainCharacter: null,
             },
-        },
+        ],
         relatedPresets: [],
     })
     await lobby.save({
@@ -44,20 +44,33 @@ export const addPlayerToLobby = async (
     nickname: string,
     mainCharacter: string
 ): Promise<void> => {
-    const lobby = await getLobby(lobbyId)
     const user = await getUser(userId)
-    const character = await getEntity(mainCharacter)
     if (!user) {
         throw new Error('User not found')
     }
-    if (!lobby) {
-        throw new Error('Lobby not found')
-    }
+    const character = await getEntity(mainCharacter)
     if (!character) {
         throw new Error('Character not found')
     }
-    lobby.players[userId] = { nickname, mainCharacter }
+    const lobby = await getLobby(lobbyId)
+    if (!lobby) {
+        throw new Error()
+    }
+    lobby.players.push({ nickname, mainCharacter, userId: user._id.toString() })
     await mongoose.connection
         .collection('lobbies')
         .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { players: lobby.players } })
+}
+
+export const createNewEntity = async (
+    descriptor: string,
+    attributes: { [key: string]: string },
+    customAttributes: Array<{ dlc: string; descriptor: string; value: number }>
+): Promise<Types.ObjectId> => {
+    console.log('Creating entity', descriptor, attributes, customAttributes)
+    const entity = new EntityModel({ descriptor, attributes, customAttributes: customAttributes })
+    await entity.save({
+        validateBeforeSave: true,
+    })
+    return entity._id
 }
