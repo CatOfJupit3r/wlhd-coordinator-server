@@ -43,11 +43,23 @@ export class LobbyCombatController {
             return
         }
         const lobby = await getLobby(lobby_id)
+        if (!lobby) {
+            res.json({ message: 'error', code: 404 })
+            return
+        }
         this.active_games.set(lobby_id, this.active_games.get(lobby_id) || new Map())
         const lobby_combats = this.active_games.get(lobby_id)
         if (lobby_combats) {
             const removeSelf = () => lobby_combats.delete(combatNickname)
-            // lobby_combats.set(combatNickname, new LobbyCombat(combatPreset, removeSelf))
+            lobby_combats.set(
+                combatNickname,
+                new LobbyCombat(
+                    combatPreset,
+                    removeSelf,
+                    lobby.gm_id,
+                    lobby.players.map((player) => player.nickname) || []
+                )
+            )
             res.json({ message: 'ok', code: 200 })
         } else {
             res.json({ message: 'error', code: 500 })
