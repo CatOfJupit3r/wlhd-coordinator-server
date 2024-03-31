@@ -6,6 +6,9 @@ export class LobbyClass {
     name: string
 
     @prop({ required: true })
+    createdAt: Date
+
+    @prop({ required: true })
     gm_id: string // id of user in `Users` collection
 
     @prop({ required: true, type: () => [PlayerClass] })

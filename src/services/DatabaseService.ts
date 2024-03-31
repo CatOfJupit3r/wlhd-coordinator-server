@@ -12,8 +12,21 @@ export const getUser = async (userId: string): Promise<UserClass | null> => {
     return UserModel.findOne({ _id: new Types.ObjectId(userId) })
 }
 
+export const getUserByHandle = async (handle: string): Promise<UserClass | null> => {
+    return UserModel.findOne({ handle })
+}
+
 export const getEntity = async (entityId: string): Promise<EntityClass | null> => {
     return EntityModel.findOne({ _id: new Types.ObjectId(entityId) })
+}
+
+export const createNewUser = async (handle: string, hashedPassword: string): Promise<Types.ObjectId> => {
+    const user = new UserModel({ handle, hashedPassword, createdAt: new Date() })
+    console.log('Creating user', user)
+    await user.save({
+        validateBeforeSave: true,
+    })
+    return user._id
 }
 
 export const createNewLobby = async (lobbyName: string, handle: string): Promise<Types.ObjectId> => {
@@ -23,10 +36,11 @@ export const createNewLobby = async (lobbyName: string, handle: string): Promise
     }
     const lobby = new LobbyModel({
         name: lobbyName,
-        gm_id: gm._id,
+        createdAt: new Date(),
+        // gm_id: gm._id,
         players: [
             {
-                userId: gm._id,
+                // userId: gm._id,
                 nickname: gm.handle,
                 mainCharacter: null,
             },
@@ -57,7 +71,7 @@ export const addPlayerToLobby = async (
     if (!lobby) {
         throw new Error()
     }
-    lobby.players.push({ nickname, mainCharacter, userId: user._id.toString() })
+    // lobby.players.push({ nickname, mainCharacter, userId: user._id.toString() })
     await mongoose.connection
         .collection('lobbies')
         .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { players: lobby.players } })

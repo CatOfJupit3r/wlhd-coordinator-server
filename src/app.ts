@@ -8,13 +8,17 @@ import { authenticationMiddleware } from './middleware/AuthenticationMiddleware'
 
 import combatRoutes from './routes/combatRoutes'
 import entityRoutes from './routes/entityRoutes'
+import indexRoutes from './routes/intexRoutes'
 import lobbyRoutes from './routes/lobbyRoutes'
 import translationRoutes from './routes/translationRoutes'
 
 const app = express()
 app.use(cors())
 
-mongoose.connect('mongodb://localhost:27017/gameDB')
+mongoose.connect('mongodb://localhost:27017/gameDB').catch((err) => {
+    console.log(err)
+    throw new Error('Database connection failed. Exiting...')
+})
 
 // both socket and http server are created on the same port
 const server = http.createServer(app)
@@ -25,15 +29,12 @@ const io = new SocketIOServer(server, {
 })
 
 app.use(express.json())
-app.use(authenticationMiddleware)
-app.use('/', translationRoutes)
-app.use('/lobby', lobbyRoutes)
-app.use('/combat', combatRoutes)
-app.use('/entity', entityRoutes)
 
-app.get('/', (req, res) => {
-    res.send('Welcome. Actually, you are not!')
-})
+app.use('/', indexRoutes)
+app.use('/translations', translationRoutes)
+app.use('/lobby', authenticationMiddleware, lobbyRoutes)
+app.use('/combat', authenticationMiddleware, combatRoutes)
+app.use('/entity', authenticationMiddleware, entityRoutes)
 
 io.on('connection', (socket) => {
     const gameId = socket.handshake.query.game_id

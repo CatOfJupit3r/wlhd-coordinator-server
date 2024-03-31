@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from 'express'
 
 export function authenticationMiddleware(req: Request, res: Response, next: NextFunction) {
+    console.log(req.headers)
     next()
     // try {
     //     if (!req.headers || !req.headers.authorization) {
@@ -9,7 +10,8 @@ export function authenticationMiddleware(req: Request, res: Response, next: Next
     //         });
     //     }
     //     const token = req.headers.authorization.replace("Bearer ", "");
-    //     const decoded = verify(token, process.env.JWT_SECRET);
+    //     const decoded = verify(token, JWT_SECRET);
+    //
     //     req.userData = decoded;
     //     next();
     // } catch (err) {

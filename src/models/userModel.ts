@@ -1,15 +1,14 @@
 import { getModelForClass, prop } from '@typegoose/typegoose'
-import mongoose from 'mongoose'
 
 export class UserClass {
     @prop({ required: true })
-    _id: mongoose.Types.ObjectId
-
-    @prop({ required: true })
-    password: string
+    hashedPassword: string
 
     @prop({ required: true })
     handle: string
+
+    @prop({ required: true })
+    createdAt: Date
 }
 
 export const UserModel = getModelForClass(UserClass, {
