@@ -1,6 +1,6 @@
 export interface Translation {
-    [key: string]: {
-        [key: string]: {
+    [language: string]: {
+        [dlc: string]: {
             [key: string]: string
         }
     }
