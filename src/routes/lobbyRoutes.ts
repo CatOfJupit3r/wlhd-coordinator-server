@@ -21,7 +21,7 @@ router.patch('/:lobby_id/add_player', async (req, res) => {
     res.json({ result: 'ok', player_id })
 })
 
-router.get('/:lobby_id', lobbyCombatController.getLobbyCombats.bind(lobbyCombatController))
+router.get('/:lobby_id', lobbyCombatController.getLobbyInfo.bind(lobbyCombatController))
 router.post('/:lobby_id/create_combat', lobbyCombatController.createLobbyCombat.bind(lobbyCombatController))
 router.post('/:lobby_id/', lobbyCombatController.getAllNicknames.bind(lobbyCombatController))
 

@@ -12,10 +12,25 @@ export class LobbyCombatController {
         this.active_games = new Map()
     }
 
-    public getLobbyCombats(req: Request, res: Response): void {
+    public async getLobbyInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
+        const lobby = await getLobby(lobby_id)
+        if (!lobby) {
+            res.json({ message: 'Lobby not found!', code: 404 })
+            return
+        }
+        const combatInfo = []
         const combats = this.active_games.get(lobby_id)
-        res.json({ combats })
+        if (combats) {
+            for (const [nickname, combat] of combats) {
+                combatInfo.push({
+                    nickname,
+                    isActive: combat.isActive(),
+                    roundCount: combat.isActive() ? combat.getRoundCount() : 0,
+                })
+            }
+        }
+        res.json({ combats: combatInfo || [], gm: lobby.gm_id, players: lobby.players })
     }
 
     public async createLobbyCombat(req: Request, res: Response): Promise<void> {

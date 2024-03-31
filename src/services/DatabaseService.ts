@@ -115,7 +115,6 @@ export const getJoinedLobbiesInfo = async (
 ): Promise<Array<{ name: string; isGm: boolean; _id: string }>> => {
     const res: Array<{ name: string; isGm: boolean; _id: string }> = []
     const lobbies = await LobbyModel.find({ 'players.userId': userId })
-    console.log('Lobbies:', lobbies)
     for (const lobby of lobbies) {
         res.push({
             _id: lobby._id.toString(),

@@ -40,6 +40,10 @@ export class LobbyCombat {
         })
     }
 
+    public getRoundCount() {
+        return this.gameState.round_count
+    }
+
     public isActive() {
         return this.gameSocket.active
     }
