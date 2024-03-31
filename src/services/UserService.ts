@@ -3,7 +3,7 @@ import { omit } from 'lodash'
 import { Types } from 'mongoose'
 import { UserClass } from '../models/userModel'
 import AuthService from './AuthService'
-import { createNewUser, getUser, getUserByHandle } from './DatabaseService'
+import { createNewUser, getJoinedLobbiesInfo, getUser, getUserByHandle } from './DatabaseService'
 
 class UsersService {
     #privateFields = ['hashedPassword']
@@ -25,6 +25,9 @@ class UsersService {
         const user = (await this.findByHandle(handle, true)) as UserClass
 
         if (!user) throw new Error('User not found')
+
+        console.log('User found:', user)
+        console.log('Password:', password)
 
         const isPasswordCorrect = await bcrypt.compare(password, user.hashedPassword)
         if (!isPasswordCorrect) throw new Error('Incorrect password')
@@ -48,6 +51,13 @@ class UsersService {
 
     logout(refreshToken: string) {
         AuthService.invalidateRefreshToken(refreshToken)
+    }
+
+    async getJoinedLobbiesInfo(token: string) {
+        const decoded = AuthService.verifyAccessToken(token)
+        const user = await getUser(decoded._id)
+        if (!user) throw new Error('User not found')
+        return getJoinedLobbiesInfo(decoded._id)
     }
 
     async findById(_id: string, shouldIncludePrivateFields: boolean) {

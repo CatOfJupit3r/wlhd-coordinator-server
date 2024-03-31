@@ -9,7 +9,7 @@ route.get('/', (req, res) => {
 
 route.post('/register', async (req, res) => {
     const { handle, password } = req.body
-    // TODO: validate email and password ?
+
     try {
         await UserService.createAccount({ handle, password })
         const { accessToken, refreshToken } = await UserService.loginWithPassword({ handle, password })

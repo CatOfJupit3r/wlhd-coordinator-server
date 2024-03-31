@@ -11,6 +11,7 @@ import entityRoutes from './routes/entityRoutes'
 import indexRoutes from './routes/intexRoutes'
 import lobbyRoutes from './routes/lobbyRoutes'
 import translationRoutes from './routes/translationRoutes'
+import userRoutes from './routes/userRoutes'
 
 const app = express()
 app.use(cors())
@@ -32,6 +33,7 @@ app.use(express.json())
 
 app.use('/', indexRoutes)
 app.use('/translations', translationRoutes)
+app.use('/user', authenticationMiddleware, userRoutes)
 app.use('/lobby', authenticationMiddleware, lobbyRoutes)
 app.use('/combat', authenticationMiddleware, combatRoutes)
 app.use('/entity', authenticationMiddleware, entityRoutes)

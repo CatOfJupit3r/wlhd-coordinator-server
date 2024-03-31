@@ -93,6 +93,7 @@ export const createNewEntity = async (
 export const createNewCombatPreset = async (
     field: Array<{ path: string; square: string; source: 'embedded' | 'dlc' }>
 ): Promise<Types.ObjectId> => {
+    // eslint-disable-next-line no-extra-semi
     ;(() => {
         const occupiedSquares: Array<string> = []
         for (const pawn of field) {
@@ -107,4 +108,20 @@ export const createNewCombatPreset = async (
         validateBeforeSave: true,
     })
     return combatPreset._id
+}
+
+export const getJoinedLobbiesInfo = async (
+    userId: string
+): Promise<Array<{ name: string; isGm: boolean; _id: string }>> => {
+    const res: Array<{ name: string; isGm: boolean; _id: string }> = []
+    const lobbies = await LobbyModel.find({ 'players.userId': userId })
+    console.log('Lobbies:', lobbies)
+    for (const lobby of lobbies) {
+        res.push({
+            _id: lobby._id.toString(),
+            name: lobby.name,
+            isGm: lobby.gm_id.toString() === userId,
+        })
+    }
+    return res
 }
