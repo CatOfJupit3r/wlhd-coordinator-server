@@ -3,7 +3,7 @@ import { omit } from 'lodash'
 import { Types } from 'mongoose'
 import { UserClass } from '../models/userModel'
 import AuthService from './AuthService'
-import { createNewUser, getJoinedLobbiesInfo, getUser, getUserByHandle } from './DatabaseService'
+import DatabaseService from './DatabaseService'
 
 class UsersService {
     #privateFields = ['hashedPassword']
@@ -16,7 +16,7 @@ class UsersService {
 
         const hashedPassword = await bcrypt.hash(password, 10)
 
-        const _id = await createNewUser(handle, hashedPassword)
+        const _id = await DatabaseService.createNewUser(handle, hashedPassword)
 
         console.log(`Registered new user with handle: ${handle}. Id: ${_id}`)
     }
@@ -55,20 +55,20 @@ class UsersService {
 
     async getJoinedLobbiesInfo(token: string) {
         const decoded = AuthService.verifyAccessToken(token)
-        const user = await getUser(decoded._id)
+        const user = await DatabaseService.getUser(decoded._id)
         if (!user) throw new Error('User not found')
-        return getJoinedLobbiesInfo(decoded._id)
+        return DatabaseService.getJoinedLobbiesInfo(decoded._id)
     }
 
     async findById(_id: string, shouldIncludePrivateFields: boolean) {
-        const user = await getUser(_id)
+        const user = await DatabaseService.getUser(_id)
         if (!user) return null
         if (shouldIncludePrivateFields) return user
         return this.#omitPrivateFields(user)
     }
 
     async findByHandle(handle: string, shouldIncludePrivateFields: boolean) {
-        const user = await getUserByHandle(handle)
+        const user = await DatabaseService.getUserByHandle(handle)
         if (!user) {
             return null
         }

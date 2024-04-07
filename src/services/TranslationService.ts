@@ -1,7 +1,7 @@
 import { Translation } from '../models/Translation'
 import { getTranslationData } from '../utils/getTranslationData'
 
-export class TranslationService {
+class TranslationService {
     private translations: Translation = {}
 
     constructor() {
@@ -28,3 +28,5 @@ export class TranslationService {
         return result
     }
 }
+
+export default new TranslationService()

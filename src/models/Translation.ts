@@ -5,3 +5,10 @@ export interface Translation {
         }
     }
 }
+
+export interface TranslatableString {
+    main_string: string
+    format_args?: {
+        [key: string]: string | TranslatableString
+    }
+}

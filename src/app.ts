@@ -6,6 +6,7 @@ import { Server as SocketIOServer } from 'socket.io'
 import mongoose from 'mongoose'
 import { authenticationMiddleware } from './middleware/AuthenticationMiddleware'
 
+import LobbyCombatController from './controllers/LobbyCombatController'
 import combatRoutes from './routes/combatRoutes'
 import entityRoutes from './routes/entityRoutes'
 import indexRoutes from './routes/intexRoutes'
@@ -39,13 +40,13 @@ app.use('/combat', authenticationMiddleware, combatRoutes)
 app.use('/entity', authenticationMiddleware, entityRoutes)
 
 io.on('connection', (socket) => {
-    const gameId = socket.handshake.query.game_id
-    const userToken = socket.handshake.query.user_token
-    console.log('Connected', gameId, userToken)
+    const { gameId, userToken, lobbyId } = socket.handshake.query
     if (!gameId || !userToken) {
         console.log('Invalid connection')
-        return
+        socket.disconnect()
     }
+    console.log('Trying to establish connection: ', gameId, userToken)
+    LobbyCombatController.manageSocket(socket, gameId as string, userToken as string, lobbyId as string)
 })
 
 export default server
