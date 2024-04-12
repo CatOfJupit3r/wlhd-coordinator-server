@@ -1,0 +1,155 @@
+{
+    "pyromancy" : {
+        "name" : "Pyromancy",
+        "description" : "Pyromancy is a form of magic that deals with fire. It is a powerful form of magic that can be used to deal massive damage to enemies.",
+        "progression" : {
+            "common" : {
+                "shared" : {
+                    "skills" : [],
+                    "attributes" : [
+                        {
+                            "dlc": "builtins",
+                            "descriptor": "strength",
+                            "value": "+1"
+                        }
+                    ],
+                    "spells" : [
+                        "fireball"
+                    ],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                },
+                "major" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                },
+                "minor" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                }
+            },
+            "third" : {
+                "shared" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                },
+                "major" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                },
+                "minor" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                }
+            },
+            "fifth" : {
+                "shared" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                },
+                "major" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                },
+                "minor" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                }
+            },
+            "seventh" : {
+                "shared" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                },
+                "major" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                },
+                "minor" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                }
+            },
+            "ninth" : {
+                "shared" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                },
+                "major" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                },
+                "minor" : {
+                    "skills" : [],
+                    "attributes" : [],
+                    "spells" : [],
+                    "status_effects" : [],
+                    "items" : [],
+                    "weapons" : []
+                }
+            }
+        },
+        "spellBank" : {
+            "fireball" : {
+                "descriptor" : "builtins:fireball",
+                "requiresToUse" : [],
+                "conflictsWith" : []
+            }
+        },
+        "statusEffectBank" : {
+        }
+    }
+}
