@@ -35,12 +35,12 @@ const parseEntityClass = (character: EntityClass, lobby: LobbyClass, character_i
     return {
         ...(character as any)._doc,
         attributes: {
-            ...character.customAttributes.reduce((acc: { [key: string]: string }, value: any) => {
-                acc[`${value.dlc}:${value.descriptor}`] = String(value.value) // Convert number to string
-                return acc
-            }, {}),
             ...Object.entries(new_obj).reduce((acc: { [key: string]: string }, [key, value]) => {
                 acc[`builtins:${key}`] = String(value) // Convert number to string
+                return acc
+            }, {}),
+            ...character.customAttributes.reduce((acc: { [key: string]: string }, value: any) => {
+                acc[`${value.dlc}:${value.descriptor}`] = String(value.value) // Convert number to string
                 return acc
             }, {}),
         },

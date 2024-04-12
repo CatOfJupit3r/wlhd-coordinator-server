@@ -38,8 +38,26 @@ class LobbyCombatController {
                 })
             }
         }
+        const player = lobby.players.find((player) => player.userId === user._id)
+        if (!player) {
+            res.json({ message: 'You are not in this lobby!', code: 403 })
+            return
+        }
+        let name = ''
+        let _id: string | null = null
+        if (player.mainCharacter) {
+            const entity = await DatabaseService.getEntity(player.mainCharacter)
+            if (entity) {
+                name = entity.descriptor
+                _id = player.mainCharacter
+            } else {
+                name = 'Character not found'
+                _id = ''
+            }
+        }
         const controlledEntity = {
-            id: lobby.players.find((player) => player.userId === user._id)?.mainCharacter,
+            name,
+            id: _id,
         }
         res.json({
             lobbyId: lobby_id,
