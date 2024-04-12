@@ -18,13 +18,17 @@ class LobbyCombatController {
     public async getLobbyInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
         const lobby = await DatabaseService.getLobby(lobby_id)
+        if (!req.headers.authorization) {
+            res.json({ message: 'No token provided!', code: 401 })
+            return
+        }
+        const user = AuthService.verifyAccessToken(req.headers.authorization)
         if (!lobby) {
             res.json({ message: 'Lobby not found!', code: 404 })
             return
         }
         const combatInfo = []
         const combats = this.active_games.get(lobby_id)
-        console.log('Lobby:', lobby, 'Combats:', combats)
         if (combats) {
             for (const [nickname, combat] of combats) {
                 combatInfo.push({
@@ -34,7 +38,17 @@ class LobbyCombatController {
                 })
             }
         }
-        res.json({ combats: combatInfo || [], gm: lobby.gm_id, players: lobby.players })
+        const controlledEntity = {
+            id: lobby.players.find((player) => player.userId === user._id)?.mainCharacter,
+        }
+        res.json({
+            lobbyId: lobby_id,
+            combats: combatInfo || [],
+            gm: lobby.gm_id,
+            players: lobby.players,
+            layout: user._id === lobby.gm_id ? 'gm' : 'default',
+            controlledEntity: controlledEntity.id ? controlledEntity : null,
+        })
     }
 
     public async createLobbyCombat(req: Request, res: Response): Promise<void> {

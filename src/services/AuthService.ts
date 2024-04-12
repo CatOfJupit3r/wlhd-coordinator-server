@@ -45,6 +45,10 @@ class AuthService {
     invalidateRefreshToken(refreshToken: string) {
         this.refreshTokens = this.refreshTokens.filter((t) => t !== refreshToken)
     }
+
+    removeBearerPrefix(token: string) {
+        return token.replace('Bearer ', '')
+    }
 }
 
 export default new AuthService()

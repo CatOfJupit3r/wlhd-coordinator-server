@@ -11,7 +11,7 @@ export class LobbyClass {
     @prop({ required: true })
     gm_id: string // id of user in `Users` collection
 
-    @prop({ required: true, type: () => [PlayerClass] })
+    @prop({ required: true, type: () => [PlayerClass], _id: false })
     players: Array<PlayerClass>
 
     @prop({ required: true, type: () => [String] })

@@ -35,7 +35,7 @@ app.use(express.json())
 app.use('/', indexRoutes)
 app.use('/translations', translationRoutes)
 app.use('/user', authenticationMiddleware, userRoutes)
-app.use('/lobby', authenticationMiddleware, lobbyRoutes)
+app.use('/lobby', lobbyRoutes)
 app.use('/combat', authenticationMiddleware, combatRoutes)
 app.use('/entity', authenticationMiddleware, entityRoutes)
 

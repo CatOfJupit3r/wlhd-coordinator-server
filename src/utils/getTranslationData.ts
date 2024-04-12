@@ -4,7 +4,7 @@ import { Translation } from '../models/Translation'
 
 export const getTranslationData = (): Translation => {
     const result: Translation = {}
-    const dlcFolderPath = 'data/translations'
+    const dlcFolderPath = 'src/data/translations'
 
     try {
         const translationsFiles = fs.readdirSync(dlcFolderPath)

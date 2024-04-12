@@ -37,18 +37,18 @@ class DatabaseService {
         return user._id
     }
 
-    public createNewLobby = async (lobbyName: string, handle: string): Promise<Types.ObjectId> => {
-        const gm = await this.getUser(handle)
+    public createNewLobby = async (lobbyName: string, gm_id: string): Promise<Types.ObjectId> => {
+        const gm = await this.getUser(gm_id)
         if (!gm) {
             throw new Error('User not found')
         }
         const lobby = new LobbyModel({
             name: lobbyName,
             createdAt: new Date(),
-            // gm_id: gm._id,
+            gm_id: gm_id,
             players: [
                 {
-                    // userId: gm._id,
+                    userId: gm_id,
                     nickname: gm.handle,
                     mainCharacter: null,
                 },
@@ -139,6 +139,29 @@ class DatabaseService {
             })
         }
         return res
+    }
+
+    public getCharacterInfo = async (characterId: string): Promise<EntityClass> => {
+        const character = await this.getEntity(characterId)
+        if (!character) {
+            throw new Error('Character not found')
+        }
+        return character
+    }
+
+    public assignCharacterToPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {
+        const lobby = await this.getLobby(lobbyId)
+        if (!lobby) {
+            throw new Error('Lobby not found')
+        }
+        const player = lobby.players.find((p) => p.userId === userId)
+        if (!player) {
+            throw new Error('Player not found')
+        }
+        player.mainCharacter = characterId
+        await mongoose.connection
+            .collection('lobbies')
+            .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { players: lobby.players } })
     }
 }
 

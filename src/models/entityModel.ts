@@ -1,86 +1,93 @@
 import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose'
 
+const attributeProp = (defaultVal: number = 0) => prop({ default: defaultVal })
+
+const requiredProp = (options: { [key: string]: any } = {}) => prop({ required: true, ...options })
+
 class AttributeClass {
-    @prop({ default: 0 })
-    current_health?: number
+    @attributeProp()
+    current_health: number
 
-    @prop({ default: 0 })
-    max_health?: number
+    @attributeProp()
+    max_health: number
 
-    @prop({ default: 0 })
-    current_action_points?: number
+    @attributeProp()
+    current_action_points: number
 
-    @prop({ default: 0 })
-    current_armor?: number
+    @attributeProp()
+    current_armor: number
 
-    @prop({ default: 0 })
-    base_armor?: number
+    @attributeProp()
+    base_armor: number
 
-    @prop({ default: 0 })
-    weapon_bonus_damage?: number
+    @attributeProp()
+    weapon_bonus_damage: number
 
-    @prop({ default: 0 })
-    weapon_healing_damage?: number
+    @attributeProp()
+    weapon_healing_damage: number
 
-    @prop({ default: 0 })
-    athletics?: number
+    @attributeProp()
+    athletics: number
 
-    @prop({ default: 0 })
-    caution?: number
+    @attributeProp()
+    caution: number
 
-    @prop({ default: 0 })
-    dexterity?: number
+    @attributeProp()
+    dexterity: number
 
-    @prop({ default: 0 })
-    persuasion?: number
+    @attributeProp()
+    persuasion: number
 
-    @prop({ default: 0 })
-    medicine?: number
+    @attributeProp()
+    medicine: number
 
-    @prop({ default: 0 })
-    reflexes?: number
+    @attributeProp()
+    reflexes: number
 
-    @prop({ default: 0 })
-    strength?: number
+    @attributeProp()
+    strength: number
 
-    @prop({ default: 0 })
-    will?: number
+    @attributeProp()
+    will: number
 
-    @prop({ default: 0 })
-    physical_attack?: number
+    @attributeProp()
+    physical_attack: number
 
-    @prop({ default: 0 })
-    physical_defense?: number
+    @attributeProp()
+    physical_defense: number
 
-    @prop({ default: 0 })
-    fire_attack?: number
+    @attributeProp()
+    fire_attack: number
 
-    @prop({ default: 0 })
-    fire_defense?: number
+    @attributeProp()
+    fire_defense: number
 
-    @prop({ default: 0 })
-    air_attack?: number
+    @attributeProp()
+    air_attack: number
 
-    @prop({ default: 0 })
-    air_defense?: number
+    @attributeProp()
+    air_defense: number
 
-    @prop({ default: 0 })
-    water_attack?: number
+    @attributeProp()
+    water_attack: number
 
-    @prop({ default: 0 })
-    water_defense?: number
+    @attributeProp()
+    water_defense: number
 
-    @prop({ default: 0 })
-    earth_attack?: number
+    @attributeProp()
+    earth_attack: number
 
-    @prop({ default: 0 })
-    earth_defense?: number
+    @attributeProp()
+    earth_defense: number
 
-    @prop({ default: 0 })
-    nature_attack?: number
+    @attributeProp()
+    nature_attack: number
 
-    @prop({ default: 0 })
-    nature_defense?: number
+    @attributeProp()
+    nature_defense: number
+
+    @attributeProp()
+    gold: number
 }
 
 class CustomAttributeClass {
@@ -90,24 +97,53 @@ class CustomAttributeClass {
     @prop({ required: true })
     descriptor: string
 
-    @prop({ required: true })
+    @prop({ default: 0 })
     value: number
 }
 
+class SpellClass {
+    @requiredProp({ type: String })
+    descriptor: string
+
+    @prop({ type: () => [String], default: [] })
+    conflictsWith: Array<string>
+
+    @prop({ type: () => [String], default: [] })
+    requiresToUse: Array<string>
+}
+
+class ItemClass {
+    @requiredProp()
+    descriptor: string
+
+    @prop({ default: 1 })
+    count: number
+}
+
 @modelOptions({
-    schemaOptions: { collection: 'entities' },
+    schemaOptions: { collection: 'character' },
 })
 export class EntityClass {
     @prop({ required: true })
     descriptor: string
 
-    @prop({ required: true, type: () => AttributeClass })
+    @prop({ required: true, type: () => AttributeClass, _id: false })
     attributes: AttributeClass
 
-    @prop({ type: () => [CustomAttributeClass] })
+    @prop({ type: () => [CustomAttributeClass], _id: false })
     customAttributes: Array<CustomAttributeClass>
+
+    @prop({ type: () => [SpellClass], default: [], _id: false })
+    spellBook: Array<SpellClass>
+
+    @prop({ type: () => [String], default: [] })
+    spellLayout: Array<string>
+
+    @prop({ type: () => [ItemClass], default: [], _id: false })
+    inventory: Array<ItemClass>
+
+    @prop({ type: () => [ItemClass], default: [], _id: false })
+    weaponry: Array<ItemClass>
 }
 
-export const EntityModel = getModelForClass(EntityClass, {
-    schemaOptions: { collection: 'entities' },
-})
+export const EntityModel = getModelForClass(EntityClass)

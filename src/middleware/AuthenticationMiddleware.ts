@@ -8,7 +8,7 @@ export function authenticationMiddleware(req: Request, res: Response, next: Next
                 message: 'Authentification Failed',
             })
         }
-        const token = req.headers.authorization.replace('Bearer ', '')
+        const token = AuthService.removeBearerPrefix(req.headers.authorization)
         const decoded = AuthService.verifyAccessToken(token)
 
         if (!decoded) {

@@ -26,9 +26,6 @@ class UsersService {
 
         if (!user) throw new Error('User not found')
 
-        console.log('User found:', user)
-        console.log('Password:', password)
-
         const isPasswordCorrect = await bcrypt.compare(password, user.hashedPassword)
         if (!isPasswordCorrect) throw new Error('Incorrect password')
 

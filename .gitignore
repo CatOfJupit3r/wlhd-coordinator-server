@@ -37,8 +37,8 @@ next-env.d.ts
 
 .env
 
-data/translations/
-data/translations/*
-!data/translations/put_translations_here.txt
+src/data/translations/
+src/data/translations/*
+!src/data/translations/put_translations_here.txt
 /.idea
 use_cases.txt
