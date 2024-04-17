@@ -1,19 +1,20 @@
 import { Router } from 'express'
+import AuthService from '../services/AuthService'
 import UserService from '../services/UserService'
 
 const router = Router()
 
 router.get('/joined_lobbies', async (req, res) => {
-    const authHeader = req.header('Authorization')
-
-    if (!authHeader) {
-        res.status(401).send('Unauthorized')
+    if (!req.headers.authorization) {
+        res.status(401).json({ message: 'Unauthorized' })
         return
     }
-    const token = authHeader.split(' ')[1]
+    const token = AuthService.removeBearerPrefix(req.headers.authorization)
     const data = await UserService.getJoinedLobbiesInfo(token)
 
-    res.json(data)
+    res.json({
+        joinedLobbies: data,
+    })
 })
 
 export default router
