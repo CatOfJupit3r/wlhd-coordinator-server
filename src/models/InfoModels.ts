@@ -1,3 +1,5 @@
+import { PlayerClass } from './lobbyModel'
+
 export interface CharacterInfo {
     descriptor: string
     controlledBy: string | null
@@ -18,4 +20,16 @@ export interface CharacterInfo {
         descriptor: string
         count: number
     }>
+}
+
+export interface LobbyInfo {
+    lobbyId: string
+    combats: Array<{ nickname: string; isActive: boolean; roundCount: number }>
+    gm: string
+    players: Array<PlayerClass>
+    layout: 'default' | 'gm'
+    controlledEntity: {
+        name: string
+        id: string
+    } | null
 }

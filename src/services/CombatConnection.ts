@@ -54,7 +54,7 @@ type Player = {
     isGm?: boolean
 }
 
-export class LobbyCombatService {
+export class CombatConnection {
     public combatNickname: string
     private readonly combatPresets: GamePreset
     private players: Array<Player>
@@ -121,10 +121,6 @@ export class LobbyCombatService {
          */
         this.setupGameListeners()
         this.gameSocket.connect()
-    }
-
-    public manageSocket(userToken: string, playerSocket: PlayerSocket) {
-        this.handlePlayer(userToken, playerSocket)
     }
 
     private broadcast(event: string, payload?: object) {

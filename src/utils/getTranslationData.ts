@@ -1,5 +1,4 @@
 import fs from 'fs'
-import { DLCManifest } from '../models/DLCManifest'
 import { Translation } from '../models/Translation'
 
 export const getTranslationData = (): Translation => {
@@ -17,7 +16,16 @@ export const getTranslationData = (): Translation => {
             }
             const manifest = fs.readFileSync(`${dlcFolderPath}/${file}/manifest.json`, 'utf8')
 
-            const dlcDescriptor = (JSON.parse(manifest) as DLCManifest).descriptor
+            const dlcDescriptor = (
+                JSON.parse(manifest) as {
+                    title: string
+                    description: string
+                    descriptor: string
+                    version: string
+                    author: string
+                    source: string
+                }
+            ).descriptor
             const dlcContent = fs.readdirSync(`${dlcFolderPath}/${file}`)
             dlcContent.forEach((translationDir: string) => {
                 if (translationDir === '.DS_Store') {

@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt'
 import { omit } from 'lodash'
 import { Types } from 'mongoose'
+import { Forbidden, NotFound } from '../models/ErrorModels'
 import { UserClass } from '../models/userModel'
 import AuthService from './AuthService'
 import DatabaseService from './DatabaseService'
@@ -24,10 +25,10 @@ class UsersService {
     async loginWithPassword({ handle, password }: { handle: string; password: string }) {
         const user = (await this.findByHandle(handle, true)) as UserClass
 
-        if (!user) throw new Error('User not found')
+        if (!user) throw new NotFound('User not found')
 
         const isPasswordCorrect = await bcrypt.compare(password, user.hashedPassword)
-        if (!isPasswordCorrect) throw new Error('Incorrect password')
+        if (!isPasswordCorrect) throw new Forbidden('Incorrect password')
 
         const userWithoutPrivateFields = this.#omitPrivateFields(user)
 

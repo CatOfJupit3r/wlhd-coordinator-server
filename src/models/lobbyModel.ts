@@ -18,7 +18,7 @@ export class LobbyClass {
     relatedPresets: Array<string> // id of preset in `combat_presets` collection
 }
 
-class PlayerClass {
+export class PlayerClass {
     @prop({ required: true })
     userId: string // id of user in `Users` collection
 

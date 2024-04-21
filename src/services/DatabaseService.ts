@@ -1,10 +1,29 @@
+import { DocumentType } from '@typegoose/typegoose'
 import mongoose, { Types } from 'mongoose'
+import { BadRequest, InternalServerError, NotFound } from '../models/ErrorModels'
 import { CombatClass, CombatModel } from '../models/combatModel'
 import { EntityClass, EntityModel } from '../models/entityModel'
 import { LobbyClass, LobbyModel } from '../models/lobbyModel'
 import { UserClass, UserModel } from '../models/userModel'
 
 class DatabaseService {
+    private saveDocument = async (
+        document:
+            | DocumentType<LobbyClass>
+            | DocumentType<UserClass>
+            | DocumentType<EntityClass>
+            | DocumentType<CombatClass>
+    ) => {
+        try {
+            await document.save({
+                validateBeforeSave: true,
+            })
+        } catch (e) {
+            console.log(`Validation failed for creation of ${document.baseModelName}`, e)
+            throw new InternalServerError()
+        }
+    }
+
     public getLobby = async (lobbyId: string): Promise<LobbyClass | null> => {
         if (!lobbyId) {
             return null
@@ -39,9 +58,7 @@ class DatabaseService {
 
     public createNewLobby = async (lobbyName: string, gm_id: string): Promise<Types.ObjectId> => {
         const gm = await this.getUser(gm_id)
-        if (!gm) {
-            throw new Error('User not found')
-        }
+        if (!gm) throw new NotFound('User not found')
         const lobby = new LobbyModel({
             name: lobbyName,
             createdAt: new Date(),
@@ -55,9 +72,7 @@ class DatabaseService {
             ],
             relatedPresets: [],
         })
-        await lobby.save({
-            validateBeforeSave: true,
-        })
+        await this.saveDocument(lobby)
         return lobby._id
     }
 
@@ -68,17 +83,12 @@ class DatabaseService {
         mainCharacter: string
     ): Promise<void> => {
         const user = await this.getUser(userId)
-        if (!user) {
-            throw new Error('User not found')
-        }
+        if (!user) throw new NotFound('User not found')
         const character = await this.getEntity(mainCharacter)
-        if (!character) {
-            throw new Error('Character not found')
-        }
+        if (!character) throw new NotFound('Character not found')
         const lobby = await this.getLobby(lobbyId)
-        if (!lobby) {
-            throw new Error()
-        }
+        if (!lobby) throw new NotFound('Lobby not found')
+
         lobby.players.push({ nickname, mainCharacter, userId })
         await mongoose.connection
             .collection('lobbies')
@@ -114,7 +124,7 @@ class DatabaseService {
             const occupiedSquares: Array<string> = []
             for (const pawn of field) {
                 if (occupiedSquares.includes(pawn.square)) {
-                    throw new Error('Square is already occupied')
+                    throw new BadRequest('Multiple pawns on the same square')
                 }
                 occupiedSquares.push(pawn.square)
             }
@@ -143,21 +153,16 @@ class DatabaseService {
 
     public getCharacterInfo = async (characterId: string): Promise<EntityClass> => {
         const character = await this.getEntity(characterId)
-        if (!character) {
-            throw new Error('Character not found')
-        }
+        if (!character) throw new NotFound('Character not found')
         return character
     }
 
     public assignCharacterToPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {
         const lobby = await this.getLobby(lobbyId)
-        if (!lobby) {
-            throw new Error('Lobby not found')
-        }
+        if (!lobby) throw new NotFound('Lobby not found')
         const player = lobby.players.find((p) => p.userId === userId)
-        if (!player) {
-            throw new Error('Player not found')
-        }
+        if (!player) throw new NotFound('Player not found')
+
         player.mainCharacter = characterId
         await mongoose.connection
             .collection('lobbies')
