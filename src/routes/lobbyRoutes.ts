@@ -24,7 +24,7 @@ router.post('/create', authenticationMiddleware, LobbyController.createNewLobby.
 router.post(
     '/:lobby_id/create_combat',
     authenticationMiddleware,
-    LobbyController.createLobbyCombat.bind(LobbyController)
+    LobbyController.createCombatForLobby.bind(LobbyController)
 )
 
 // PATCH

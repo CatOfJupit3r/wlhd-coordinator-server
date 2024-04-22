@@ -42,10 +42,10 @@ class LobbyController {
         res.status(200).json(await LobbyService.getLobbyInfo(lobby_id, user, player))
     }
 
-    public async createLobbyCombat(req: Request, res: Response): Promise<void> {
-        console.log('Creating lobby combat. Params:', req.body)
+    public async createCombatForLobby(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-        const combatPreset: {
+
+        interface CombatPreset {
             field: {
                 [square: string]: {
                     path: string
@@ -56,10 +56,26 @@ class LobbyController {
                     }
                 }
             }
-        } = req.body.combat_preset
-        const combatNickname: string = req.body.combat_nickname
+        }
 
-        if (!lobby_id || !combatPreset || !combatNickname) throw new BadRequest('Missing parameters')
+        const {
+            combatNickname,
+            combatPreset,
+        }: {
+            combatNickname: string
+            combatPreset: CombatPreset
+        } = req.body
+
+        console.log('Creating combat for lobby', req.body)
+        if (!lobby_id || !combatPreset || !combatNickname)
+            throw new BadRequest('Missing parameters', {
+                required: [
+                    { lobby_id: 'string', present: !!lobby_id },
+                    { combatPreset: 'object', present: !!combatPreset },
+                    { combatNickname: 'string', present: !!combatNickname },
+                ],
+                provided: req.body,
+            })
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
         const preset = await getEmittableCombatPreset(combatPreset)
@@ -71,11 +87,9 @@ class LobbyController {
             lobby.gm_id,
             lobby.players.map((player) => player.userId)
         )
-        if (!combat_id) {
-            throw new InternalServerError('Failed to create combat')
-        } else {
+        if (combat_id) {
             res.status(200).json({ message: 'ok', combat_id })
-        }
+        } else throw new InternalServerError('Failed to create combat')
     }
 
     public getAllActiveCombats(req: Request, res: Response): void {
