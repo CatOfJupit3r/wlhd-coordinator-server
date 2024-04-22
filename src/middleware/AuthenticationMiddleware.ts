@@ -5,17 +5,23 @@ import AuthService from '../services/AuthService'
 export function authenticationMiddleware(req: Request, res: Response, next: NextFunction) {
     try {
         if (!req.headers || !req.headers.authorization) {
-            throw new Unauthorized('Authentication Failed')
+            throw new Unauthorized('Authentication Failed', {
+                reason: 'Authorization header is missing',
+            })
         }
         const token = AuthService.removeBearerPrefix(req.headers.authorization)
         const decoded = AuthService.verifyAccessToken(token)
 
         if (!decoded) {
-            throw new Unauthorized('Authentication Failed')
+            throw new Unauthorized('Authentication Failed', {
+                reason: 'Invalid token',
+            })
         }
         next()
-    } catch (err) {
-        if (!(err instanceof Unauthorized)) console.log('Error in authenticationMiddleware:', err)
-        throw new Unauthorized('Authentication Failed')
+    } catch (err: any) {
+        if (!(err instanceof Unauthorized)) console.log('Error in Authentication Middleware:', err)
+        throw new Unauthorized('Authentication Failed', {
+            ...err.additionalData,
+        })
     }
 }
