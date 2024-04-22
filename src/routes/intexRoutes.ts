@@ -3,9 +3,13 @@ import LoginController from '../controllers/LoginController'
 
 const route = Router()
 
+// GET
+
 route.get('/', (req, res) => {
     res.send('Welcome. Actually, you are not!')
 })
+
+// POST
 
 route.post('/register', LoginController.register.bind(LoginController))
 route.post('/login', LoginController.login.bind(LoginController))
