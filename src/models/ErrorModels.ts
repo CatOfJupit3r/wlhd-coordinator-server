@@ -40,6 +40,12 @@ export class InternalServerError extends Exception {
     }
 }
 
+export class CriticalError extends Exception {
+    constructor(message: string = 'Critical error occurred', additionalData?: AdditionalData) {
+        super(message, 500, additionalData)
+    }
+}
+
 export class Forbidden extends Exception {
     constructor(message: string = 'You are not allowed to access this resource', additionalData?: AdditionalData) {
         super(message, 403, additionalData)
