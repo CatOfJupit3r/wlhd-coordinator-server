@@ -35,17 +35,25 @@ const GM_EVENTS = {
     END_COMBAT: 'end_combat',
 }
 
-const RESPONSE_EVENTS = {
+const GAME_SERVER_RESPONSES = {
     PLAYER_CHOICE: 'player_choice',
-    NEW_MESSAGE: 'new_message',
-    BATTLEFIELD_UPDATE: 'battlefield_update',
     ALLOCATE: 'allocate',
-    HALT_ACTION: 'halt_action',
     START_COMBAT: 'start_combat',
     END_COMBAT: 'end_combat',
+}
+
+const PLAYER_RESPONSES = {
+    BATTLE_STARTED: 'battle_started',
+    ROUND_UPDATE: 'round_update',
+    GAME_HANDSHAKE: 'game_handshake',
+    ACTION_RESULT: 'action_result',
+    BATTLE_ENDED: 'battle_ended',
     CURRENT_ENTITY_UPDATED: 'current_entity_updated',
     NO_CURRENT_ENTITY: 'no_current_entity',
+    HALT_ACTION: 'halt_action',
     TAKE_ACTION: 'take_action',
+    NEW_MESSAGE: 'new_message',
+    BATTLEFIELD_UPDATE: 'battlefield_update',
 }
 
 type Player = {
@@ -167,7 +175,7 @@ export class CombatConnection {
         GameAPIService.fetchMessage(this.gameId, message)
             .then((data) => {
                 this.gameState.messages = [...this.gameState.messages, ...data]
-                this.broadcast(RESPONSE_EVENTS.NEW_MESSAGE, {
+                this.broadcast(PLAYER_RESPONSES.NEW_MESSAGE, {
                     message: data,
                 })
             })
@@ -180,7 +188,7 @@ export class CombatConnection {
         GameAPIService.fetchBattlefield(this.gameId)
             .then((data) => {
                 this.gameState.currentBattlefield = data
-                this.broadcast(RESPONSE_EVENTS.BATTLEFIELD_UPDATE, {
+                this.broadcast(PLAYER_RESPONSES.BATTLEFIELD_UPDATE, {
                     battlefield: data,
                 })
             })
@@ -212,8 +220,8 @@ export class CombatConnection {
                 player.socket && player.socket.emit('error', 'No action specified!')
                 return
             }
-            this.broadcast(RESPONSE_EVENTS.HALT_ACTION) // we halt all actions in case some other socket decides to send actions
-            this.sendToServer(RESPONSE_EVENTS.PLAYER_CHOICE, {
+            this.broadcast(PLAYER_RESPONSES.HALT_ACTION) // we halt all actions in case some other socket decides to send actions
+            this.sendToServer(GAME_SERVER_RESPONSES.PLAYER_CHOICE, {
                 game_id: this.gameId,
                 user_token: player.id_,
                 choices: {
@@ -255,8 +263,13 @@ export class CombatConnection {
         this.setupPlayerListeners(playerSocket, player)
         if (player.isGm) {
             this.setupGmListeners(playerSocket, player)
+            this.connect()
         }
         this.players[this.players.indexOf(player)].socket = playerSocket
+        this.players[this.players.indexOf(player)].socket?.emit(PLAYER_RESPONSES.GAME_HANDSHAKE, {
+            // handshake
+            game_id: this.gameId,
+        })
     }
 
     private setupGameListeners() {
@@ -281,14 +294,14 @@ export class CombatConnection {
                         entity: null,
                     },
                 }
-                this.broadcast(GAME_SERVER_EVENTS.GAME_HANDSHAKE, {
+                this.broadcast(PLAYER_RESPONSES.GAME_HANDSHAKE, {
                     game_id: this.gameId,
                 })
             },
             [GAME_SERVER_EVENTS.ROUND_UPDATE]: (data: { round_count: number }) => {
                 console.log('Round updated', data)
                 this.gameState.round_count = data.round_count
-                this.broadcast(GAME_SERVER_EVENTS.ROUND_UPDATE, { round_count: this.gameState.round_count })
+                this.broadcast(PLAYER_RESPONSES.ROUND_UPDATE, { round_count: this.gameState.round_count })
             },
             [GAME_SERVER_EVENTS.GAME_STATE]: (data: { message: string; battlefield_updated: boolean }) => {
                 console.log('State updated', data)
@@ -306,20 +319,20 @@ export class CombatConnection {
             [GAME_SERVER_EVENTS.BATTLE_STARTED]: () => {
                 console.log('Game has started')
                 this.gameState.battleResult = 'ongoing'
-                this.broadcast(GAME_SERVER_EVENTS.BATTLE_STARTED)
+                this.broadcast(PLAYER_RESPONSES.BATTLE_STARTED)
             },
             [GAME_SERVER_EVENTS.TAKE_ACTION]: async (data: { user_token: string; entity_id: string }) => {
                 console.log('Player turn', data)
                 const { user_token, entity_id } = data
                 this.gameState.turn.player = user_token
                 this.gameState.turn.entity = entity_id
-                this.broadcast(RESPONSE_EVENTS.CURRENT_ENTITY_UPDATED)
+                this.broadcast(PLAYER_RESPONSES.CURRENT_ENTITY_UPDATED)
 
                 try {
                     await this.updateEntityActions()
                 } catch (e) {
                     console.log('Error fetching entity actions', e)
-                    this.sendToServer(RESPONSE_EVENTS.PLAYER_CHOICE, {
+                    this.sendToServer(GAME_SERVER_RESPONSES.PLAYER_CHOICE, {
                         game_id: this.gameId,
                         user_token: user_token,
                         choices: {
@@ -330,12 +343,12 @@ export class CombatConnection {
 
                 const trySending = (user_token: string, entity_id: string): boolean => {
                     if (user_token && this.players.find((player) => player.id_ === user_token)) {
-                        this.sendToPlayer(user_token, RESPONSE_EVENTS.TAKE_ACTION, {
+                        this.sendToPlayer(user_token, PLAYER_RESPONSES.TAKE_ACTION, {
                             entity_id: entity_id,
                         })
                         return true
                     } else {
-                        return this.sendToGm(RESPONSE_EVENTS.TAKE_ACTION, {
+                        return this.sendToGm(PLAYER_RESPONSES.TAKE_ACTION, {
                             entity_id: entity_id,
                         })
                     }
@@ -343,7 +356,7 @@ export class CombatConnection {
                 if (!trySending(user_token, entity_id)) {
                     setTimeout(() => {
                         if (!trySending(user_token, entity_id)) {
-                            this.sendToServer(RESPONSE_EVENTS.PLAYER_CHOICE, {
+                            this.sendToServer(GAME_SERVER_RESPONSES.PLAYER_CHOICE, {
                                 game_id: this.gameId,
                                 user_token: user_token,
                                 choices: {
@@ -358,9 +371,9 @@ export class CombatConnection {
                 console.log('Action result', data)
                 this.gameState.turn.player = null
                 this.gameState.turn.entity = null
-                this.broadcast(RESPONSE_EVENTS.NO_CURRENT_ENTITY, data)
+                this.broadcast(PLAYER_RESPONSES.NO_CURRENT_ENTITY, data)
 
-                this.sendToPlayer(data.user_token, GAME_SERVER_EVENTS.ACTION_RESULT, {
+                this.sendToPlayer(data.user_token, PLAYER_RESPONSES.ACTION_RESULT, {
                     code: data.code,
                     message: data.message,
                 })
@@ -369,7 +382,7 @@ export class CombatConnection {
                 battle_result: 'builtins:win' | 'builtins:lose' | 'builtins:draw' | 'builtins:flee'
             }) => {
                 console.log('Game has ended', data)
-                this.broadcast(GAME_SERVER_EVENTS.BATTLE_ENDED, data)
+                this.broadcast(PLAYER_RESPONSES.BATTLE_ENDED, data)
                 this.onClose('Game has ended')
             },
             connect: () => {
@@ -415,8 +428,8 @@ export class CombatConnection {
                 allocation: ControlInfo
             }) => {
                 // this listener is for GM to allocate entity to player in case id of control info is null
-                this.broadcast(RESPONSE_EVENTS.HALT_ACTION)
-                this.sendToServer(RESPONSE_EVENTS.ALLOCATE, {
+                this.broadcast(PLAYER_RESPONSES.HALT_ACTION)
+                this.sendToServer(GAME_SERVER_RESPONSES.ALLOCATE, {
                     game_id: this.gameId,
                     allocation: {
                         filter,
@@ -425,11 +438,11 @@ export class CombatConnection {
                 })
             },
             [GM_EVENTS.START_COMBAT]: () => {
-                this.sendToServer(RESPONSE_EVENTS.START_COMBAT)
+                this.sendToServer(GAME_SERVER_RESPONSES.START_COMBAT)
             },
             [GM_EVENTS.END_COMBAT]: () => {
-                this.broadcast(RESPONSE_EVENTS.HALT_ACTION)
-                this.sendToServer(RESPONSE_EVENTS.END_COMBAT)
+                this.broadcast(PLAYER_RESPONSES.HALT_ACTION)
+                this.sendToServer(GAME_SERVER_RESPONSES.END_COMBAT)
             },
         }
         for (const event in GM_LISTENERS) {
