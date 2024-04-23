@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { BadRequest } from '../models/ErrorModels'
 import TranslationService from '../services/TranslationService'
 import { Cache } from '../utils/Cache'
 
@@ -12,29 +13,27 @@ export class TranslationController {
     public reloadTranslations(req: Request, res: Response): void {
         TranslationService.reloadTranslations()
         this.cache.clear()
-        res.status(204).send()
+        res.status(200).json({ message: 'Translations reloaded' })
     }
 
     public getTranslation(req: Request, res: Response): void {
         const { language, dlc } = req.query
         if (!language || !dlc) {
-            res.status(400).send('Missing language or dlc')
-            return
+            throw new BadRequest(`Missing: ${!language ? 'language' : ''} ${!dlc ? 'dlc' : ''}`)
         }
         if (this.cache.get(`${language}-${dlc}`)) {
             res.json(this.cache.get(`${language}-${dlc}`))
             return
         }
         const translation = TranslationService.getTranslation(language.toString(), dlc.toString())
-        this.cache.set(`${language}-${dlc}`, translation)
+        if (translation) this.cache.set(`${language}-${dlc}`, translation)
         res.json(translation)
     }
 
     public getTranslationSnippet(req: Request, res: Response): void {
         const { language, dlc, keys } = req.query
         if (!language || !dlc || !keys || keys.toString().split(',').length === 0) {
-            res.status(400).send('Missing language, dlc or keys')
-            return
+            throw new BadRequest(`Missing: ${!language ? 'language' : ''} ${!dlc ? 'dlc' : ''} ${!keys ? 'keys' : ''}`)
         }
         if (this.cache.get(`${language}-${dlc}-${keys}`)) {
             res.json(this.cache.get(`${language}-${dlc}-${keys}`))

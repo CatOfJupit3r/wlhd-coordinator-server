@@ -51,3 +51,15 @@ export class Forbidden extends Exception {
         super(message, 403, additionalData)
     }
 }
+
+export class MethodNotAllowed extends Exception {
+    constructor(message: string = 'This method is not allowed', additionalData?: AdditionalData) {
+        super(message, 405, additionalData)
+    }
+}
+
+export class Conflict extends Exception {
+    constructor(message: string = 'Conflict occurred', additionalData?: AdditionalData) {
+        super(message, 409, additionalData)
+    }
+}
