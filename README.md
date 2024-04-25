@@ -1,8 +1,52 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Walenholde Combat System — Game Coordinator
 
-## Getting Started
 
-First, run the development server:
+This repository contains coordinator for WLHD ecosystem. This server is responsible for managing games, players, and game sessions.
+
+Built using ExpressJS and MongoDB.
+
+
+## Description
+
+This is a passion project, created to provide a platform for playing Walenholde Combat System. 
+
+WLHD is a tabletop RPG system, created by me, that is still in active development. For more detailed information, check [Learn More](#Learn-More).
+
+## Prerequisites
+
+Before you begin, ensure you have met the following requirements:
+
+- You have installed [Node.js and npm](https://nodejs.org/en/download/) (built using NodeJS v21.6.1).
+- You have installed [MongoDB](https://www.mongodb.com/try/download/community).
+- You have a `<Windows/Linux/Mac>` machine.
+
+## Installation
+
+1. Clone this repository:
+```bash
+git clone https://github.com/CatOfJupit3r/wlc-frontend-web.git
+```
+2. Install dependencies:
+```bash
+npm install
+```
+3. Create a `.env` file in the root directory of the project and populate it with the variables from `.env.example`.
+
+## Environment Variables
+
+
+- PORT — Port on which the server will run _(default: 5000)_
+- HOST — Host on which the server will run _(default: localhost)_
+- GAME_SERVER_URL — FULL URL to the GAME server ~~(not this repository)~~
+- JWT_SECRET — Secret token for JWT. **DO NOT SHARE THIS!**
+- JWT_REFRESH — Secret token for JWT refresh. **DO NOT SHARE THIS TOO!**
+
+
+## Usage
+
+### Local
+
+Open a terminal inside the project directory run according to your package manager:
 
 ```bash
 npm run dev
@@ -14,23 +58,35 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Docker
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+This repository supports Docker. To build the image, run:
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+```bash
+docker build -t wlhd-game-coordinator .
+```
+
+Then, to run the container:
+
+```bash
+docker run -p 4000:4000 -d wlhd-game-coordinator
+```
+
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+To learn more about Walenholde Combat System... Well, you can't, as it's still a WIP. But in future you will be able to find more information about it on GitHub Wiki page, including:
 
--   [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
--   [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Creating your own lobbies, characters and hosting them.
+- Mechanics of the game, including combat, spells, and other features.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Related
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- [React Frontend](https://github.com/CatOfJupit3r/wlc-frontend-web) - Frontend for the game coordinator, built using React, Redux and GraphQL.
+- [Discord Bot Interface](https://github.com/CatOfJupit3r/wlc-frontend-discord) - Frontend for the game coordinator, built using Discord API. (Deprecated)
+- [Game Guide] - Contains all the necessary information about the game and its various mechanics in a traditional TTRPG format. (WIP)
+- [Game Wiki] - Contains all the necessary information about the game and its various mechanics in easily navigable way. (WIP)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
+
