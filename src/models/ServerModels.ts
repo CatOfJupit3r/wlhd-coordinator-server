@@ -1,5 +1,19 @@
 import { TranslatableString } from './Translation'
 
+export interface GameHandshake {
+    gameId: string
+    roundCount: number
+    messages: Array<Array<TranslatableString>>
+    combatStatus: 'ongoing' | 'pending'
+    currentBattlefield: Battlefield
+    allEntitiesInfo: {
+        [key: string]: EntityInfo
+    }
+    entityActions: EntityAction | null
+    currentPlayer: string | null
+    currentEntity: string | null
+}
+
 export interface Battlefield {
     field: string[][]
     columns: string[]
@@ -29,6 +43,7 @@ export type ControlInfo = ControlledByPlayer | ControlledByAI | ControlledByGame
 
 export interface EntityInfo {
     descriptor: string
+    id: string
     square: { line: string; column: string }
     attributes: { [attribute: string]: string }
     controlled_by: ControlInfo
@@ -100,4 +115,5 @@ export interface GamePreset {
     }
 }
 
-export type GameStateContainer = Array<Array<TranslatableString>>
+export type GameMessage = Array<TranslatableString>
+export type GameStateContainer = Array<GameMessage>

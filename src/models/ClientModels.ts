@@ -1,4 +1,15 @@
+import { Battlefield, GameStateContainer } from './ServerModels'
 import { TranslatableString } from './Translation'
+
+export interface GameHandshake {
+    roundCount: number
+    messages: GameStateContainer // but only last 10 instead of all
+    combatStatus: 'ongoing' | 'pending'
+    currentBattlefield: Battlefield
+    currentEntityInfo: EntityInfoTurn | null
+    entityTooltips: { [square: string]: EntityInfoTooltip | null }
+    controlledEntities: Array<EntityInfoFull> | null
+}
 
 export interface EntityInfoTooltip {
     name: TranslatableString

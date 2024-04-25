@@ -2,16 +2,22 @@ import { Socket as PlayerSocket } from 'socket.io'
 import io, { Socket } from 'socket.io-client'
 import { DefaultEventsMap } from 'socket.io/dist/typed-events'
 import { GAME_SERVER_URL, SECRET_TOKEN } from '../configs/config'
-
+import {
+    EntityInfoFull,
+    EntityInfoTooltip,
+    EntityInfoTurn,
+    GameHandshake as GameHandshakePlayers,
+} from '../models/ClientModels'
 import {
     Battlefield,
     ControlInfo,
     EntityAction,
     EntityInfo,
+    GameHandshake as GameHandshakeGameServer,
     GamePreset,
     GameStateContainer,
 } from '../models/ServerModels'
-import GameAPIService from './GameAPIService'
+import { TranslatableString } from '../models/Translation'
 
 const GAME_SERVER_EVENTS = {
     GAME_HANDSHAKE: 'game_handshake',
@@ -22,11 +28,16 @@ const GAME_SERVER_EVENTS = {
     GAME_STATE: 'game_state',
     ACTION_RESULT: 'action_result',
     BATTLE_ENDED: 'battle_ended',
+    NEW_MESSAGE: 'new_message',
+    BATTLEFIELD_UPDATE: 'battlefield_update',
+    ENTITIES_UPDATED: 'entities_updated',
 }
 
 const PLAYER_EVENTS = {
     TAKE_ACTION: 'take_action',
     SKIP: 'skip',
+    GAME_HANDSHAKE: 'game_handshake',
+    REQUEST_DATA: 'request_data',
 }
 
 const GM_EVENTS = {
@@ -48,12 +59,14 @@ const PLAYER_RESPONSES = {
     GAME_HANDSHAKE: 'game_handshake',
     ACTION_RESULT: 'action_result',
     BATTLE_ENDED: 'battle_ended',
-    CURRENT_ENTITY_UPDATED: 'current_entity_updated',
-    NO_CURRENT_ENTITY: 'no_current_entity',
+    ENTITIES_UPDATED: 'entities_updated', // this response to give tooltips and full info
+    CURRENT_ENTITY_UPDATED: 'current_entity_updated', // this response to give info about CURRENT ACTIVE entity
+    NO_CURRENT_ENTITY: 'no_current_entity', // and this response to remove info about CURRENT ACTIVE entity, if there is
     HALT_ACTION: 'halt_action',
     TAKE_ACTION: 'take_action',
     NEW_MESSAGE: 'new_message',
     BATTLEFIELD_UPDATE: 'battlefield_update',
+    INCOMING_DATA: 'incoming_data',
 }
 
 type Player = {
@@ -65,15 +78,15 @@ type Player = {
 export class CombatConnection {
     public combatNickname: string
     private readonly combatPresets: GamePreset
-    private players: Array<Player>
+    private readonly players: Array<Player>
     private gameSocket: Socket<DefaultEventsMap, DefaultEventsMap>
     private gameId: string
     private gameState: {
-        round_count: number
+        roundCount: number
         messages: GameStateContainer
         battleResult: 'pending' | 'ongoing'
         currentBattlefield: Battlefield
-        allEntitiesInfo: Array<EntityInfo> // info about all entities.
+        allEntitiesInfo: { [square: string]: EntityInfo } // info about all entities.
         turn: {
             actions: EntityAction | null // keeps json of possible entity action in order to not fetch them each event
             player: string | null // handle of current player. Supplied by game servers
@@ -111,8 +124,13 @@ export class CombatConnection {
         })
     }
 
+    private setGameId(gameId: string) {
+        console.log(`Connected to game server with id: ${gameId}`)
+        this.gameId = gameId
+    }
+
     public getRoundCount() {
-        return this.gameState.round_count
+        return this.gameState.roundCount
     }
 
     public isActive() {
@@ -171,47 +189,30 @@ export class CombatConnection {
         this.removeSelf()
     }
 
-    private addNewMessage(message: string) {
-        GameAPIService.fetchMessage(this.gameId, message)
-            .then((data) => {
-                this.gameState.messages = [...this.gameState.messages, ...data]
-                this.broadcast(PLAYER_RESPONSES.NEW_MESSAGE, {
-                    message: data,
-                })
-            })
-            .catch((e) => {
-                console.log('Error fetching message', e.message)
-            })
+    private addNewMessage(newMessage: Array<TranslatableString>) {
+        this.gameState.messages = [...this.gameState.messages, newMessage]
     }
 
-    private updateBattlefield() {
-        GameAPIService.fetchBattlefield(this.gameId)
-            .then((data) => {
-                this.gameState.currentBattlefield = data
-                this.broadcast(PLAYER_RESPONSES.BATTLEFIELD_UPDATE, {
-                    battlefield: data,
-                })
-            })
-            .catch((e) => {
-                console.log('Error fetching battlefield', e.message)
-            })
+    private updateBattlefield(newBattlefield: Battlefield) {
+        this.gameState.currentBattlefield = newBattlefield
     }
 
-    private updateEntitiesInfo() {
-        GameAPIService.fetchAllEntityInfo(this.gameId)
-            .then((data) => {
-                this.gameState.allEntitiesInfo = data
-            })
-            .catch((e) => {
-                console.log('Error fetching entities info', e.message)
-            })
+    private updateRoundCount(newRoundCount: number) {
+        this.gameState.roundCount = newRoundCount
     }
 
-    private async updateEntityActions() {
+    private updateEntitiesInfo(newEntityData: { [square: string]: EntityInfo }) {
+        this.gameState.allEntitiesInfo = {
+            ...this.gameState.allEntitiesInfo,
+            ...newEntityData,
+        }
+    }
+
+    private updateEntityActions(actions: EntityAction) {
         if (!this.gameState.turn.entity) {
             return
         }
-        this.gameState.turn.actions = await GameAPIService.fetchEntityActions(this.gameId, this.gameState.turn.entity)
+        this.gameState.turn.actions = actions
     }
 
     private sendActionsToServer(actions: { [key: string]: string }, player: Player) {
@@ -266,53 +267,74 @@ export class CombatConnection {
             this.connect()
         }
         this.players[this.players.indexOf(player)].socket = playerSocket
-        this.players[this.players.indexOf(player)].socket?.emit(PLAYER_RESPONSES.GAME_HANDSHAKE, {
-            // handshake
-            game_id: this.gameId,
-        })
+        this.players[this.players.indexOf(player)].socket?.emit(PLAYER_RESPONSES.GAME_HANDSHAKE, this.createHandshake())
     }
 
     private setupGameListeners() {
         const LISTENERS = {
-            [GAME_SERVER_EVENTS.GAME_HANDSHAKE]: (data: {
-                game_id: string
-                battlefield: Battlefield
-                entities_info: Array<EntityInfo>
-            }) => {
+            [GAME_SERVER_EVENTS.GAME_HANDSHAKE]: (data: GameHandshakeGameServer) => {
                 console.log('Handshake', data)
-                this.gameId = data.game_id
-                const { battlefield, entities_info } = data
+                const {
+                    gameId,
+                    roundCount,
+                    currentBattlefield,
+                    messages,
+                    combatStatus,
+                    entityActions,
+                    currentEntity,
+                    currentPlayer,
+                    allEntitiesInfo,
+                } = data
+                this.setGameId(gameId)
                 this.gameState = {
-                    round_count: 0,
-                    messages: [],
-                    battleResult: 'pending',
-                    currentBattlefield: battlefield,
-                    allEntitiesInfo: entities_info,
+                    roundCount: roundCount,
+                    messages: messages,
+                    battleResult: combatStatus,
+                    currentBattlefield: currentBattlefield,
+                    allEntitiesInfo: allEntitiesInfo,
                     turn: {
-                        actions: null,
-                        player: null,
-                        entity: null,
+                        actions: entityActions,
+                        player: currentPlayer,
+                        entity: currentEntity,
                     },
                 }
-                this.broadcast(PLAYER_RESPONSES.GAME_HANDSHAKE, {
-                    game_id: this.gameId,
-                })
+                this.broadcast(PLAYER_RESPONSES.GAME_HANDSHAKE, this.createHandshake())
             },
             [GAME_SERVER_EVENTS.ROUND_UPDATE]: (data: { round_count: number }) => {
                 console.log('Round updated', data)
-                this.gameState.round_count = data.round_count
-                this.broadcast(PLAYER_RESPONSES.ROUND_UPDATE, { round_count: this.gameState.round_count })
+                this.updateRoundCount(data.round_count)
+                this.broadcast(PLAYER_RESPONSES.ROUND_UPDATE, {
+                    roundCount: this.gameState.roundCount,
+                })
             },
-            [GAME_SERVER_EVENTS.GAME_STATE]: (data: { message: string; battlefield_updated: boolean }) => {
-                console.log('State updated', data)
-                const { message, battlefield_updated } = data
-                if (message || battlefield_updated) {
-                    this.updateEntitiesInfo()
-                    if (message) {
-                        this.addNewMessage(message)
-                    }
-                    if (battlefield_updated) {
-                        this.updateBattlefield()
+            [GAME_SERVER_EVENTS.NEW_MESSAGE]: ({ message }: { message: Array<TranslatableString> }) => {
+                console.log('New message', message)
+                this.addNewMessage(message)
+                this.broadcast(PLAYER_RESPONSES.NEW_MESSAGE, {
+                    message: message,
+                })
+            },
+            [GAME_SERVER_EVENTS.BATTLEFIELD_UPDATE]: (data: { battlefield: Battlefield }) => {
+                console.log('Battlefield updated', data)
+                this.updateBattlefield(data.battlefield)
+                this.broadcast(PLAYER_RESPONSES.BATTLEFIELD_UPDATE, {
+                    battlefield: this.gameState.currentBattlefield,
+                })
+            },
+            [GAME_SERVER_EVENTS.ENTITIES_UPDATED]: (data: {
+                newEntityData: {
+                    [id: string]: EntityInfo
+                }
+            }) => {
+                console.log('Entities updated')
+                this.updateEntitiesInfo(data.newEntityData)
+                // instead of broadcasting, we send info individually, because of 'controlledEntities' data
+                for (const player of this.players) {
+                    if (player.socket) {
+                        player.socket.emit(PLAYER_RESPONSES.ENTITIES_UPDATED, {
+                            newControlledEntities: this.generateEntityFullInfoForPlayer(player.id_),
+                            newTooltips: this.generateEntityToolTipForPlayer(player.id_),
+                        })
                     }
                 }
             },
@@ -321,17 +343,53 @@ export class CombatConnection {
                 this.gameState.battleResult = 'ongoing'
                 this.broadcast(PLAYER_RESPONSES.BATTLE_STARTED)
             },
-            [GAME_SERVER_EVENTS.TAKE_ACTION]: async (data: { user_token: string; entity_id: string }) => {
-                console.log('Player turn', data)
-                const { user_token, entity_id } = data
-                this.gameState.turn.player = user_token
-                this.gameState.turn.entity = entity_id
-                this.broadcast(PLAYER_RESPONSES.CURRENT_ENTITY_UPDATED)
-
+            [GAME_SERVER_EVENTS.TAKE_ACTION]: async ({
+                user_token,
+                entity_id,
+                actions,
+            }: {
+                user_token: string
+                entity_id: string
+                actions: EntityAction
+            }) => {
                 try {
-                    await this.updateEntityActions()
+                    console.log('Take action', user_token, entity_id, actions)
+                    this.gameState.turn.player = user_token
+                    this.gameState.turn.entity = entity_id
+                    const entityInfo = this.findEntityInfoById(entity_id)
+                    entityInfo &&
+                        this.broadcast(PLAYER_RESPONSES.CURRENT_ENTITY_UPDATED, this.generateEntityTurnInfo(entityInfo))
+                    this.updateEntityActions(actions)
+
+                    const trySending = (user_token: string, entity_id: string): boolean => {
+                        if (user_token && this.players.find((player) => player.id_ === user_token)) {
+                            this.sendToPlayer(user_token, PLAYER_RESPONSES.TAKE_ACTION, {
+                                entityId: entity_id,
+                                actions: actions,
+                            })
+                            return true
+                        } else {
+                            return this.sendToGm(PLAYER_RESPONSES.TAKE_ACTION, {
+                                entityId: entity_id,
+                                actions: actions,
+                            })
+                        }
+                    }
+                    if (!trySending(user_token, entity_id)) {
+                        setTimeout(() => {
+                            if (!trySending(user_token, entity_id)) {
+                                this.sendToServer(GAME_SERVER_RESPONSES.PLAYER_CHOICE, {
+                                    game_id: this.gameId,
+                                    user_token: user_token,
+                                    choices: {
+                                        action: 'builtins:skip',
+                                    },
+                                })
+                            }
+                        }, 1000)
+                    }
                 } catch (e) {
-                    console.log('Error fetching entity actions', e)
+                    console.log('Error handling take action listener ', e)
                     this.sendToServer(GAME_SERVER_RESPONSES.PLAYER_CHOICE, {
                         game_id: this.gameId,
                         user_token: user_token,
@@ -340,38 +398,12 @@ export class CombatConnection {
                         },
                     })
                 }
-
-                const trySending = (user_token: string, entity_id: string): boolean => {
-                    if (user_token && this.players.find((player) => player.id_ === user_token)) {
-                        this.sendToPlayer(user_token, PLAYER_RESPONSES.TAKE_ACTION, {
-                            entity_id: entity_id,
-                        })
-                        return true
-                    } else {
-                        return this.sendToGm(PLAYER_RESPONSES.TAKE_ACTION, {
-                            entity_id: entity_id,
-                        })
-                    }
-                }
-                if (!trySending(user_token, entity_id)) {
-                    setTimeout(() => {
-                        if (!trySending(user_token, entity_id)) {
-                            this.sendToServer(GAME_SERVER_RESPONSES.PLAYER_CHOICE, {
-                                game_id: this.gameId,
-                                user_token: user_token,
-                                choices: {
-                                    action: 'builtins:skip',
-                                },
-                            })
-                        }
-                    }, 1000)
-                }
             },
             [GAME_SERVER_EVENTS.ACTION_RESULT]: (data: { user_token: string; code: number; message: string }) => {
                 console.log('Action result', data)
                 this.gameState.turn.player = null
                 this.gameState.turn.entity = null
-                this.broadcast(PLAYER_RESPONSES.NO_CURRENT_ENTITY, data)
+                this.broadcast(PLAYER_RESPONSES.NO_CURRENT_ENTITY)
 
                 this.sendToPlayer(data.user_token, PLAYER_RESPONSES.ACTION_RESULT, {
                     code: data.code,
@@ -412,12 +444,120 @@ export class CombatConnection {
             [PLAYER_EVENTS.SKIP]: () => {
                 this.sendActionsToServer({ action: 'builtins:skip' }, player)
             },
+            [PLAYER_EVENTS.REQUEST_DATA]: ({
+                type,
+                payload,
+            }:
+                | {
+                      type: 'messages'
+                      payload?: { start: number; end: number } // if there is no payload, then we send last 10 messages
+                  }
+                | {
+                      type: 'current_entity_info'
+                      payload: null
+                  }
+                | {
+                      type: 'entity_tooltip'
+                      payload: { square: { line: string; column: string } }
+                  }
+                | {
+                      type: 'controlled_entities'
+                      payload: null
+                  }
+                | {
+                      type: 'battlefield'
+                      payload: null
+                  }) => {
+                switch (type) {
+                    case 'messages':
+                        player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                            type: 'messages',
+                            payload: {
+                                messages: () => {
+                                    const { start, end } = payload || { start: -10, end: 0 }
+                                    return this.gameState.messages.slice(start, end)
+                                },
+                            },
+                        })
+                        break
+                    case 'current_entity_info':
+                        if (this.gameState.turn.entity) {
+                            player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                                type: 'current_entity_info',
+                                payload: {
+                                    entity: (() => {
+                                        const entityInfo = this.findEntityInfoById(this.gameState.turn.entity)
+                                        return entityInfo ? this.generateEntityFullInfo(entityInfo) : null
+                                    })(),
+                                },
+                            })
+                        } else {
+                            player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                                type: 'current_entity_info',
+                                payload: {
+                                    entity: null,
+                                },
+                            })
+                        }
+                        break
+                    case 'entity_tooltip': {
+                        const { square } = payload
+                        const entity = Object.values(this.gameState.allEntitiesInfo).find(
+                            (entity) => entity.square.line === square.line && entity.square.column === square.column
+                        )
+                        if (entity) {
+                            player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                                type: 'entity_tooltip',
+                                payload: {
+                                    entity: this.generateEntityToolTip(entity),
+                                },
+                            })
+                        } else {
+                            player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                                type: 'entity_tooltip',
+                                payload: {
+                                    entity: null,
+                                },
+                            })
+                        }
+                        break
+                    }
+                    case 'controlled_entities':
+                        player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                            type: 'controlled_entities',
+                            payload: {
+                                newControlledEntities: this.generateEntityFullInfoForPlayer(player.id_),
+                            },
+                        })
+                        break
+                    case 'battlefield':
+                        player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                            type: 'battlefield',
+                            payload: {
+                                battlefield: this.gameState.currentBattlefield,
+                            },
+                        })
+                        break
+                    default:
+                        player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                            type: 'invalid',
+                            payload: {
+                                request: {
+                                    type: type,
+                                    payload: payload,
+                                },
+                            },
+                        })
+                        break
+                }
+            },
         }
         for (const event in LISTENERS) {
             playerSocket.on(event, LISTENERS[event])
         }
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private setupGmListeners(playerSocket: PlayerSocket, player: Player) {
         const GM_LISTENERS = {
             [GM_EVENTS.ALLOCATE]: ({
@@ -447,6 +587,91 @@ export class CombatConnection {
         }
         for (const event in GM_LISTENERS) {
             playerSocket.on(event, GM_LISTENERS[event])
+        }
+    }
+
+    private generateEntityToolTip(entity: EntityInfo): EntityInfoTooltip {
+        return {
+            name: { main_string: entity.descriptor },
+            square: { line: entity.square.line, column: entity.square.column },
+            health: {
+                current: entity.attributes['builtins:current_health'],
+                max: entity.attributes['builtins:max_health'],
+            },
+            action_points: {
+                current: entity.attributes['builtins:current_action_points'],
+                max: entity.attributes['builtins:max_action_points'],
+            },
+            armor: {
+                current: entity.attributes['builtins:current_armor'],
+                base: entity.attributes['builtins:base_armor'],
+            },
+            status_effects: entity.status_effects.map((effect) => {
+                return {
+                    descriptor: effect.descriptor,
+                    duration: effect.duration.toString(),
+                }
+            }),
+        }
+    }
+
+    private generateEntityFullInfo(entity: EntityInfo): EntityInfoFull {
+        return {
+            ...entity,
+            name: entity.descriptor,
+        }
+    }
+
+    private generateEntityTurnInfo(entity: EntityInfo): EntityInfoTurn {
+        return {
+            name: entity.descriptor,
+            square: { line: entity.square.line, column: entity.square.column },
+            action_points: {
+                current: parseInt(entity.attributes['builtins:current_action_points']),
+                max: parseInt(entity.attributes['builtins:max_action_points']),
+            },
+        }
+    }
+
+    private generateEntityFullInfoForPlayer(playerId: string): Array<EntityInfoFull> {
+        return Object.values(this.gameState.allEntitiesInfo)
+            .filter((entity) => entity.controlled_by.type === 'player' && entity.controlled_by.id === playerId)
+            .map((entity) => this.generateEntityFullInfo(entity))
+    }
+
+    private generateEntityToolTipForPlayer(playerId: string): { [square: string]: EntityInfoTooltip | null } {
+        return Object.entries(this.gameState.allEntitiesInfo).reduce((acc, [, entity]) => {
+            if (entity.controlled_by.type === 'player' && entity.controlled_by.id === playerId) {
+                return {
+                    ...acc,
+                    [`${entity.square.line}:${entity.square.column}`]: this.generateEntityToolTip(entity),
+                }
+            } else {
+                return acc
+            }
+        }, {})
+    }
+
+    private findEntityInfoById(id: string): EntityInfo | null {
+        return Object.values(this.gameState.allEntitiesInfo).find((entity) => entity.id === id) || null
+    }
+
+    private createHandshake(): GameHandshakePlayers {
+        return {
+            roundCount: this.gameState.roundCount,
+            messages: this.gameState.messages.slice(-10),
+            combatStatus: this.gameState.battleResult,
+            currentBattlefield: this.gameState.currentBattlefield,
+            currentEntityInfo: (() => {
+                if (this.gameState.turn.entity) {
+                    const entityInfo = this.findEntityInfoById(this.gameState.turn.entity)
+                    return entityInfo ? this.generateEntityTurnInfo(entityInfo) : null
+                } else {
+                    return null
+                }
+            })(),
+            entityTooltips: this.generateEntityToolTipForPlayer(this.gmId),
+            controlledEntities: this.generateEntityFullInfoForPlayer(this.gmId),
         }
     }
 }
