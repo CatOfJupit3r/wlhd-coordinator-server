@@ -24,7 +24,7 @@ Before you begin, ensure you have met the following requirements:
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/CatOfJupit3r/wlc-frontend-web.git
+git clone https://github.com/CatOfJupit3r/wlc-coordinator-server.git
 ```
 2. Install dependencies:
 ```bash
@@ -83,10 +83,10 @@ To learn more about Walenholde Combat System... Well, you can't, as it's still a
 
 ## Related
 
-- [React Frontend](https://github.com/CatOfJupit3r/wlc-frontend-web) - Frontend for the game coordinator, built using React, Redux and GraphQL.
+- [React Frontend](https://github.com/CatOfJupit3r/wlc-frontend-web) - Frontend for the game coordinator, built using React, Redux and GraphQL. 
+- [Game Coordinator](https://github.com/CatOfJupit3r/wlc-coordinator-server) - Backend for the game coordinator, built using ExpressJS and MongoDB. (You are here!)
+- [Game Engine](https://youtu.be/h81WXIfCnoE?si=LS7HpLYhI-LBg4-9) - Core game engine, built using Python, Python and Python. (also, FastAPI).
 - [Discord Bot Interface](https://github.com/CatOfJupit3r/wlc-frontend-discord) - Frontend for the game coordinator, built using Discord API. (Deprecated)
 - [Game Guide] - Contains all the necessary information about the game and its various mechanics in a traditional TTRPG format. (WIP)
 - [Game Wiki] - Contains all the necessary information about the game and its various mechanics in easily navigable way. (WIP)
-
-
 
