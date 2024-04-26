@@ -38,6 +38,7 @@ npm install
 - PORT — Port on which the server will run _(default: 5000)_
 - HOST — Host on which the server will run _(default: localhost)_
 - GAME_SERVER_URL — FULL URL to the GAME server ~~(not this repository)~~
+- GAME_SECRET_TOKEN — Secret token to access the GAME server. **DO NOT SHARE THIS!**
 - JWT_SECRET — Secret token for JWT. **DO NOT SHARE THIS!**
 - JWT_REFRESH — Secret token for JWT refresh. **DO NOT SHARE THIS TOO!**
 

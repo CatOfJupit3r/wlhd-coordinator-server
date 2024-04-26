@@ -41,4 +41,3 @@ src/data/translations/
 src/data/translations/*
 !src/data/translations/put_translations_here.txt
 /.idea
-use_cases.txt
