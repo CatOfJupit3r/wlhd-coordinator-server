@@ -1,6 +1,7 @@
 import jwt, { TokenExpiredError } from 'jsonwebtoken'
 import { Types } from 'mongoose'
 import { JWT_ACCESS_SECRET, JWT_REFRESH_SECRET } from '../configs/config'
+import { BadRequest } from '../models/ErrorModels'
 
 class AuthService {
     refreshTokens: Array<string> = []
@@ -17,7 +18,7 @@ class AuthService {
     generateRefreshToken(user: { _id: Types.ObjectId; handle: string }) {
         const payload = { _id: user._id, handle: user.handle }
         const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, {
-            expiresIn: '365d',
+            expiresIn: '7d',
         })
         this.refreshTokens.push(refreshToken)
 
@@ -37,7 +38,7 @@ class AuthService {
         // TODO: NON-PRODUCTION CODE
 
         if (!this.refreshTokens.includes(refreshToken)) {
-            throw new Error('Refresh token is not valid')
+            throw new BadRequest('Refresh token is not valid')
         }
         return jwt.verify(refreshToken, JWT_REFRESH_SECRET) as { _id: string; handle: string }
     }

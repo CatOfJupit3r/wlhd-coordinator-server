@@ -126,13 +126,13 @@ class LobbyController {
     }
 
     public onConnection(socket: Socket): void {
-        const { gameId, userToken, lobbyId } = socket.handshake.query
-        if (!gameId || !userToken) {
-            console.log('Invalid connection')
+        const { combatId, userToken } = socket.handshake.query
+        if (!combatId || !userToken) {
             socket.disconnect()
+            return
         }
-        console.log('Trying to establish connection: ', gameId, userToken)
-        LobbyService.manageSocket(socket, gameId as string, userToken as string, lobbyId as string)
+        console.log('Trying to establish connection: ', combatId, userToken)
+        LobbyService.manageSocket(socket, combatId as string, userToken as string)
     }
 }
 

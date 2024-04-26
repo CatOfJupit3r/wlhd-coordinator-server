@@ -1,7 +1,7 @@
 import { Socket as PlayerSocket } from 'socket.io'
 import io, { Socket } from 'socket.io-client'
 import { DefaultEventsMap } from 'socket.io/dist/typed-events'
-import { GAME_SERVER_URL, SECRET_TOKEN } from '../configs/config'
+import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs/config'
 import {
     EntityInfoFull,
     EntityInfoTooltip,
@@ -23,13 +23,13 @@ const GAME_SERVER_EVENTS = {
     GAME_HANDSHAKE: 'game_handshake',
     ROUND_UPDATE: 'round_update',
     BATTLE_STARTED: 'battle_started',
-    TAKE_ACTION: 'take_action',
+    PLAYER_TURN: 'player_turn',
     SKIP: 'skip',
     GAME_STATE: 'game_state',
     ACTION_RESULT: 'action_result',
     BATTLE_ENDED: 'battle_ended',
     NEW_MESSAGE: 'new_message',
-    BATTLEFIELD_UPDATE: 'battlefield_update',
+    BATTLEFIELD_UPDATED: 'battlefield_updated',
     ENTITIES_UPDATED: 'entities_updated',
 }
 
@@ -65,7 +65,7 @@ const PLAYER_RESPONSES = {
     HALT_ACTION: 'halt_action',
     TAKE_ACTION: 'take_action',
     NEW_MESSAGE: 'new_message',
-    BATTLEFIELD_UPDATE: 'battlefield_update',
+    BATTLEFIELD_UPDATED: 'battlefield_updated',
     INCOMING_DATA: 'incoming_data',
 }
 
@@ -86,7 +86,7 @@ export class CombatConnection {
         messages: GameStateContainer
         battleResult: 'pending' | 'ongoing'
         currentBattlefield: Battlefield
-        allEntitiesInfo: { [square: string]: EntityInfo } // info about all entities.
+        allEntitiesInfo: { [square: string]: EntityInfo | null } // info about all entities.
         turn: {
             actions: EntityAction | null // keeps json of possible entity action in order to not fetch them each event
             player: string | null // handle of current player. Supplied by game servers
@@ -118,8 +118,9 @@ export class CombatConnection {
         this.gameSocket = io(GAME_SERVER_URL, {
             path: '/sockets',
             autoConnect: false,
+            reconnection: false,
             query: {
-                token: SECRET_TOKEN,
+                token: GAME_SECRET_TOKEN,
             },
         })
     }
@@ -138,7 +139,9 @@ export class CombatConnection {
     }
 
     public isPlayerInCombat(playerName: string): boolean {
-        return this.players.some((player) => player.id_ === playerName)
+        return this.players.some(
+            (player) => player.id_ === playerName && player.socket !== null && player.socket.connected
+        )
     }
 
     public connect() {
@@ -244,19 +247,27 @@ export class CombatConnection {
         console.log('Player connected', userToken)
 
         playerSocket.use((packet, next) => {
-            if (packet[0] === 'error') {
+            const event = packet[0]
+            if (event === 'error') {
                 console.log('Error from player', packet[1])
-            } else if (packet[0] in PLAYER_EVENTS) {
-                if (this.gameState && this.gameState.battleResult === 'ongoing') {
+                next()
+            } else if (
+                (player.isGm && Object.values(GM_EVENTS).includes(event)) ||
+                Object.values(PLAYER_EVENTS).includes(event)
+            ) {
+                if (
+                    (this.gameState && this.gameState.battleResult === 'ongoing') ||
+                    event === PLAYER_EVENTS.GAME_HANDSHAKE ||
+                    event === GM_EVENTS.START_COMBAT
+                ) {
                     next()
                 } else {
                     playerSocket.emit('error', 'Game is not active!')
                 }
             } else {
-                console.log('Invalid event from player', packet[0])
-                playerSocket.emit('error', 'Invalid event')
+                console.log('Invalid event from player', event)
+                playerSocket.emit('error', `Invalid event: ${event}`)
             }
-            next()
         })
         playerSocket.onAny((event, ...args) => {
             console.log(`Received ${event} with args: ${args}`)
@@ -267,7 +278,11 @@ export class CombatConnection {
             this.connect()
         }
         this.players[this.players.indexOf(player)].socket = playerSocket
-        this.players[this.players.indexOf(player)].socket?.emit(PLAYER_RESPONSES.GAME_HANDSHAKE, this.createHandshake())
+        this.gameSocket.connected &&
+            this.players[this.players.indexOf(player)].socket?.emit(
+                PLAYER_RESPONSES.GAME_HANDSHAKE,
+                this.createHandshake(player.id_)
+            )
     }
 
     private setupGameListeners() {
@@ -298,7 +313,11 @@ export class CombatConnection {
                         entity: currentEntity,
                     },
                 }
-                this.broadcast(PLAYER_RESPONSES.GAME_HANDSHAKE, this.createHandshake())
+                this.players.forEach((player) => {
+                    if (player.socket) {
+                        player.socket.emit(PLAYER_RESPONSES.GAME_HANDSHAKE, this.createHandshake(player.id_))
+                    }
+                })
             },
             [GAME_SERVER_EVENTS.ROUND_UPDATE]: (data: { round_count: number }) => {
                 console.log('Round updated', data)
@@ -314,10 +333,10 @@ export class CombatConnection {
                     message: message,
                 })
             },
-            [GAME_SERVER_EVENTS.BATTLEFIELD_UPDATE]: (data: { battlefield: Battlefield }) => {
+            [GAME_SERVER_EVENTS.BATTLEFIELD_UPDATED]: (data: { battlefield: Battlefield }) => {
                 console.log('Battlefield updated', data)
                 this.updateBattlefield(data.battlefield)
-                this.broadcast(PLAYER_RESPONSES.BATTLEFIELD_UPDATE, {
+                this.broadcast(PLAYER_RESPONSES.BATTLEFIELD_UPDATED, {
                     battlefield: this.gameState.currentBattlefield,
                 })
             },
@@ -333,7 +352,7 @@ export class CombatConnection {
                     if (player.socket) {
                         player.socket.emit(PLAYER_RESPONSES.ENTITIES_UPDATED, {
                             newControlledEntities: this.generateEntityFullInfoForPlayer(player.id_),
-                            newTooltips: this.generateEntityToolTipForPlayer(player.id_),
+                            newTooltips: this.generateEntityToolTipForPlayer(),
                         })
                     }
                 }
@@ -343,7 +362,7 @@ export class CombatConnection {
                 this.gameState.battleResult = 'ongoing'
                 this.broadcast(PLAYER_RESPONSES.BATTLE_STARTED)
             },
-            [GAME_SERVER_EVENTS.TAKE_ACTION]: async ({
+            [GAME_SERVER_EVENTS.PLAYER_TURN]: async ({
                 user_token,
                 entity_id,
                 actions,
@@ -353,7 +372,6 @@ export class CombatConnection {
                 actions: EntityAction
             }) => {
                 try {
-                    console.log('Take action', user_token, entity_id, actions)
                     this.gameState.turn.player = user_token
                     this.gameState.turn.entity = entity_id
                     const entityInfo = this.findEntityInfoById(entity_id)
@@ -399,7 +417,11 @@ export class CombatConnection {
                     })
                 }
             },
-            [GAME_SERVER_EVENTS.ACTION_RESULT]: (data: { user_token: string; code: number; message: string }) => {
+            [GAME_SERVER_EVENTS.ACTION_RESULT]: (data: {
+                user_token: string
+                code: number
+                message: 'builtins:action_performed' | 'builtins:invalid_input' | string
+            }) => {
                 console.log('Action result', data)
                 this.gameState.turn.player = null
                 this.gameState.turn.entity = null
@@ -411,7 +433,12 @@ export class CombatConnection {
                 })
             },
             [GAME_SERVER_EVENTS.BATTLE_ENDED]: (data: {
-                battle_result: 'builtins:win' | 'builtins:lose' | 'builtins:draw' | 'builtins:flee'
+                battle_result:
+                    | 'builtins:win'
+                    | 'builtins:lose'
+                    | 'builtins:draw'
+                    | 'builtins:flee'
+                    | 'builtins:terminated'
             }) => {
                 console.log('Game has ended', data)
                 this.broadcast(PLAYER_RESPONSES.BATTLE_ENDED, data)
@@ -503,7 +530,8 @@ export class CombatConnection {
                     case 'entity_tooltip': {
                         const { square } = payload
                         const entity = Object.values(this.gameState.allEntitiesInfo).find(
-                            (entity) => entity.square.line === square.line && entity.square.column === square.column
+                            (entity) =>
+                                entity && entity.square.line === square.line && entity.square.column === square.column
                         )
                         if (entity) {
                             player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
@@ -634,29 +662,32 @@ export class CombatConnection {
     }
 
     private generateEntityFullInfoForPlayer(playerId: string): Array<EntityInfoFull> {
-        return Object.values(this.gameState.allEntitiesInfo)
-            .filter((entity) => entity.controlled_by.type === 'player' && entity.controlled_by.id === playerId)
-            .map((entity) => this.generateEntityFullInfo(entity))
+        const res: Array<EntityInfoFull> = []
+        console.log('Before filter:', Object.values(this.gameState.allEntitiesInfo))
+        Object.values(this.gameState.allEntitiesInfo).forEach((entity) => {
+            if (entity && entity.controlled_by.type === 'player' && entity.controlled_by.id === playerId) {
+                res.push(this.generateEntityFullInfo(entity))
+            }
+        })
+        console.log('After filter:', res)
+        return res
     }
 
-    private generateEntityToolTipForPlayer(playerId: string): { [square: string]: EntityInfoTooltip | null } {
+    private generateEntityToolTipForPlayer(): { [square: string]: EntityInfoTooltip | null } {
         return Object.entries(this.gameState.allEntitiesInfo).reduce((acc, [, entity]) => {
-            if (entity.controlled_by.type === 'player' && entity.controlled_by.id === playerId) {
-                return {
-                    ...acc,
-                    [`${entity.square.line}:${entity.square.column}`]: this.generateEntityToolTip(entity),
-                }
-            } else {
-                return acc
+            if (!entity) return acc
+            return {
+                ...acc,
+                [`${entity.square.line}/${entity.square.column}`]: this.generateEntityToolTip(entity),
             }
         }, {})
     }
 
     private findEntityInfoById(id: string): EntityInfo | null {
-        return Object.values(this.gameState.allEntitiesInfo).find((entity) => entity.id === id) || null
+        return Object.values(this.gameState.allEntitiesInfo).find((entity) => entity && entity.id === id) || null
     }
 
-    private createHandshake(): GameHandshakePlayers {
+    private createHandshake(playerId: string): GameHandshakePlayers {
         return {
             roundCount: this.gameState.roundCount,
             messages: this.gameState.messages.slice(-10),
@@ -670,8 +701,8 @@ export class CombatConnection {
                     return null
                 }
             })(),
-            entityTooltips: this.generateEntityToolTipForPlayer(this.gmId),
-            controlledEntities: this.generateEntityFullInfoForPlayer(this.gmId),
+            entityTooltips: this.generateEntityToolTipForPlayer(),
+            controlledEntities: this.generateEntityFullInfoForPlayer(playerId),
         }
     }
 }
