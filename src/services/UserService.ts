@@ -6,7 +6,7 @@ import { UserClass } from '../models/userModel'
 import AuthService from './AuthService'
 import DatabaseService from './DatabaseService'
 
-class UsersService {
+class UserService {
     #privateFields = ['hashedPassword']
 
     #omitPrivateFields = (user: any) => omit(user, this.#privateFields)
@@ -77,4 +77,4 @@ class UsersService {
     }
 }
 
-export default new UsersService()
+export default new UserService()
