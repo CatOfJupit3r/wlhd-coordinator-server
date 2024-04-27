@@ -44,6 +44,7 @@ const GM_EVENTS = {
     ALLOCATE: 'allocate',
     START_COMBAT: 'start_combat',
     END_COMBAT: 'end_combat',
+    TRY_SENDING_AGAIN: 'try_sending_again', // this event is for GM to try sending actions to original player again
 }
 
 const GAME_SERVER_RESPONSES = {
@@ -67,6 +68,12 @@ const PLAYER_RESPONSES = {
     NEW_MESSAGE: 'new_message',
     BATTLEFIELD_UPDATED: 'battlefield_updated',
     INCOMING_DATA: 'incoming_data',
+}
+
+const GM_RESPONSES = {
+    TAKE_UNALLOCATED_ACTION: 'take_unallocated_action',
+    // if player is not present, but GM is, then GM can take action and is notified about unallocated entity.
+    TAKE_OFFLINE_PLAYER_ACTION: 'take_offline_player_action',
 }
 
 type Player = {
@@ -184,8 +191,7 @@ export class CombatConnection {
         }
     }
 
-    private onClose(message: string = 'Game server connection closed') {
-        console.log(message)
+    private onClose() {
         this.players.forEach((player) => {
             player.socket?.disconnect()
         })
@@ -279,10 +285,16 @@ export class CombatConnection {
         }
         this.players[this.players.indexOf(player)].socket = playerSocket
         this.gameSocket.connected &&
-            this.players[this.players.indexOf(player)].socket?.emit(
-                PLAYER_RESPONSES.GAME_HANDSHAKE,
-                this.createHandshake(player.id_)
-            )
+            (() => {
+                this.players[this.players.indexOf(player)].socket?.emit(
+                    PLAYER_RESPONSES.GAME_HANDSHAKE,
+                    this.createHandshake(player.id_)
+                )
+                this.gameState.battleResult === 'ongoing' &&
+                    this.gameState.turn.player === player.id_ &&
+                    this.gameState.turn.entity &&
+                    this.emitTakeActionToPlayer()
+            })()
     }
 
     private setupGameListeners() {
@@ -334,7 +346,7 @@ export class CombatConnection {
                 })
             },
             [GAME_SERVER_EVENTS.BATTLEFIELD_UPDATED]: (data: { battlefield: Battlefield }) => {
-                console.log('Battlefield updated', data)
+                console.log('Battlefield updated')
                 this.updateBattlefield(data.battlefield)
                 this.broadcast(PLAYER_RESPONSES.BATTLEFIELD_UPDATED, {
                     battlefield: this.gameState.currentBattlefield,
@@ -376,36 +388,11 @@ export class CombatConnection {
                     this.gameState.turn.entity = entity_id
                     const entityInfo = this.findEntityInfoById(entity_id)
                     entityInfo &&
-                        this.broadcast(PLAYER_RESPONSES.CURRENT_ENTITY_UPDATED, this.generateEntityTurnInfo(entityInfo))
+                        this.broadcast(PLAYER_RESPONSES.CURRENT_ENTITY_UPDATED, {
+                            activeEntity: this.generateEntityTurnInfo(entityInfo),
+                        })
                     this.updateEntityActions(actions)
-
-                    const trySending = (user_token: string, entity_id: string): boolean => {
-                        if (user_token && this.players.find((player) => player.id_ === user_token)) {
-                            this.sendToPlayer(user_token, PLAYER_RESPONSES.TAKE_ACTION, {
-                                entityId: entity_id,
-                                actions: actions,
-                            })
-                            return true
-                        } else {
-                            return this.sendToGm(PLAYER_RESPONSES.TAKE_ACTION, {
-                                entityId: entity_id,
-                                actions: actions,
-                            })
-                        }
-                    }
-                    if (!trySending(user_token, entity_id)) {
-                        setTimeout(() => {
-                            if (!trySending(user_token, entity_id)) {
-                                this.sendToServer(GAME_SERVER_RESPONSES.PLAYER_CHOICE, {
-                                    game_id: this.gameId,
-                                    user_token: user_token,
-                                    choices: {
-                                        action: 'builtins:skip',
-                                    },
-                                })
-                            }
-                        }, 1000)
-                    }
+                    this.emitTakeActionToPlayer()
                 } catch (e) {
                     console.log('Error handling take action listener ', e)
                     this.sendToServer(GAME_SERVER_RESPONSES.PLAYER_CHOICE, {
@@ -442,7 +429,7 @@ export class CombatConnection {
             }) => {
                 console.log('Game has ended', data)
                 this.broadcast(PLAYER_RESPONSES.BATTLE_ENDED, data)
-                this.onClose('Game has ended')
+                this.onClose()
             },
             connect: () => {
                 console.log('Connected to game server. Preparing handshake')
@@ -454,7 +441,8 @@ export class CombatConnection {
                 console.log('Error from game server', err.message)
             },
             disconnect: () => {
-                this.onClose('Disconnected from game server')
+                console.log('Disconnected from game server')
+                this.onClose()
             },
         }
 
@@ -585,7 +573,6 @@ export class CombatConnection {
         }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private setupGmListeners(playerSocket: PlayerSocket, player: Player) {
         const GM_LISTENERS = {
             [GM_EVENTS.ALLOCATE]: ({
@@ -655,21 +642,19 @@ export class CombatConnection {
             name: entity.descriptor,
             square: { line: entity.square.line, column: entity.square.column },
             action_points: {
-                current: parseInt(entity.attributes['builtins:current_action_points']),
-                max: parseInt(entity.attributes['builtins:max_action_points']),
+                current: entity.attributes['builtins:current_action_points'],
+                max: entity.attributes['builtins:max_action_points'],
             },
         }
     }
 
     private generateEntityFullInfoForPlayer(playerId: string): Array<EntityInfoFull> {
         const res: Array<EntityInfoFull> = []
-        console.log('Before filter:', Object.values(this.gameState.allEntitiesInfo))
         Object.values(this.gameState.allEntitiesInfo).forEach((entity) => {
             if (entity && entity.controlled_by.type === 'player' && entity.controlled_by.id === playerId) {
                 res.push(this.generateEntityFullInfo(entity))
             }
         })
-        console.log('After filter:', res)
         return res
     }
 
@@ -703,6 +688,43 @@ export class CombatConnection {
             })(),
             entityTooltips: this.generateEntityToolTipForPlayer(),
             controlledEntities: this.generateEntityFullInfoForPlayer(playerId),
+        }
+    }
+
+    private emitTakeActionToPlayer() {
+        const trySending = (user_token: string | null, entity_id: string): boolean => {
+            if (!user_token) {
+                return this.sendToGm(GM_RESPONSES.TAKE_UNALLOCATED_ACTION, {
+                    entityId: entity_id,
+                    actions: this.gameState.turn.actions,
+                })
+            }
+            if (user_token && this.players.find((player) => player.id_ === user_token)) {
+                this.sendToPlayer(user_token, PLAYER_RESPONSES.TAKE_ACTION, {
+                    entityId: entity_id,
+                    actions: this.gameState.turn.actions,
+                })
+                return true
+            } else {
+                return this.sendToGm(GM_RESPONSES.TAKE_OFFLINE_PLAYER_ACTION, {
+                    entityId: entity_id,
+                    actions: this.gameState.turn.actions,
+                })
+            }
+        }
+        const { player, entity } = this.gameState.turn
+        if (entity && !trySending(player, entity)) {
+            setTimeout(() => {
+                if (!trySending(player, entity)) {
+                    this.sendToServer(GAME_SERVER_RESPONSES.PLAYER_CHOICE, {
+                        game_id: this.gameId,
+                        user_token: player,
+                        choices: {
+                            action: 'builtins:skip',
+                        },
+                    })
+                }
+            }, 1000)
         }
     }
 }
