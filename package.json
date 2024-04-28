@@ -4,8 +4,8 @@
     "private": true,
     "esModuleInterop": true,
     "scripts": {
-        "start": "ts-node src/server.ts",
-        "dev": "nodemon src/server.ts",
+        "start": "ts-node src/app.ts",
+        "dev": "nodemon src/app.ts",
         "lint": "eslint . --fix",
         "ts": "tsc --noEmit",
         "prepare": "husky",

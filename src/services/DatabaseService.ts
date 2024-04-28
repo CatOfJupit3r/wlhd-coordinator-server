@@ -7,6 +7,10 @@ import { LobbyClass, LobbyModel } from '../models/lobbyModel'
 import { UserClass, UserModel } from '../models/userModel'
 
 class DatabaseService {
+    public connect = async (): Promise<void> => {
+        await mongoose.connect('mongodb://localhost:27017/gameDB')
+    }
+
     private saveDocument = async (
         document:
             | DocumentType<LobbyClass>

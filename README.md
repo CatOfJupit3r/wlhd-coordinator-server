@@ -41,6 +41,7 @@ npm install
 - GAME_SECRET_TOKEN — Secret token to access the GAME server. **DO NOT SHARE THIS!**
 - JWT_SECRET — Secret token for JWT. **DO NOT SHARE THIS!**
 - JWT_REFRESH — Secret token for JWT refresh. **DO NOT SHARE THIS TOO!**
+- GITHUB_TOKEN — GitHub token for cloning and pulling DLCs. Use this if you want automatic installation of DLCs.
 
 
 ## Usage
