@@ -1,72 +1,182 @@
-import { BadRequest } from '../models/ErrorModels'
+import { BadRequest, Exception } from '../models/ErrorModels'
 import {
     FailedValidation,
     INVALID_INPUT,
     Input,
     Misses,
-    Record,
+    Schema,
+    SchemaValue,
     SuccessfulValidation,
     SupportedTypes,
     VALID_INPUT,
 } from '../models/Validation'
 
 class InputValidator {
-    private VALIDATION_FAILED_MISSING_KEYS(misses: Misses): string {
-        return (
-            'Validation failed! Missing keys: {' +
-            misses.reduce((acc, currentValue) => acc + ` ${currentValue.key}:${currentValue.type}`, '') +
-            ' }.'
-        )
+    private VALIDATION_FAILED(): string {
+        return 'Validation failed!'
     }
 
-    private VALIDATION_FAILED_UNDEFINED(misses: Misses): string {
-        return (
-            'Validation failed! Undefined keys: {' +
-            misses.reduce((acc, currentValue) => acc + ` ${currentValue.key}:${currentValue.type}`, '') +
-            ' }.'
-        )
+    private WRONG_TYPE_DETAILS(
+        provided: Input,
+        schema: Schema,
+        misses?: Misses
+    ): {
+        details: {
+            type: string
+            required: Array<SchemaValue>
+            provided: Array<{
+                key: string
+                type: string
+            }>
+            misses: Misses
+        }
+    } {
+        return {
+            details: {
+                type: 'wrong_type',
+                required: Object.entries(schema).map(([key, type]) => ({ key, type })),
+                provided: Object.entries(provided).map(([key, value]) => ({ key, type: typeof value })),
+                misses: misses || [],
+            },
+        }
+    }
+
+    private MISSING_KEYS_DETAILS(
+        provided: Input,
+        schema: Schema,
+        misses?: Misses
+    ): {
+        details: {
+            type: string
+            required: Array<SchemaValue>
+            provided: Array<{
+                key: string
+                type: string
+            }>
+            misses: Misses
+        }
+    } {
+        return {
+            details: {
+                type: 'missing_keys',
+                required: Object.entries(schema).map(([key, type]) => ({ key, type })),
+                provided: Object.entries(provided).map(([key, value]) => ({ key, type: typeof value })),
+                misses: misses || [],
+            },
+        }
     }
 
     public validateObject(
         input: Input,
-        expected: Record,
-        throwError: boolean = false
+        expected: Schema,
+        throwRequestError: boolean = false
     ): FailedValidation | SuccessfulValidation {
-        for (const [key, type] of Object.entries(expected)) {
-            if (!input[key]) {
-                if (throwError) throw new BadRequest(this.VALIDATION_FAILED_UNDEFINED([{ key, type }]))
-                return INVALID_INPUT([{ key, type }])
+        try {
+            for (const [key, type] of Object.entries(expected)) {
+                if (!input[key]) {
+                    if (throwRequestError)
+                        throw new BadRequest(
+                            this.VALIDATION_FAILED(),
+                            this.MISSING_KEYS_DETAILS(input, expected, [
+                                {
+                                    key,
+                                    type,
+                                },
+                            ])
+                        )
+                    return INVALID_INPUT([{ key, type }])
+                }
+                const validation = this.validateField({ key, value: input[key] }, type)
+                if (!validation.success) {
+                    if (throwRequestError)
+                        throw new BadRequest(
+                            this.VALIDATION_FAILED(),
+                            this.WRONG_TYPE_DETAILS(
+                                input,
+                                expected,
+                                validation.misses.map((miss) => ({
+                                    key: `${key}.${miss.key}`,
+                                    type: miss.type,
+                                }))
+                            )
+                        )
+                    return INVALID_INPUT(
+                        validation.misses.map((miss) => ({
+                            key: `${key}.${miss.key}`,
+                            type: miss.type,
+                        }))
+                    )
+                }
             }
-            const validation = this.validateField({ key, value: input[key] }, type)
-            if (!validation.success) {
-                if (throwError) throw new BadRequest(this.VALIDATION_FAILED_MISSING_KEYS(validation.misses))
-                return INVALID_INPUT(validation.misses.map((miss) => ({ key: `${key}.${miss.key}`, type: miss.type })))
+            return VALID_INPUT()
+        } catch (error: unknown) {
+            if (error instanceof Exception) throw error
+            else {
+                console.log(error)
+                if (throwRequestError)
+                    throw new BadRequest(
+                        'Something went wrong during handling of your request. Please, verify your input via API Documentation.'
+                    )
+                throw error
             }
         }
-        return VALID_INPUT()
     }
 
     public validateField(
         input: { key: string; value: unknown },
         expectedType: SupportedTypes,
-        throwError: boolean = false
+        throwRequestError: boolean = false
     ): FailedValidation | SuccessfulValidation {
-        const { key, value } = input
-        if (!value) {
-            if (throwError) throw new BadRequest(this.VALIDATION_FAILED_UNDEFINED([{ key, type: expectedType }]))
-        }
-        if (expectedType === 'any') return VALID_INPUT()
-        if (expectedType === 'array') {
-            if (!Array.isArray(value)) {
-                if (throwError) throw new BadRequest(this.VALIDATION_FAILED_MISSING_KEYS([{ key, type: 'array' }]))
-                return INVALID_INPUT([{ key, type: 'array' }])
+        try {
+            const { key, value } = input
+            if (!value) {
+                if (throwRequestError)
+                    throw new BadRequest(
+                        this.VALIDATION_FAILED(),
+                        this.MISSING_KEYS_DETAILS({ [key]: value }, { [key]: expectedType }, [
+                            {
+                                key,
+                                type: expectedType,
+                            },
+                        ])
+                    )
+            }
+            if (expectedType === 'any') return VALID_INPUT()
+            if (expectedType === 'array') {
+                if (!Array.isArray(value)) {
+                    if (throwRequestError)
+                        throw new BadRequest(
+                            this.VALIDATION_FAILED(),
+                            this.WRONG_TYPE_DETAILS({ [key]: value }, { [key]: expectedType }, [{ key, type: 'array' }])
+                        )
+                    return INVALID_INPUT([{ key, type: 'array' }])
+                }
+            }
+            if (typeof value !== expectedType) {
+                if (throwRequestError)
+                    throw new BadRequest(
+                        this.VALIDATION_FAILED(),
+                        this.WRONG_TYPE_DETAILS({ [key]: value }, { [key]: expectedType }, [
+                            {
+                                key,
+                                type: expectedType,
+                            },
+                        ])
+                    )
+                return INVALID_INPUT([{ key, type: expectedType }])
+            }
+            return VALID_INPUT()
+        } catch (error: unknown) {
+            if (error instanceof Exception) throw error
+            else {
+                console.log(error)
+                if (throwRequestError)
+                    throw new BadRequest(
+                        'Something went wrong during handling of your request. Please, verify your input via API Documentation.'
+                    )
+                throw error
             }
         }
-        if (typeof value !== expectedType) {
-            if (throwError) throw new BadRequest(this.VALIDATION_FAILED_MISSING_KEYS([{ key, type: expectedType }]))
-            return INVALID_INPUT([{ key, type: expectedType }])
-        }
-        return VALID_INPUT()
     }
 }
 

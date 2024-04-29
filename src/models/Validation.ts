@@ -1,6 +1,6 @@
 export type SupportedTypes = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'
 
-export interface Record {
+export interface Schema {
     [key: string]: SupportedTypes
 }
 
@@ -12,10 +12,12 @@ export interface SuccessfulValidation {
     success: true
 }
 
-export type Misses = Array<{
+export interface SchemaValue {
     key: string
-    type: string
-}>
+    type: SupportedTypes
+}
+
+export type Misses = Array<SchemaValue>
 
 export interface FailedValidation {
     success: false
