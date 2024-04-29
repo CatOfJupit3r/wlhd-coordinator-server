@@ -1,64 +1,72 @@
-type SupportedTypes = 'string' | 'number' | 'boolean' | 'object' | 'array'
-
-interface Record {
-    [key: string]: SupportedTypes
-}
-
-interface Input {
-    [key: string]: unknown
-}
-
-interface SuccessfulValidation {
-    success: true
-}
-
-interface FailedValidation {
-    success: false
-    miss: Array<{
-        key: string
-        type: string
-    }>
-}
+import { BadRequest } from '../models/ErrorModels'
+import {
+    FailedValidation,
+    INVALID_INPUT,
+    Input,
+    Misses,
+    Record,
+    SuccessfulValidation,
+    SupportedTypes,
+    VALID_INPUT,
+} from '../models/Validation'
 
 class InputValidator {
-    public validateObject(input: Input, expected: Record): FailedValidation | SuccessfulValidation {
+    private VALIDATION_FAILED_MISSING_KEYS(misses: Misses): string {
+        return (
+            'Validation failed! Missing keys: {' +
+            misses.reduce((acc, currentValue) => acc + ` ${currentValue.key}:${currentValue.type}`, '') +
+            ' }.'
+        )
+    }
+
+    private VALIDATION_FAILED_UNDEFINED(misses: Misses): string {
+        return (
+            'Validation failed! Undefined keys: {' +
+            misses.reduce((acc, currentValue) => acc + ` ${currentValue.key}:${currentValue.type}`, '') +
+            ' }.'
+        )
+    }
+
+    public validateObject(
+        input: Input,
+        expected: Record,
+        throwError: boolean = false
+    ): FailedValidation | SuccessfulValidation {
         for (const [key, type] of Object.entries(expected)) {
             if (!input[key]) {
-                return {
-                    success: false,
-                    miss: [{ key, type }],
-                }
+                if (throwError) throw new BadRequest(this.VALIDATION_FAILED_UNDEFINED([{ key, type }]))
+                return INVALID_INPUT([{ key, type }])
             }
-            const validation = this.validateField(type, input[key], key)
-            if (!validation.success)
-                return {
-                    success: false,
-                    miss: validation.miss.map((miss) => ({ key: `${key}.${miss.key}`, type: miss.type })),
-                }
+            const validation = this.validateField({ key, value: input[key] }, type)
+            if (!validation.success) {
+                if (throwError) throw new BadRequest(this.VALIDATION_FAILED_MISSING_KEYS(validation.misses))
+                return INVALID_INPUT(validation.misses.map((miss) => ({ key: `${key}.${miss.key}`, type: miss.type })))
+            }
         }
-        return { success: true }
+        return VALID_INPUT()
     }
 
     public validateField(
+        input: { key: string; value: unknown },
         expectedType: SupportedTypes,
-        value: unknown,
-        key: string
+        throwError: boolean = false
     ): FailedValidation | SuccessfulValidation {
+        const { key, value } = input
+        if (!value) {
+            if (throwError) throw new BadRequest(this.VALIDATION_FAILED_UNDEFINED([{ key, type: expectedType }]))
+        }
+        if (expectedType === 'any') return VALID_INPUT()
         if (expectedType === 'array') {
             if (!Array.isArray(value)) {
-                return {
-                    success: false,
-                    miss: [{ key, type: 'array' }],
-                }
+                if (throwError) throw new BadRequest(this.VALIDATION_FAILED_MISSING_KEYS([{ key, type: 'array' }]))
+                return INVALID_INPUT([{ key, type: 'array' }])
             }
         }
         if (typeof value !== expectedType) {
-            return {
-                success: false,
-                miss: [{ key, type: expectedType }],
-            }
+            if (throwError) throw new BadRequest(this.VALIDATION_FAILED_MISSING_KEYS([{ key, type: expectedType }]))
+            return INVALID_INPUT([{ key, type: expectedType }])
         }
-        return { success: true }
+        return VALID_INPUT()
     }
 }
 
