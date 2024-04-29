@@ -54,9 +54,7 @@ class DatabaseService {
     public createNewUser = async (handle: string, hashedPassword: string): Promise<Types.ObjectId> => {
         const user = new UserModel({ handle, hashedPassword, createdAt: new Date() })
         console.log('Creating user', user)
-        await user.save({
-            validateBeforeSave: true,
-        })
+        await this.saveDocument(user)
         return user._id
     }
 
@@ -105,10 +103,8 @@ class DatabaseService {
         customAttributes: Array<{ dlc: string; descriptor: string; value: number }>
     ): Promise<Types.ObjectId> => {
         console.log('Creating entity', descriptor, attributes, customAttributes)
-        const entity = new EntityModel({ descriptor, attributes, customAttributes: customAttributes })
-        await entity.save({
-            validateBeforeSave: true,
-        })
+        const entity = new EntityModel({ descriptor, attributes, customAttributes })
+        await this.saveDocument(entity)
         return entity._id
     }
 
@@ -127,16 +123,12 @@ class DatabaseService {
         ;(() => {
             const occupiedSquares: Array<string> = []
             for (const pawn of field) {
-                if (occupiedSquares.includes(pawn.square)) {
-                    throw new BadRequest('Multiple pawns on the same square')
-                }
+                if (occupiedSquares.includes(pawn.square)) throw new BadRequest('Multiple pawns on the same square')
                 occupiedSquares.push(pawn.square)
             }
         })()
         const combatPreset = new CombatModel({ field })
-        await combatPreset.save({
-            validateBeforeSave: true,
-        })
+        await this.saveDocument(combatPreset)
         return combatPreset._id
     }
 
@@ -146,10 +138,12 @@ class DatabaseService {
         const res: Array<{ name: string; isGm: boolean; _id: string }> = []
         const lobbies = await LobbyModel.find({ 'players.userId': userId })
         for (const lobby of lobbies) {
+            const { _id, name, gm_id } = lobby
+            if (!_id || !name || !gm_id) throw new InternalServerError()
             res.push({
-                _id: lobby._id.toString(),
-                name: lobby.name,
-                isGm: lobby.gm_id.toString() === userId,
+                _id: _id.toString(),
+                name,
+                isGm: gm_id.toString() === userId,
             })
         }
         return res
