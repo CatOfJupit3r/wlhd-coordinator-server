@@ -47,6 +47,7 @@ class LobbyService {
                         nickname: combat.combatNickname,
                         isActive: combat.isActive(),
                         roundCount: combat.isActive() ? combat.getRoundCount() : 0,
+                        _id: combat_id,
                     })
                 }
             }
@@ -93,19 +94,26 @@ class LobbyService {
         await DatabaseService.addPlayerToLobby(lobby_id, player_id, nickname, mainCharacter)
     }
 
-    public manageSocket(socket: Socket, lobby_id: string, combat_id: string, userToken: string): void {
-        if (this.managingCombats.get(lobby_id)?.find((id) => id === combat_id)) {
-            return this.disconnectSocket(socket)
-        }
+    public manageSocket(socket: Socket, combat_id: string, userToken: string): void {
         const combat = CombatManager.get(combat_id)
         if (!combat) {
+            console.log('Combat not found')
             return this.disconnectSocket(socket)
         }
-        const { _id } = AuthService.verifyAccessToken(userToken)
-        if (combat.isPlayerInCombat(_id)) {
+        let user_id: string
+        try {
+            const { _id } = AuthService.verifyAccessToken(userToken)
+            user_id = _id
+        } catch (e) {
+            socket.emit('invalid_token')
+            console.log('Error verifying token')
             return this.disconnectSocket(socket)
         }
-        combat.handlePlayer(_id, socket)
+        if (combat.isPlayerInCombat(user_id)) {
+            console.log('Player is in combat')
+            return this.disconnectSocket(socket)
+        }
+        combat.handlePlayer(user_id, socket)
     }
 
     private disconnectSocket(socket: Socket): void {
