@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { BadRequest } from '../models/ErrorModels'
+import InputValidator from '../services/InputValidator'
 import TranslationService from '../services/TranslationService'
 import { Cache } from '../utils/Cache'
 
@@ -18,9 +19,8 @@ export class TranslationController {
 
     public getTranslation(req: Request, res: Response): void {
         const { language, dlc } = req.query
-        if (!language || !dlc) {
-            throw new BadRequest(`Missing: ${!language ? 'language' : ''} ${!dlc ? 'dlc' : ''}`)
-        }
+        InputValidator.validateObject({ language, dlc }, { language: 'string', dlc: 'string' }, true)
+        if (!language || !dlc) throw new BadRequest('Missing: language or dlc') // for eslint
         if (this.cache.get(`${language}-${dlc}`)) {
             res.json(this.cache.get(`${language}-${dlc}`))
             return
@@ -32,9 +32,13 @@ export class TranslationController {
 
     public getTranslationSnippet(req: Request, res: Response): void {
         const { language, dlc, keys } = req.query
-        if (!language || !dlc || !keys || keys.toString().split(',').length === 0) {
-            throw new BadRequest(`Missing: ${!language ? 'language' : ''} ${!dlc ? 'dlc' : ''} ${!keys ? 'keys' : ''}`)
-        }
+        InputValidator.validateObject(
+            { language, dlc, keys },
+            { language: 'string', dlc: 'string', keys: 'string' },
+            true
+        )
+        if (!language || !dlc || !keys) throw new BadRequest('Missing: language or dlc') // for eslint
+        if (keys.toString().split(',').length === 0) throw new BadRequest('Missing: keys')
         if (this.cache.get(`${language}-${dlc}-${keys}`)) {
             res.json(this.cache.get(`${language}-${dlc}-${keys}`))
             return
