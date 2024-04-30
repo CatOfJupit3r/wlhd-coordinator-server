@@ -76,7 +76,7 @@ const GM_RESPONSES = {
     TAKE_OFFLINE_PLAYER_ACTION: 'take_offline_player_action',
 }
 
-type Player = {
+interface Player {
     socket: PlayerSocket | null
     id_: string
     isGm?: boolean
