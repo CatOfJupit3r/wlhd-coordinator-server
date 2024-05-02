@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import { Unauthorized } from '../models/ErrorModels'
 import AuthService from '../services/AuthService'
 
-export function authenticationMiddleware(req: Request, res: Response, next: NextFunction) {
+export const authenticationMiddleware = (req: Request, res: Response, next: NextFunction) => {
     try {
         if (!req.headers || !req.headers.authorization) {
             throw new Unauthorized('Authentication Failed', {
