@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
-import { Unauthorized } from '../models/ErrorModels'
+import { Exception, Unauthorized } from '../models/ErrorModels'
 import AuthService from '../services/AuthService'
 
 export const authenticationMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -18,10 +18,14 @@ export const authenticationMiddleware = (req: Request, res: Response, next: Next
             })
         }
         next()
-    } catch (err: any) {
+    } catch (err: unknown) {
         if (!(err instanceof Unauthorized)) console.log('Error in Authentication Middleware:', err)
+        if (err instanceof Exception)
+            throw new Unauthorized('Authentication Failed', {
+                ...err.additionalData,
+            })
         throw new Unauthorized('Authentication Failed', {
-            ...err.additionalData,
+            reason: 'Unknown error',
         })
     }
 }
