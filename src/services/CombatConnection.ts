@@ -607,7 +607,7 @@ export class CombatConnection {
 
     private generateEntityToolTip(entity: EntityInfo): EntityInfoTooltip {
         return {
-            name: { main_string: entity.descriptor },
+            name: entity.descriptor,
             square: { line: entity.square.line, column: entity.square.column },
             health: {
                 current: entity.attributes['builtins:current_health'],
@@ -624,17 +624,19 @@ export class CombatConnection {
             status_effects: entity.status_effects.map((effect) => {
                 return {
                     descriptor: effect.descriptor,
-                    duration: effect.duration.toString(),
+                    duration: effect.duration ? effect.duration.toString() : null,
                 }
             }),
         }
     }
 
     private generateEntityFullInfo(entity: EntityInfo): EntityInfoFull {
-        return {
+        const res = {
             ...entity,
             name: entity.descriptor,
+            controlled_by: undefined,
         }
+        return res
     }
 
     private generateEntityTurnInfo(entity: EntityInfo): EntityInfoTurn {

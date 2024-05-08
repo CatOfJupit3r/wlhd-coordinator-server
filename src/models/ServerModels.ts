@@ -72,7 +72,7 @@ export interface EntityInfo {
         cooldown: { current: number; max: number }
     }>
     status_effects: Array<{
-        descriptor: TranslatableString
+        descriptor: string
         duration: number
     }>
 }

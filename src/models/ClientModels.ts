@@ -1,5 +1,4 @@
 import { Battlefield, GameStateContainer } from './ServerModels'
-import { TranslatableString } from './Translation'
 
 export interface GameHandshake {
     roundCount: number
@@ -12,14 +11,14 @@ export interface GameHandshake {
 }
 
 export interface EntityInfoTooltip {
-    name: TranslatableString
+    name: string
     square: { line: string; column: string }
     health: { current: string; max: string }
     action_points: { current: string; max: string }
     armor: { current: string; base: string }
     status_effects: Array<{
-        descriptor: TranslatableString
-        duration: string
+        descriptor: string
+        duration: string | null
     }>
 }
 
@@ -58,7 +57,7 @@ export interface EntityInfoFull {
         cooldown: { current: number; max: number }
     }>
     status_effects: Array<{
-        descriptor: TranslatableString
+        descriptor: string
         duration: number
     }>
 }
