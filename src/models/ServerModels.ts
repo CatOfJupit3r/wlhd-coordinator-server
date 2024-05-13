@@ -1,5 +1,11 @@
 import { TranslatableString } from './Translation'
 
+export interface GameComponentDecoration {
+    name: string
+    sprite: string
+    description: string
+}
+
 export interface GameHandshake {
     gameId: string
     roundCount: number
@@ -43,38 +49,62 @@ export type ControlInfo = ControlledByPlayer | ControlledByAI | ControlledByGame
 
 export interface EntityInfo {
     descriptor: string
+    decorations: GameComponentDecoration
     id: string
     square: { line: string; column: string }
     attributes: { [attribute: string]: string }
     controlled_by: ControlInfo
 
-    items: Array<{
-        descriptor: string
-        cost: number
-        uses: number | null
-        cooldown: { current: number; max: number }
-        count: number // how many of given item entity has
-        consumable: boolean // if item is consumable
-    }>
-    weapons: Array<{
-        descriptor: string
-        cost: number
-        uses: number | null
-        consumable: boolean
-        count: number
-        cooldown: { current: number; max: number }
-        isActive: boolean
-    }>
-    spells: Array<{
-        descriptor: string
-        cost: number
-        uses: number | null
-        cooldown: { current: number; max: number }
-    }>
-    status_effects: Array<{
-        descriptor: string
-        duration: number
-    }>
+    items: Array<ItemInfo>
+    weapons: Array<WeaponInfo>
+    spells: Array<SpellInfo>
+    status_effects: Array<StatusEffectInfo>
+}
+
+export interface WeaponInfo {
+    descriptor: string
+    decorations: GameComponentDecoration
+    cost: number
+    uses: {
+        current: number
+        max: number | null
+    }
+    consumable: boolean
+    quantity: number
+    user_needs_range: Array<number>
+    cooldown: { current: number; max: number }
+    isActive: boolean
+}
+
+export interface ItemInfo {
+    descriptor: string
+    decorations: GameComponentDecoration
+    cost: number
+    uses: {
+        current: number
+        max: number | null
+    }
+    user_needs_range: Array<number>
+    cooldown: { current: number; max: number }
+    quantity: number // how many of given item entity has
+    consumable: boolean // if item is consumable
+}
+
+export interface SpellInfo {
+    descriptor: string
+    decorations: GameComponentDecoration
+    cost: number
+    user_needs_range: Array<number>
+    uses: {
+        current: number
+        max: number | null
+    }
+    cooldown: { current: number; max: number | null }
+}
+
+export interface StatusEffectInfo {
+    decorations: GameComponentDecoration
+    duration: string | null
 }
 
 export interface TranslationInfoAction {
@@ -105,13 +135,13 @@ export interface GamePreset {
     field_pawns: {
         [square: string]: {
             entity_preset: { source: 'dlc' | 'embedded'; name: string }
-            owner: { type: 'player'; id: string | null } | { type: 'ai'; id: string } | { type: 'game_logic' }
+            owner: ControlInfo
         }
     }
     // we can send presets of entities that are not installed by dlc.
     // For this, define field_pawn with source: 'embedded' and 'name' of a key in this object
     custom_entities: {
-        [key: string]: any
+        [key: string]: unknown
     }
 }
 

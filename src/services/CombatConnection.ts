@@ -60,7 +60,7 @@ const PLAYER_RESPONSES = {
     GAME_HANDSHAKE: 'game_handshake',
     ACTION_RESULT: 'action_result',
     BATTLE_ENDED: 'battle_ended',
-    ENTITIES_UPDATED: 'entities_updated', // this response to give tooltips and full info
+    ENTITIES_UPDATED: 'entities_updated', // this response to give tooltips and full info (players) of entities
     CURRENT_ENTITY_UPDATED: 'current_entity_updated', // this response to give info about CURRENT ACTIVE entity
     NO_CURRENT_ENTITY: 'no_current_entity', // and this response to remove info about CURRENT ACTIVE entity, if there is
     HALT_ACTION: 'halt_action',
@@ -170,7 +170,9 @@ export class CombatConnection {
 
     private sendToPlayer(userToken: string, event: string, payload?: object) {
         const player = this.players.find((player) => player.id_ === userToken)
+        console.log('Sending event', event, 'to player', userToken)
         if (player && player.socket) {
+            console.log('Player found and socket exists. Sending...')
             payload ? player.socket.emit(event, payload) : player.socket.emit(event)
         }
     }
@@ -607,7 +609,7 @@ export class CombatConnection {
 
     private generateEntityToolTip(entity: EntityInfo): EntityInfoTooltip {
         return {
-            name: entity.descriptor,
+            decorations: entity.decorations,
             square: { line: entity.square.line, column: entity.square.column },
             health: {
                 current: entity.attributes['builtins:current_health'],
@@ -623,7 +625,7 @@ export class CombatConnection {
             },
             status_effects: entity.status_effects.map((effect) => {
                 return {
-                    descriptor: effect.descriptor,
+                    decorations: effect.decorations,
                     duration: effect.duration ? effect.duration.toString() : null,
                 }
             }),
@@ -631,21 +633,21 @@ export class CombatConnection {
     }
 
     private generateEntityFullInfo(entity: EntityInfo): EntityInfoFull {
-        const res = {
-            ...entity,
-            name: entity.descriptor,
-            controlled_by: undefined,
-        }
-        return res
+        const {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            controlled_by,
+            ...entityInfo
+        } = entity
+        return entityInfo
     }
 
     private generateEntityTurnInfo(entity: EntityInfo): EntityInfoTurn {
         return {
-            name: entity.descriptor,
-            square: { line: entity.square.line, column: entity.square.column },
+            decorations: entity.decorations,
+            square: { line: entity.square.line.toString(), column: entity.square.column.toString() },
             action_points: {
-                current: entity.attributes['builtins:current_action_points'],
-                max: entity.attributes['builtins:max_action_points'],
+                current: entity.attributes['builtins:current_action_points'] || '0',
+                max: entity.attributes['builtins:max_action_points'] || '0',
             },
         }
     }
