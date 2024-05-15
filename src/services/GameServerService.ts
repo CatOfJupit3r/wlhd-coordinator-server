@@ -1,9 +1,9 @@
 import DatabaseService from './DatabaseService'
 
-class CombatEditorService {
+class GameServerService {
     async createCombatPreset(field: any) {
         return await DatabaseService.createNewCombatPreset(field)
     }
 }
 
-export default new CombatEditorService()
+export default new GameServerService()

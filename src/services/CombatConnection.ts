@@ -440,7 +440,7 @@ export class CombatConnection {
                 })
             },
             error: (err: Error) => {
-                console.log('Error from game server', err.message)
+                console.log('Error from game server', err)
             },
             disconnect: () => {
                 console.log('Disconnected from game server')

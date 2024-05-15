@@ -1,5 +1,5 @@
 import { Request, Response } from 'express'
-import CombatEditorService from '../services/CombatEditorService'
+import CombatEditorService from '../services/GameServerService'
 import InputValidator from '../services/InputValidator'
 
 class CombatEditorController {
