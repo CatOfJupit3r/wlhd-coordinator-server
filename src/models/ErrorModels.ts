@@ -63,3 +63,9 @@ export class Conflict extends Exception {
         super(message, 409, additionalData)
     }
 }
+
+export class ServiceUnavailable extends Exception {
+    constructor(message: string = 'Service is temporarily unavailable', additionalData?: AdditionalData) {
+        super(message, 503, additionalData)
+    }
+}

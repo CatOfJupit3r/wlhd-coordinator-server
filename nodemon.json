@@ -1,5 +1,5 @@
 {
-    "ignore": [".git"],
+    "ignore": [".git", "src/installed"],
     "verbose": true,
     "execMap": {
         "ts": "ts-node"

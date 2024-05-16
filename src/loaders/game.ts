@@ -1,5 +1,17 @@
+import { AxiosError } from 'axios'
+import GameServerService from '../services/GameServerService'
+
 const GameLoader = async () => {
-    // this loader will establish connection to game servers, ask for dlcs and return related data to RootLoader to download
+    try {
+        await GameServerService.init()
+    } catch (error: unknown) {
+        if (error instanceof AxiosError) {
+            console.log('Error loading game servers', error.response?.data)
+            process.exit(1)
+        } else {
+            console.log('Error loading game servers', error)
+        }
+    }
 }
 
 export default GameLoader
