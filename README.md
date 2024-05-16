@@ -88,6 +88,7 @@ To learn more about Walenholde Combat System... Well, you can't, as it's still a
 - [React Frontend](https://github.com/CatOfJupit3r/wlhd-frontend-web) — Frontend for the game coordinator, built using React, Redux and GraphQL. (You are here!)
 - [Game Coordinator](https://github.com/CatOfJupit3r/wlhd-coordinator-server) — Backend for the game coordinator, built using ExpressJS and MongoDB.
 - [Game Engine](https://youtu.be/h81WXIfCnoE?si=LS7HpLYhI-LBg4-9) — Core game engine, built using Python, Python and Python. (also, FastAPI).
+- [Building your own WLHD Package](https://github.com/CatOfJupit3r/wlhd-example-package) — Guide on how to build your own WLHD package, including all the necessary information.
 - [Discord Bot Interface](https://github.com/CatOfJupit3r/wlhd-frontend-discord) — Frontend for the game coordinator, built using Discord API. (Deprecated)
 - [Game Guide] — Contains all the necessary information about the game and its various mechanics in a traditional TTRPG format. (WIP)
 - [Game Wiki] — Contains all the necessary information about the game and its various mechanics in easily navigable way. (WIP)
