@@ -16,7 +16,7 @@ class AssetService {
     }
 
     public getAllLoadedDLCs() {
-        return fs.readdirSync(PATH_TO_INSTALLED_PACKAGES) || []
+        return fs.readdirSync(PATH_TO_INSTALLED_PACKAGES).filter((value) => value !== '.DS_Store') || []
     }
 
     public getDLCAssetNames(dlc: string): Array<string> {
