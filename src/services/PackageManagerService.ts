@@ -1,5 +1,7 @@
 import fs from 'fs'
+import path from 'path'
 import { simpleGit, SimpleGit } from 'simple-git'
+
 import { GITHUB_TOKEN, PATH_TO_INSTALLED_PACKAGES } from '../configs'
 import { Manifest } from '../models/dlc_manifest'
 
@@ -64,7 +66,7 @@ class PackageManagerService {
             console.log('Invalid package name or source', packageName, source)
             return
         }
-        const packagePath = `${PATH_TO_INSTALLED_PACKAGES}/${packageName}`
+        const packagePath = path.join(PATH_TO_INSTALLED_PACKAGES, packageName)
         if (fs.existsSync(packagePath)) {
             try {
                 console.log(`Package ${packageName} already installed, updating...`)
@@ -88,8 +90,8 @@ class PackageManagerService {
         await this.git.clone(this.injectGithubToken(source), dir)
     }
 
-    private async gitPull(packagePath: string) {
-        const dir = `${PATH_TO_INSTALLED_PACKAGES}/${packagePath}`
+    private async gitPull(packageName: string) {
+        const dir = `${PATH_TO_INSTALLED_PACKAGES}/${packageName}`
         const dlc_git = simpleGit({
             baseDir: dir,
             binary: 'git',
@@ -111,7 +113,7 @@ class PackageManagerService {
         const onlyRequiresFiles = ['manifest.json', 'translations', 'assets', 'data', '.git']
         const dlc = fs.readdirSync(PATH_TO_INSTALLED_PACKAGES)
         for (const folder of dlc) {
-            const folderPath = `${PATH_TO_INSTALLED_PACKAGES}/${folder}`
+            const folderPath = path.join(PATH_TO_INSTALLED_PACKAGES, folder)
             const dlcFiles = fs.readdirSync(folderPath)
             for (const file of dlcFiles) {
                 if (!onlyRequiresFiles.includes(file)) {
@@ -124,13 +126,13 @@ class PackageManagerService {
     private verifyPackageManifest() {
         const dlc = fs.readdirSync(PATH_TO_INSTALLED_PACKAGES)
         for (const folder of dlc) {
-            const folderPath = `${PATH_TO_INSTALLED_PACKAGES}/${folder}`
+            const folderPath = path.join(PATH_TO_INSTALLED_PACKAGES, folder)
             const dlcFiles = fs.readdirSync(folderPath)
             if (!dlcFiles.includes('manifest.json')) {
                 console.log(`Manifest not found for package ${folder}`)
                 fs.rmSync(folderPath, { recursive: true })
             } else {
-                const manifest = JSON.parse(fs.readFileSync(`${folderPath}/manifest.json`, 'utf-8'))
+                const manifest = JSON.parse(fs.readFileSync(path.join(folderPath, 'manifest.json'), 'utf-8'))
                 if (!manifest.descriptor || !manifest.source) {
                     console.log(`Invalid manifest for package ${folder}`)
                     fs.rmSync(folderPath, { recursive: true })
