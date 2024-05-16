@@ -1,6 +1,6 @@
 import fs from 'fs'
 import { simpleGit, SimpleGit } from 'simple-git'
-import { PATH_TO_INSTALLED_PACKAGES } from '../configs'
+import { GITHUB_TOKEN, PATH_TO_INSTALLED_PACKAGES } from '../configs'
 import { Manifest } from '../models/dlc_manifest'
 
 class PackageManagerService {
@@ -26,7 +26,7 @@ class PackageManagerService {
     }
 
     private checkIfGithubCredentialsExist() {
-        return !!process.env.GITHUB_TOKEN
+        return !!GITHUB_TOKEN()
     }
 
     public async installPackages(manifests: Array<Manifest>) {
@@ -85,7 +85,7 @@ class PackageManagerService {
 
     private async gitClone(source: string, packageName: string) {
         const dir = `${packageName}`
-        await this.git.clone(source, dir)
+        await this.git.clone(this.injectGithubToken(source), dir)
     }
 
     private async gitPull(packagePath: string) {
@@ -142,6 +142,13 @@ class PackageManagerService {
     private verifyGithubLink(url: string): boolean {
         const githubLink = /https?:\/\/github\.com\/(?:[^/\s]+\/)+(?:wlhd-[A-Za-z]+-package|)/gm
         return githubLink.test(url)
+    }
+
+    private injectGithubToken(url: string): string {
+        if (!this.checkIfGithubCredentialsExist()) {
+            return url
+        }
+        return url.replace('https://', `https://${GITHUB_TOKEN()}@`)
     }
 }
 
