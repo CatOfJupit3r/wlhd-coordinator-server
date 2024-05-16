@@ -1,6 +1,6 @@
 import fs from 'fs'
 import { simpleGit, SimpleGit } from 'simple-git'
-import { PATH_TO_INSTALLED_PACKAGES } from '../configs/config'
+import { PATH_TO_INSTALLED_PACKAGES } from '../configs'
 import { Manifest } from '../models/dlc_manifest'
 
 class PackageManagerService {

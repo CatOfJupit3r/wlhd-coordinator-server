@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { PATH_TO_INSTALLED_PACKAGES } from '../configs/config'
+import { PATH_TO_INSTALLED_PACKAGES } from '../configs'
 
 interface AssetInfo {
     [asset_name: string]: Array<string>

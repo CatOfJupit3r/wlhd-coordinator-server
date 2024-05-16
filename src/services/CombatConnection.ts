@@ -1,7 +1,7 @@
 import { Socket as PlayerSocket } from 'socket.io'
 import io, { Socket } from 'socket.io-client'
 import { DefaultEventsMap } from 'socket.io/dist/typed-events'
-import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs/config'
+import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs'
 import {
     EntityInfoFull,
     EntityInfoTooltip,
@@ -122,12 +122,12 @@ export class CombatConnection {
             })
         })
         this.removeSelf = removeSelf
-        this.gameSocket = io(GAME_SERVER_URL, {
+        this.gameSocket = io(GAME_SERVER_URL(), {
             path: '/sockets',
             autoConnect: false,
             reconnection: false,
             query: {
-                token: GAME_SECRET_TOKEN,
+                token: GAME_SECRET_TOKEN(),
             },
         })
     }

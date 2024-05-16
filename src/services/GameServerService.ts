@@ -1,5 +1,5 @@
 import axios, { isAxiosError } from 'axios'
-import { GAME_SERVER_URL } from '../configs/config'
+import { GAME_SERVER_URL } from '../configs'
 import AssetController from '../controllers/AssetController'
 import TranslationController from '../controllers/TranslationController'
 import { GameServerStatus, Manifest } from '../models/dlc_manifest'
@@ -42,7 +42,7 @@ class GameServerService {
     }
 
     async checkGameServers(): Promise<GameServerStatus> {
-        const res = await axios.get(`${GAME_SERVER_URL}/api/`)
+        const res = await axios.get(`${GAME_SERVER_URL()}/api/`)
         return res.data
     }
 

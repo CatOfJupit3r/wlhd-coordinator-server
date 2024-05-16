@@ -4,9 +4,7 @@ import LobbyController from '../controllers/LobbyController'
 
 const SocketLoader = async (server: http.Server) => {
     const io = new SocketIOServer(server, {
-        cors: {
-            origin: '*',
-        },
+        cors: { origin: '*' },
     })
 
     io.on('connection', LobbyController.onConnection.bind(LobbyController))

@@ -1,5 +1,5 @@
 import fs from 'fs'
-import { PATH_TO_INSTALLED_PACKAGES } from '../configs/config'
+import { PATH_TO_INSTALLED_PACKAGES } from '../configs'
 import { Translation } from '../models/Translation'
 import { Manifest } from '../models/dlc_manifest'
 
