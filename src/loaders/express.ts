@@ -10,6 +10,7 @@ import translationRoutes from '../routes/translationRoutes'
 import userRoutes from '../routes/userRoutes'
 
 import { errorHandlerMiddleware } from '../middleware/ErrorHandlerMiddleware'
+import assetRoutes from '../routes/assetRoutes'
 
 const ExpressLoader = async (app: Express) => {
     app.use(cors())
@@ -21,6 +22,7 @@ const ExpressLoader = async (app: Express) => {
     app.use('/lobby', lobbyRoutes)
     app.use('/combat', combatRoutes)
     app.use('/entity', entityRoutes)
+    app.use('/assets', assetRoutes)
 
     app.use(errorHandlerMiddleware)
 }
