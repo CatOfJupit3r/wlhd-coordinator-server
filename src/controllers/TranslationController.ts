@@ -26,12 +26,12 @@ export class TranslationController {
         InputValidator.validateObject({ language, dlc }, { language: 'string', dlc: 'string' }, true)
         if (!language || !dlc) throw new BadRequest('Missing: language or dlc') // for eslint
         if (this.cache.get(`${language}-${dlc}`)) {
-            res.json(this.cache.get(`${language}-${dlc}`))
+            res.status(200).json(this.cache.get(`${language}-${dlc}`))
             return
         }
         const translation = TranslationService.getTranslation(language.toString(), dlc.toString())
         if (translation) this.cache.set(`${language}-${dlc}`, translation)
-        res.json(translation)
+        res.status(200).json(translation)
     }
 
     public getTranslationSnippet(req: Request, res: Response): void {
@@ -44,7 +44,7 @@ export class TranslationController {
         if (!language || !dlc || !keys) throw new BadRequest('Missing: language or dlc') // for eslint
         if (keys.toString().split(',').length === 0) throw new BadRequest('Missing: keys')
         if (this.cache.get(`${language}-${dlc}-${keys}`)) {
-            res.json(this.cache.get(`${language}-${dlc}-${keys}`))
+            res.status(200).json(this.cache.get(`${language}-${dlc}-${keys}`))
             return
         }
         const translation = TranslationService.getTranslationSnippet(
@@ -53,7 +53,7 @@ export class TranslationController {
             keys.toString().split(',')
         )
         this.cache.set(`${language}-${dlc}-${keys}`, translation)
-        res.json(translation)
+        res.status(200).json(translation)
     }
 }
 

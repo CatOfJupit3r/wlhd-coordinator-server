@@ -13,6 +13,9 @@ class TranslationService {
     }
 
     public getTranslation(language: string, dlc: string): { [translation: string]: string } {
+        if (/^[a-z]{2}-[A-Z]{2}$/gm.test(language)) {
+            language = language.replace('-', '_')
+        }
         if (language in this.translations && dlc in this.translations[language]) {
             return this.translations[language][dlc]
         } else {
@@ -22,6 +25,9 @@ class TranslationService {
 
     public getTranslationSnippet(language: string, dlc: string, keys: string[]): { [p: string]: string } {
         const result: { [translation: string]: string } = {}
+        if (/^[a-z]{2}-[A-Z]{2}$/gm.test(language)) {
+            language = language.replace('-', '_')
+        }
         keys.forEach((key) => {
             result[key] = this.translations[language][dlc][key]
         })
