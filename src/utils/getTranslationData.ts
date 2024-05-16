@@ -1,41 +1,33 @@
 import fs from 'fs'
+import { PATH_TO_INSTALLED_PACKAGES } from '../configs/config'
 import { Translation } from '../models/Translation'
+import { Manifest } from '../models/dlc_manifest'
 
 export const getTranslationData = (): Translation => {
     const result: Translation = {}
-    const dlcFolderPath = 'src/data/translations'
 
     try {
-        const translationsFiles = fs.readdirSync(dlcFolderPath)
-        translationsFiles.forEach((file) => {
-            if (file === '.DS_Store') {
-                return
-            }
-            if (fs.lstatSync(`${dlcFolderPath}/${file}`).isFile()) {
-                return
-            }
-            const manifest = fs.readFileSync(`${dlcFolderPath}/${file}/manifest.json`, 'utf8')
+        const availableDLCs = fs.readdirSync(PATH_TO_INSTALLED_PACKAGES)
+        availableDLCs.forEach((file) => {
+            if (!fs.lstatSync(`${PATH_TO_INSTALLED_PACKAGES}/${file}`).isDirectory() || file === '.DS_Store') return
+            const manifest = fs.readFileSync(`${PATH_TO_INSTALLED_PACKAGES}/${file}/manifest.json`, 'utf8')
+            if (!manifest) return
 
-            const dlcDescriptor = (
-                JSON.parse(manifest) as {
-                    title: string
-                    description: string
-                    descriptor: string
-                    version: string
-                    author: string
-                    source: string
-                }
-            ).descriptor
-            const dlcContent = fs.readdirSync(`${dlcFolderPath}/${file}`)
-            dlcContent.forEach((translationDir: string) => {
-                if (translationDir === '.DS_Store') {
-                    return
-                }
-                if (translationDir === 'manifest.json') {
+            const dlcDescriptor = (JSON.parse(manifest) as Manifest).descriptor
+            if (!dlcDescriptor) return
+            const availableLanguages = fs.readdirSync(`${PATH_TO_INSTALLED_PACKAGES}/${file}/translations`)
+            if (!availableLanguages) return
+            availableLanguages.forEach((translationDir: string) => {
+                if (
+                    !fs
+                        .lstatSync(`${PATH_TO_INSTALLED_PACKAGES}/${file}/translations/${translationDir}`)
+                        .isDirectory() ||
+                    translationDir === '.DS_Store'
+                ) {
                     return
                 }
                 const language = translationDir
-                const languageData = fs.readdirSync(`${dlcFolderPath}/${file}/${translationDir}`)
+                const languageData = fs.readdirSync(`${PATH_TO_INSTALLED_PACKAGES}/${file}/translations/${language}`)
                 result[language] = { ...result[language] }
                 result[language][dlcDescriptor] = {
                     ...result[language][dlcDescriptor],
@@ -45,7 +37,7 @@ export const getTranslationData = (): Translation => {
                         return
                     }
                     const translation = fs.readFileSync(
-                        `${dlcFolderPath}/${file}/${language}/${translationFile}`,
+                        `${PATH_TO_INSTALLED_PACKAGES}/${file}/translations/${language}/${translationFile}`,
                         'utf8'
                     )
                     result[language][dlcDescriptor] = {

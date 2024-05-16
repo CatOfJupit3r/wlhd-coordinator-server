@@ -7,13 +7,20 @@ interface AssetInfo {
 
 class AssetService {
     private fileFormatPriority = ['svg', 'png', 'gif', 'webp', 'jpg', 'jpeg']
+    private loadedAssets: {
+        [dlc: string]: AssetInfo
+    } = {}
+
+    constructor() {
+        this.reloadAssets()
+    }
 
     public getAllLoadedDLCs() {
         return fs.readdirSync(PATH_TO_INSTALLED_PACKAGES) || []
     }
 
     public getDLCAssetNames(dlc: string): Array<string> {
-        return Object.keys(this.getAssetsInfo(dlc)) || []
+        return Object.keys(this.loadedAssets[dlc] || {}) || []
     }
 
     public getAsset(dlc: string, asset: string) {
@@ -54,6 +61,13 @@ class AssetService {
             })
         }
         return assetsInfo
+    }
+
+    public reloadAssets() {
+        const dlcs = this.getAllLoadedDLCs()
+        for (const dlc of dlcs) {
+            this.loadedAssets[dlc] = this.getAssetsInfo(dlc)
+        }
     }
 }
 

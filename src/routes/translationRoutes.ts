@@ -1,16 +1,15 @@
 import { Router } from 'express'
-import { TranslationController } from '../controllers/TranslationController'
+import TranslationController from '../controllers/TranslationController'
 
 const router = Router()
-const translationController = new TranslationController()
 
 // GET
 
-router.get('/', translationController.getTranslation.bind(translationController))
-router.get('/snippet', translationController.getTranslationSnippet.bind(translationController))
+router.get('/', TranslationController.getTranslation.bind(TranslationController))
+router.get('/snippet', TranslationController.getTranslationSnippet.bind(TranslationController))
 
 // POST
 
-router.post('/reload', translationController.reloadTranslations.bind(translationController))
+router.post('/reload', TranslationController.reloadTranslationsReq.bind(TranslationController))
 
 export default router

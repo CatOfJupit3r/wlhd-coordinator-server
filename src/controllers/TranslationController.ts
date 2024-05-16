@@ -11,10 +11,14 @@ export class TranslationController {
         this.cache = new Cache()
     }
 
-    public reloadTranslations(req: Request, res: Response): void {
+    public reloadTranslationsReq(req: Request, res: Response): void {
+        this.reloadTranslations()
+        res.status(200).json({ message: 'Translations reloaded' })
+    }
+
+    public reloadTranslations(): void {
         TranslationService.reloadTranslations()
         this.cache.clear()
-        res.status(200).json({ message: 'Translations reloaded' })
     }
 
     public getTranslation(req: Request, res: Response): void {
@@ -52,3 +56,5 @@ export class TranslationController {
         res.json(translation)
     }
 }
+
+export default new TranslationController()

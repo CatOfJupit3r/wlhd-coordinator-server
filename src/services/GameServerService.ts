@@ -1,5 +1,7 @@
 import axios, { isAxiosError } from 'axios'
 import { GAME_SERVER_URL } from '../configs/config'
+import AssetController from '../controllers/AssetController'
+import TranslationController from '../controllers/TranslationController'
 import { GameServerStatus, Manifest } from '../models/dlc_manifest'
 import DatabaseService from './DatabaseService'
 import PackageManagerService from './PackageManagerService'
@@ -46,6 +48,8 @@ class GameServerService {
 
     async installDLCs(manifests: Manifest[]) {
         await PackageManagerService.installPackages(manifests)
+        TranslationController.reloadTranslations()
+        AssetController.reloadAssets()
     }
 
     // private addListeners() {

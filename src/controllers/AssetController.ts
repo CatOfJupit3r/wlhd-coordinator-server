@@ -24,6 +24,10 @@ class AssetController {
             return res.status(200).send(found_asset)
         }
     }
+
+    public reloadAssets() {
+        AssetService.reloadAssets()
+    }
 }
 
 export default new AssetController()
