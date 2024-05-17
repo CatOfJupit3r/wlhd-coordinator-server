@@ -9,13 +9,13 @@ class AssetController {
 
     public getAvailableAssetsOnDLC(req: Request, res: Response) {
         const { dlc } = req.params
-        InputValidator.validateObject({ dlc }, { dlc: 'string' })
+        InputValidator.validateObject({ dlc }, { dlc: 'string' }, true)
         res.status(200).send({ assets: AssetService.getDLCAssetNames(dlc) })
     } // returns all assets NAMES in individual dlc
 
     public getAsset(req: Request, res: Response) {
         const { dlc, asset } = req.params
-        InputValidator.validateObject({ dlc, asset }, { dlc: 'string', asset: 'string' })
+        InputValidator.validateObject({ dlc, asset }, { dlc: 'string', asset: 'string' }, true)
 
         const found_asset = AssetService.getAsset(dlc, asset)
         if (!asset) {

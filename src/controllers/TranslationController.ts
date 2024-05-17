@@ -2,13 +2,13 @@ import { Request, Response } from 'express'
 import { BadRequest } from '../models/ErrorModels'
 import InputValidator from '../services/InputValidator'
 import TranslationService from '../services/TranslationService'
-import { Cache } from '../utils/Cache'
+import { TranslationCache } from '../utils/TranslationCache'
 
 export class TranslationController {
-    private cache: Cache
+    private cache: TranslationCache
 
     constructor() {
-        this.cache = new Cache()
+        this.cache = new TranslationCache()
     }
 
     public reloadTranslationsReq(req: Request, res: Response): void {
@@ -17,25 +17,22 @@ export class TranslationController {
     }
 
     public reloadTranslations(): void {
-        TranslationService.reloadTranslations()
         this.cache.clear()
+        TranslationService.reloadTranslations()
     }
 
     public getTranslation(req: Request, res: Response): void {
-        const { language, dlc } = req.query
+        const { language, dlc, strict } = req.query
         InputValidator.validateObject({ language, dlc }, { language: 'string', dlc: 'string' }, true)
         if (!language || !dlc) throw new BadRequest('Missing: language or dlc') // for eslint
-        if (this.cache.get(`${language}-${dlc}`)) {
-            res.status(200).json(this.cache.get(`${language}-${dlc}`))
-            return
-        }
-        const translation = TranslationService.getTranslation(language.toString(), dlc.toString())
-        if (translation) this.cache.set(`${language}-${dlc}`, translation)
-        res.status(200).json(translation)
+        const languages = language.toString().split(',')
+        const dlcs = dlc.toString().split(',')
+        const strictMode = strict === 'true'
+        res.status(200).json(TranslationService.getLanguage(languages, dlcs, strictMode))
     }
 
     public getTranslationSnippet(req: Request, res: Response): void {
-        const { language, dlc, keys } = req.query
+        const { language, dlc, keys, strict } = req.query
         InputValidator.validateObject(
             { language, dlc, keys },
             { language: 'string', dlc: 'string', keys: 'string' },
@@ -43,17 +40,12 @@ export class TranslationController {
         )
         if (!language || !dlc || !keys) throw new BadRequest('Missing: language or dlc') // for eslint
         if (keys.toString().split(',').length === 0) throw new BadRequest('Missing: keys')
-        if (this.cache.get(`${language}-${dlc}-${keys}`)) {
-            res.status(200).json(this.cache.get(`${language}-${dlc}-${keys}`))
-            return
-        }
-        const translation = TranslationService.getTranslationSnippet(
-            language.toString(),
-            dlc.toString(),
-            keys.toString().split(',')
+        const languages = language.toString().split(',')
+        const dlcs = dlc.toString().split(',')
+        const strictMode = strict === 'true'
+        res.status(200).json(
+            TranslationService.getTranslationSnippet(languages, dlcs, keys.toString().split(','), strictMode)
         )
-        this.cache.set(`${language}-${dlc}-${keys}`, translation)
-        res.status(200).json(translation)
     }
 }
 

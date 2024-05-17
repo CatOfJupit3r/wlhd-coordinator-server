@@ -2,11 +2,11 @@ import fs from 'fs'
 import path from 'path'
 
 import { PATH_TO_INSTALLED_PACKAGES } from '../configs'
-import { Translation } from '../models/Translation'
+import { TranslationLoaded } from '../models/Translation'
 import { Manifest } from '../models/dlc_manifest'
 
-export const getTranslationData = (): Translation => {
-    const result: Translation = {}
+export const getTranslationData = (): TranslationLoaded => {
+    const result: TranslationLoaded = {}
 
     try {
         const availableDLCs = getAvailableDLCs(PATH_TO_INSTALLED_PACKAGES)
@@ -18,18 +18,46 @@ export const getTranslationData = (): Translation => {
             if (!dlcDescriptor) return
 
             const availableLanguages = getAvailableLanguages(PATH_TO_INSTALLED_PACKAGES, dlc)
-            availableLanguages.forEach((language) => {
+            availableLanguages.forEach((language_code) => {
+                let language: string
+                let region: string
+                if (/^[a-z]{2}-[A-Z]{2}$/gm.test(language_code) || /^[a-z]{2}_[A-Z]{2}$/gm.test(language_code)) {
+                    language_code = language_code.replace('-', '_')
+                    language = language_code.split('_')[0]
+                    region = language_code.split('_')[1]
+                } else if (/^[a-z]{2}$/gm.test(language_code)) {
+                    language = language_code
+                    region = 'US'
+                } else {
+                    console.log(`Could not parse language ${language_code} for DLC ${dlc}. Skipping...`)
+                    language = ''
+                    region = ''
+                    return
+                }
                 result[language] = { ...result[language] }
-                result[language][dlcDescriptor] = {
-                    ...result[language][dlcDescriptor],
+                result[language][region] = { ...result[language][region] }
+                result[language][region][dlcDescriptor] = {
+                    ...result[language][region][dlcDescriptor],
                 }
 
-                const languageData = getLanguageData(PATH_TO_INSTALLED_PACKAGES, dlc, language)
+                const languageData = getLanguageData(PATH_TO_INSTALLED_PACKAGES, dlc, language_code)
                 languageData.forEach((translationFile) => {
-                    const translation = readTranslationFile(PATH_TO_INSTALLED_PACKAGES, dlc, language, translationFile)
-                    result[language][dlcDescriptor] = {
-                        ...result[language][dlcDescriptor],
-                        ...translation,
+                    try {
+                        const translation = readTranslationFile(
+                            PATH_TO_INSTALLED_PACKAGES,
+                            dlc,
+                            language_code,
+                            translationFile
+                        )
+                        result[language][region][dlcDescriptor] = {
+                            ...result[language][region][dlcDescriptor],
+                            ...translation,
+                        }
+                    } catch (e) {
+                        console.log(
+                            `Error reading translation file ${translationFile} for language ${language} in DLC ${dlc}`,
+                            e
+                        )
                     }
                 })
             })
@@ -37,7 +65,6 @@ export const getTranslationData = (): Translation => {
     } catch (e) {
         console.log('Error reading translations', e)
     }
-
     return result
 }
 

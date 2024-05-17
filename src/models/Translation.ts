@@ -1,9 +1,19 @@
-export interface Translation {
+export interface TranslationLoaded {
     [language: string]: {
-        [dlc: string]: {
-            [key: string]: string
+        [region: string]: {
+            [dlc: string]: TranslationSnippet
         }
     }
+}
+
+export interface TranslationJSON {
+    [languageCode: string]: {
+        [dlc: string]: TranslationSnippet
+    }
+}
+
+export interface TranslationSnippet {
+    [key: string]: string
 }
 
 export interface TranslatableString {
