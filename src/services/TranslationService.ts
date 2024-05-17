@@ -19,17 +19,29 @@ class TranslationService {
         let request_results: TranslationJSON = {}
         for (const lang of languages) {
             for (const dlc of dlcs) {
-                let translationFiles: TranslationJSON
                 const cached = this.cache.get(`${lang}-${dlc}-${strict}`)
+                let translationFiles: TranslationJSON
+                let realLanguage: string
+                let resultDlc: string
+
                 if (cached) {
-                    const [output, realLanguage, resultDlc] = cached
+                    const [output, cachedRealLanguage, cachedResultDlc] = cached
+                    realLanguage = cachedRealLanguage
+                    resultDlc = cachedResultDlc
                     translationFiles = {
                         [realLanguage]: {
                             [resultDlc]: output,
                         },
                     }
                 } else {
-                    const [output, realLanguage, resultDlc] = this.getLanguageTranslations(lang, dlc, strict)
+                    const [output, extractedRealLanguage, extractedResultDlc] = this.getLanguageTranslations(
+                        lang,
+                        dlc,
+                        strict
+                    )
+                    realLanguage = extractedRealLanguage
+                    resultDlc = extractedResultDlc
+
                     this.cache.set(`${lang}-${dlc}`, [output, realLanguage, resultDlc])
                     translationFiles = {
                         [realLanguage]: {
@@ -37,10 +49,12 @@ class TranslationService {
                         },
                     }
                 }
-                request_results = {
-                    ...request_results,
-                    ...translationFiles,
-                }
+                request_results = this.injectTranslationToRequestResults(
+                    realLanguage,
+                    resultDlc,
+                    translationFiles,
+                    request_results
+                )
             }
         }
         return request_results
@@ -57,15 +71,27 @@ class TranslationService {
             for (const dlc of dlcs) {
                 const cached = this.cache.get(`${lang}-${dlc}-${strict}`)
                 let translationFiles: TranslationJSON
+                let realLanguage = lang
+                let resultDlc = dlc
+
                 if (cached) {
-                    const [output, realLanguage, resultDlc] = cached
+                    const [output, cachedRealLanguage, cachedResultDlc] = cached
+                    realLanguage = cachedRealLanguage
+                    resultDlc = cachedResultDlc
+
                     translationFiles = {
                         [realLanguage]: {
                             [resultDlc]: this.extractSnippet(output, keys.toString().split(',')),
                         },
                     }
                 } else {
-                    const [output, realLanguage, resultDlc] = this.getLanguageTranslations(lang, dlc, strict)
+                    const [output, extractedRealLanguage, extractedResultDlc] = this.getLanguageTranslations(
+                        lang,
+                        dlc,
+                        strict
+                    )
+                    realLanguage = extractedRealLanguage
+                    resultDlc = extractedResultDlc
                     this.cache.set(`${lang}-${dlc}`, [output, realLanguage, resultDlc])
                     translationFiles = {
                         [realLanguage]: {
@@ -73,10 +99,35 @@ class TranslationService {
                         },
                     }
                 }
-                request_results = {
-                    ...request_results,
-                    ...translationFiles,
-                }
+                request_results = this.injectTranslationToRequestResults(
+                    realLanguage,
+                    resultDlc,
+                    translationFiles,
+                    request_results
+                )
+            }
+        }
+        return request_results
+    }
+
+    private injectTranslationToRequestResults(
+        realLanguage: string,
+        resultDlc: string,
+        translationFiles: TranslationJSON,
+        request_results: TranslationJSON
+    ) {
+        if (Object.keys(request_results).includes(realLanguage)) {
+            if (!request_results[realLanguage][resultDlc]) {
+                request_results[realLanguage][resultDlc] = {}
+            }
+            request_results[realLanguage][resultDlc] = {
+                ...(request_results[realLanguage][resultDlc] || {}),
+                ...translationFiles[realLanguage][resultDlc],
+            }
+        } else {
+            request_results = {
+                ...request_results,
+                ...translationFiles,
             }
         }
         return request_results
