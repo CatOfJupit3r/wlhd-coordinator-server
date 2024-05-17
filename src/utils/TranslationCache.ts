@@ -1,4 +1,6 @@
-type CachedTranslation = [{ [translation: string]: string }, string, string]
+import { TranslationSnippet } from '../models/Translation'
+
+type CachedTranslation = [TranslationSnippet, string, string]
 
 export class TranslationCache {
     private cache: Map<string, CachedTranslation>

@@ -13,7 +13,7 @@ export interface TranslationJSON {
 }
 
 export interface TranslationSnippet {
-    [key: string]: string
+    [key: string]: TranslationSnippet | string
 }
 
 export interface TranslatableString {

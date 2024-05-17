@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 
 import { PATH_TO_INSTALLED_PACKAGES } from '../configs'
-import { TranslationLoaded } from '../models/Translation'
+import { TranslationLoaded, TranslationSnippet } from '../models/Translation'
 import { Manifest } from '../models/dlc_manifest'
 
 export const getTranslationData = (): TranslationLoaded => {
@@ -97,7 +97,7 @@ const getLanguageData = (basePath: string, dlc: string, language: string): strin
     return fs.readdirSync(languagePath).filter((file) => file !== '.DS_Store')
 }
 
-const readTranslationFile = (basePath: string, dlc: string, language: string, file: string): { [key: string]: any } => {
+const readTranslationFile = (basePath: string, dlc: string, language: string, file: string): TranslationSnippet => {
     try {
         const filePath = path.join(basePath, dlc, 'translations', language, file)
         const fileContent = fs.readFileSync(filePath, 'utf8')
