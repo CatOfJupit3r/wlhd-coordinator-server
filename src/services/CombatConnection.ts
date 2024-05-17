@@ -82,11 +82,13 @@ interface Player {
     isGm?: boolean
 }
 
+type GameSocket = Socket<DefaultEventsMap, DefaultEventsMap>
+
 export class CombatConnection {
     public combatNickname: string
     private readonly combatPresets: GamePreset
     private readonly players: Array<Player>
-    private gameSocket: Socket<DefaultEventsMap, DefaultEventsMap>
+    private readonly gameSocket: GameSocket
     private gameId: string
     private gameState: {
         roundCount: number
@@ -155,6 +157,9 @@ export class CombatConnection {
         /**
          * @throws {Error} if connection to game server fails
          */
+        if (this.gameSocket.connected) {
+            return
+        }
         this.setupGameListeners()
         this.gameSocket.connect()
     }
@@ -283,7 +288,9 @@ export class CombatConnection {
         this.setupPlayerListeners(playerSocket, player)
         if (player.isGm) {
             this.setupGmListeners(playerSocket, player)
-            this.connect()
+            if (!this.gameSocket.connected) {
+                this.connect()
+            }
         }
         this.players[this.players.indexOf(player)].socket = playerSocket
         this.gameSocket.connected &&
@@ -448,9 +455,7 @@ export class CombatConnection {
             },
         }
 
-        for (const event in LISTENERS) {
-            this.gameSocket.on(event, LISTENERS[event])
-        }
+        this.addBatchOfEventsListener(this.gameSocket, LISTENERS)
     }
 
     private setupPlayerListeners(playerSocket: PlayerSocket, player: Player) {
@@ -570,9 +575,7 @@ export class CombatConnection {
                 }
             },
         }
-        for (const event in LISTENERS) {
-            playerSocket.on(event, LISTENERS[event])
-        }
+        this.addBatchOfEventsListener(playerSocket, LISTENERS)
     }
 
     private setupGmListeners(playerSocket: PlayerSocket, player: Player) {
@@ -602,8 +605,25 @@ export class CombatConnection {
                 this.sendToServer(GAME_SERVER_RESPONSES.END_COMBAT)
             },
         }
-        for (const event in GM_LISTENERS) {
-            playerSocket.on(event, GM_LISTENERS[event])
+        this.addBatchOfEventsListener(playerSocket, GM_LISTENERS)
+    }
+
+    private addBatchOfEventsListener(
+        socket: PlayerSocket | GameSocket,
+        listeners: {
+            [key: string]: (...args: any[]) => void
+        }
+    ) {
+        if (socket instanceof PlayerSocket) {
+            for (const [event, callback] of Object.entries(listeners)) {
+                socket.removeListener(event, callback)
+                socket.on(event, callback)
+            }
+        } else {
+            for (const [event, callback] of Object.entries(listeners)) {
+                socket.off(event)
+                socket.on(event, callback)
+            }
         }
     }
 
