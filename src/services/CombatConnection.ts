@@ -31,6 +31,7 @@ const GAME_SERVER_EVENTS = {
     NEW_MESSAGE: 'new_message',
     BATTLEFIELD_UPDATED: 'battlefield_updated',
     ENTITIES_UPDATED: 'entities_updated',
+    PING: 'ping',
 }
 
 const PLAYER_EVENTS = {
@@ -52,6 +53,7 @@ const GAME_SERVER_RESPONSES = {
     ALLOCATE: 'allocate',
     START_COMBAT: 'start_combat',
     END_COMBAT: 'end_combat',
+    PONG: 'pong',
 }
 
 const PLAYER_RESPONSES = {
@@ -439,6 +441,9 @@ export class CombatConnection {
                 console.log('Game has ended', data)
                 this.broadcast(PLAYER_RESPONSES.BATTLE_ENDED, data)
                 this.onClose()
+            },
+            [GAME_SERVER_EVENTS.PING]: () => {
+                this.sendToServer(GAME_SERVER_RESPONSES.PONG)
             },
             connect: () => {
                 console.log('Connected to game server. Preparing handshake')
