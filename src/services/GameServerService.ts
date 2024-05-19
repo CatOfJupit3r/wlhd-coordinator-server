@@ -1,5 +1,5 @@
 import axios, { isAxiosError } from 'axios'
-import { GAME_SERVER_URL } from '../configs'
+import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs'
 import AssetController from '../controllers/AssetController'
 import TranslationController from '../controllers/TranslationController'
 import { GameServerStatus, Manifest } from '../models/dlc_manifest'
@@ -42,7 +42,7 @@ class GameServerService {
     }
 
     async checkGameServers(): Promise<GameServerStatus> {
-        const res = await axios.get(`${GAME_SERVER_URL()}/api/`)
+        const res = await this.fetch(`${GAME_SERVER_URL()}/api/`)
         return res.data
     }
 
@@ -50,6 +50,15 @@ class GameServerService {
         await PackageManagerService.installPackages(manifests)
         TranslationController.reloadTranslations()
         AssetController.reloadAssets()
+    }
+
+    private async fetch(url: string) {
+        const result = await axios.get(url, {
+            headers: {
+                Authorization: `Bearer ${GAME_SECRET_TOKEN()}`,
+            },
+        })
+        return result
     }
 
     // private addListeners() {
