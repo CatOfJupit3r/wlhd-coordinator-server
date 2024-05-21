@@ -142,6 +142,7 @@ export class CombatConnection {
     }
 
     public getRoundCount() {
+        console.log('Current game state', this.gameState)
         return this.gameState.roundCount
     }
 
