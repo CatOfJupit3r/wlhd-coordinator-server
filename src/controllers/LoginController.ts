@@ -9,8 +9,11 @@ class LoginController {
         InputValidator.validateObject({ handle, password }, { handle: 'string', password: 'string' }, true)
 
         try {
-            const data = await UserService.loginWithPassword({ handle, password })
-            return res.json(data)
+            const { accessToken, refreshToken } = await UserService.loginWithPassword({ handle, password })
+            return res.json({
+                accessToken,
+                refreshToken,
+            })
         } catch (error) {
             if (error instanceof Exception) throw error
             else {
