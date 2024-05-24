@@ -54,8 +54,15 @@ class UserService {
     async getJoinedLobbiesInfo(token: string) {
         const decoded = AuthService.verifyAccessToken(token)
         const user = await DatabaseService.getUser(decoded._id)
-        if (!user) throw new Error('User not found')
+        if (!user) throw new NotFound('User not found')
         return DatabaseService.getJoinedLobbiesInfo(decoded._id)
+    }
+
+    async getProfile(token: string) {
+        const decoded = AuthService.verifyAccessToken(token)
+        const user = await DatabaseService.getUser(decoded._id)
+        if (!user) throw new NotFound('User not found')
+        return user
     }
 
     async findById(_id: string, shouldIncludePrivateFields: boolean) {

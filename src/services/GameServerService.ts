@@ -4,7 +4,6 @@ import AssetController from '../controllers/AssetController'
 import TranslationController from '../controllers/TranslationController'
 import { GameServerStatus, Manifest } from '../models/dlc_manifest'
 import DatabaseService from './DatabaseService'
-import PackageManagerService from './PackageManagerService'
 
 class GameServerService {
     // private gameServerConnection = io(GAME_SERVER_URL, {
@@ -30,11 +29,13 @@ class GameServerService {
         } catch (error: unknown) {
             if (isAxiosError(error)) {
                 console.log('Connecting to game server failed, installing mandatory packages')
-                await PackageManagerService.installMandatoryPackages()
+                // await PackageManagerService.installMandatoryPackages()
             } else {
                 console.log('Error loading game servers', error)
             }
         }
+        TranslationController.reloadTranslations()
+        AssetController.reloadAssets()
     }
 
     async createCombatPreset(field: any) {
@@ -47,7 +48,7 @@ class GameServerService {
     }
 
     async installDLCs(manifests: Manifest[]) {
-        await PackageManagerService.installPackages(manifests)
+        // await PackageManagerService.installPackages(manifests)
         TranslationController.reloadTranslations()
         AssetController.reloadAssets()
     }
