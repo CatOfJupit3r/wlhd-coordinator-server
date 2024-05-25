@@ -120,12 +120,26 @@ class ItemClass {
     count: number
 }
 
+class EntityDecorations {
+    @prop({ type: () => [String], default: [] })
+    name: string
+
+    @prop({ type: () => [String], default: [] })
+    description: string
+
+    @prop({ type: () => [String], default: [] })
+    sprite: string
+}
+
 @modelOptions({
     schemaOptions: { collection: 'character' },
 })
 export class EntityClass {
     @prop({ required: true })
     descriptor: string
+
+    @prop({ required: true, _id: false })
+    decorations: EntityDecorations
 
     @prop({ required: true, type: () => AttributeClass, _id: false })
     attributes: AttributeClass

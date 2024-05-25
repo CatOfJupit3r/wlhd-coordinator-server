@@ -99,11 +99,12 @@ class DatabaseService {
 
     public createNewEntity = async (
         descriptor: string,
+        decorations: { name: string; description: string; sprite: string },
         attributes: { [key: string]: string },
         customAttributes: Array<{ dlc: string; descriptor: string; value: number }>
     ): Promise<Types.ObjectId> => {
         console.log('Creating entity', descriptor, attributes, customAttributes)
-        const entity = new EntityModel({ descriptor, attributes, customAttributes })
+        const entity = new EntityModel({ descriptor, decorations, attributes, customAttributes })
         await this.saveDocument(entity)
         return entity._id
     }
@@ -135,15 +136,27 @@ class DatabaseService {
     public getJoinedLobbiesInfo = async (
         userId: string
     ): Promise<Array<{ name: string; isGm: boolean; _id: string }>> => {
-        const res: Array<{ name: string; isGm: boolean; _id: string }> = []
+        const res: Array<{ name: string; isGm: boolean; _id: string; assignedCharacter: string | null }> = []
         const lobbies = await LobbyModel.find({ 'players.userId': userId })
         for (const lobby of lobbies) {
             const { _id, name, gm_id } = lobby
             if (!_id || !name || !gm_id) throw new InternalServerError()
+            let assignedCharacter: string | null = null
+            for (const player of lobby.players) {
+                if (player.userId === userId) {
+                    const characterId = player.mainCharacter
+                    if (!characterId) break
+                    const character = await this.getEntity(characterId)
+                    if (!character) break
+                    assignedCharacter = character.decorations.name
+                }
+            }
+
             res.push({
                 _id: _id.toString(),
                 name,
                 isGm: gm_id.toString() === userId,
+                assignedCharacter,
             })
         }
         return res

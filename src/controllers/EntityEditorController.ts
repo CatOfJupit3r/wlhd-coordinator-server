@@ -6,12 +6,18 @@ import InputValidator from '../services/InputValidator'
 class EntityEditorController {
     async createEntity(req: Request, res: Response) {
         console.log('Creating entity. Params:', req.body)
-        const { descriptor, attributes, customAttributes } = req.body
+        const { descriptor, decorations, attributes, customAttributes } = req.body
         InputValidator.validateObject(
-            { descriptor, attributes, customAttributes },
-            { descriptor: 'string', attributes: 'any', customAttributes: 'any' }
+            { descriptor, decorations, attributes, customAttributes },
+            { descriptor: 'string', attributes: 'any', customAttributes: 'any', decorations: 'any' }
         )
-        const entity_id = await EntityEditorService.createNewEntity(descriptor, attributes, customAttributes)
+        InputValidator.validateObject(decorations, { name: 'string', description: 'string', sprite: 'string' })
+        const entity_id = await EntityEditorService.createNewEntity(
+            descriptor,
+            decorations,
+            attributes,
+            customAttributes
+        )
         res.json({ result: 'ok', entity_id })
     }
 
