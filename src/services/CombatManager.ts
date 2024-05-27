@@ -1,4 +1,5 @@
 import { CombatConnection } from './CombatConnection'
+import DatabaseService from './DatabaseService'
 
 class CombatManager {
     private combats: Map<string, CombatConnection> = new Map()
@@ -23,6 +24,17 @@ class CombatManager {
         this.combats.set(combat_id, new CombatConnection(combatNickname, preset, removeSelf, gm_id, players))
         console.log('Combat created', combat_id)
         return combat_id
+    }
+
+    public async getPlayersInCombat(combat: CombatConnection): Promise<string[]> {
+        if (!combat) return []
+        const playerIDs: Array<string> = combat.getActivePlayers()
+        const players = []
+        for (const id of playerIDs) {
+            const player = await DatabaseService.getUser(id)
+            if (player) players.push(player.handle)
+        }
+        return players
     }
 }
 

@@ -48,6 +48,7 @@ class LobbyService {
                         isActive: combat.isActive(),
                         roundCount: combat.isActive() ? combat.getRoundCount() : 0,
                         _id: combat_id,
+                        activePlayers: CombatManager.getPlayersInCombat(combat),
                     })
                 }
             }

@@ -757,4 +757,8 @@ export class CombatConnection {
             }, 1000)
         }
     }
+
+    public getActivePlayers(): Array<string> {
+        return this.players.filter((player) => player.socket?.connected).map((player) => player.id_)
+    }
 }
