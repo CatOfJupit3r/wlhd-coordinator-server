@@ -1,11 +1,11 @@
 import { BadRequest, Exception } from '../models/ErrorModels'
 import {
+    FailDetails,
     FailedValidation,
     INVALID_INPUT,
     Input,
     Misses,
     Schema,
-    SchemaValue,
     SuccessfulValidation,
     SupportedTypes,
     VALID_INPUT,
@@ -16,21 +16,7 @@ class InputValidator {
         return 'Validation failed!'
     }
 
-    private WRONG_TYPE_DETAILS(
-        provided: Input,
-        schema: Schema,
-        misses?: Misses
-    ): {
-        details: {
-            type: string
-            required: Array<SchemaValue>
-            provided: Array<{
-                key: string
-                type: string
-            }>
-            misses: Misses
-        }
-    } {
+    private WRONG_TYPE_DETAILS(provided: Input, schema: Schema, misses?: Misses): { details: FailDetails } {
         return {
             details: {
                 type: 'wrong_type',
@@ -41,21 +27,7 @@ class InputValidator {
         }
     }
 
-    private MISSING_KEYS_DETAILS(
-        provided: Input,
-        schema: Schema,
-        misses?: Misses
-    ): {
-        details: {
-            type: string
-            required: Array<SchemaValue>
-            provided: Array<{
-                key: string
-                type: string
-            }>
-            misses: Misses
-        }
-    } {
+    private MISSING_KEYS_DETAILS(provided: Input, schema: Schema, misses?: Misses): { details: FailDetails } {
         return {
             details: {
                 type: 'missing_keys',

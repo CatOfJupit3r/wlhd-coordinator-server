@@ -24,6 +24,16 @@ export interface FailedValidation {
     misses: Misses
 }
 
+export interface FailDetails {
+    type: string
+    required: Array<SchemaValue>
+    provided: Array<{
+        key: string
+        type: string
+    }>
+    misses: Misses
+}
+
 export const VALID_INPUT = (): SuccessfulValidation => ({ success: true })
 
 export const INVALID_INPUT = (misses: Misses): FailedValidation => ({ success: false, misses: misses })
