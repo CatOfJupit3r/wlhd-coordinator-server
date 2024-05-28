@@ -44,10 +44,10 @@ class LobbyService {
                 const combat = CombatManager.get(combat_id)
                 if (combat) {
                     combatInfo.push({
-                        nickname: combat.combatNickname,
-                        isActive: combat.isActive(),
-                        roundCount: combat.isActive() ? combat.getRoundCount() : 0,
-                        _id: combat_id,
+                        nickname: combat?.combatNickname || '',
+                        isActive: combat?.isActive() || false,
+                        roundCount: combat?.isActive() ? combat?.getRoundCount() : 0,
+                        _id: combat_id || '',
                         activePlayers: CombatManager.getPlayersInCombat(combat),
                     })
                 }

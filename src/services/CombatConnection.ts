@@ -143,11 +143,11 @@ export class CombatConnection {
 
     public getRoundCount() {
         console.log('Current game state', this.gameState)
-        return this.gameState.roundCount
+        return this.gameState?.roundCount || 0
     }
 
     public isActive() {
-        return this.gameSocket.active
+        return this.gameSocket.connected
     }
 
     public isPlayerInCombat(playerName: string): boolean {
