@@ -68,6 +68,7 @@ class LobbyService {
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) {
             return {
+                name: 'Lobby not found',
                 lobbyId: lobby_id,
                 combats: combatInfo || [],
                 gm: '',
@@ -96,6 +97,7 @@ class LobbyService {
             })
         }
         return {
+            name: lobby.name,
             lobbyId: lobby_id,
             combats: combatInfo || [],
             gm: lobby.gm_id,

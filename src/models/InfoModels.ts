@@ -22,6 +22,7 @@ export interface CharacterInfo {
 
 export interface LobbyInfo {
     lobbyId: string
+    name: string
     combats: Array<{ nickname: string; isActive: boolean; roundCount: number }>
     gm: string
     players: Array<{

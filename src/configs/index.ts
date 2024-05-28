@@ -5,4 +5,4 @@ export const GAME_SECRET_TOKEN = () => process.env.GAME_SECRET_TOKEN || 'pancake
 export const JWT_ACCESS_SECRET = () => process.env.JWT_SECRET || 'bigSecret'
 export const JWT_REFRESH_SECRET = () => process.env.JWT_REFRESH || 'evenBiggerSecret'
 export const GITHUB_TOKEN = () => process.env.GITHUB_TOKEN
-export const PATH_TO_INSTALLED_PACKAGES = path.join(process.cwd(), 'src', 'installed')
+export const PATH_TO_INSTALLED_PACKAGES = path.join(process.cwd(), 'src', 'installed') // root/src/installed
