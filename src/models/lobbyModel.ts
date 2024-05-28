@@ -26,7 +26,7 @@ export class PlayerClass {
     nickname: string
 
     @prop({ default: null })
-    mainCharacter?: string
+    characterId?: string
 }
 
 export const LobbyModel = getModelForClass(LobbyClass, {

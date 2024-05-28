@@ -76,11 +76,30 @@ class LobbyService {
                 controlledEntity: null,
             }
         }
+        const getCharacter = async (characterId: string) => {
+            const entity = await DatabaseService.getEntity(characterId)
+            if (!entity) {
+                return null
+            }
+            return {
+                name: entity.decorations?.name || `${entity.descriptor}.name`,
+                sprite: entity.decorations?.sprite || `${entity.descriptor}.sprite`,
+            }
+        }
+        const players = []
+        for (const p of lobby.players) {
+            const character = p.characterId ? await getCharacter(p.characterId) : null
+            const player = await DatabaseService.getUser(p.userId)
+            players.push({
+                player: { handle: player?.handle || '', avatar: '', userId: p.userId, nickname: p.nickname },
+                character,
+            })
+        }
         return {
             lobbyId: lobby_id,
             combats: combatInfo || [],
             gm: lobby.gm_id,
-            players: lobby.players,
+            players,
             layout: user._id === lobby.gm_id ? 'gm' : 'default',
             controlledEntity: _id ? { name, id: _id } : null,
         }
@@ -126,9 +145,9 @@ class LobbyService {
         if (!lobby) throw new NotFound('Lobby not found')
         const player = lobby.players.find((p) => p.userId === player_id)
         if (!player) throw new NotFound('Player not found')
-        if (!player.mainCharacter) throw new BadRequest('Player has no character')
-        const character = await DatabaseService.getCharacterInfo(player.mainCharacter)
-        return this.parseEntityClass(character, lobby, player.mainCharacter)
+        if (!player.characterId) throw new BadRequest('Player has no character')
+        const character = await DatabaseService.getCharacterInfo(player.characterId)
+        return this.parseEntityClass(character, lobby, player.characterId)
     }
 
     public async getCharacterInfo(lobby_id: string, character_id: string): Promise<CharacterInfo> {
@@ -158,7 +177,7 @@ class LobbyService {
                 }, {}),
             },
             controlledBy: character_id
-                ? lobby.players.find((p) => p.mainCharacter === character_id)?.userId || null
+                ? lobby.players.find((p) => p.characterId === character_id)?.userId || null
                 : null,
         }
     }

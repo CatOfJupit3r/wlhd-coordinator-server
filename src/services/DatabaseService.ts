@@ -91,7 +91,7 @@ class DatabaseService {
         const lobby = await this.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
 
-        lobby.players.push({ nickname, mainCharacter, userId })
+        lobby.players.push({ nickname, characterId: mainCharacter, userId })
         await mongoose.connection
             .collection('lobbies')
             .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { players: lobby.players } })
@@ -144,11 +144,12 @@ class DatabaseService {
             let assignedCharacter: string | null = null
             for (const player of lobby.players) {
                 if (player.userId === userId) {
-                    const characterId = player.mainCharacter
+                    const characterId = player.characterId
                     if (!characterId) break
                     const character = await this.getEntity(characterId)
                     if (!character) break
-                    assignedCharacter = character.decorations.name
+                    assignedCharacter =
+                        character.decorations?.name || character.descriptor ? `${character.descriptor}.name` : null
                 }
             }
 
@@ -174,7 +175,7 @@ class DatabaseService {
         const player = lobby.players.find((p) => p.userId === userId)
         if (!player) throw new NotFound('Player not found')
 
-        player.mainCharacter = characterId
+        player.characterId = characterId
         await mongoose.connection
             .collection('lobbies')
             .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { players: lobby.players } })
