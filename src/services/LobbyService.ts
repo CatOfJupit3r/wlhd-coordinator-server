@@ -37,18 +37,38 @@ class LobbyService {
     }
 
     public async getLobbyInfo(lobby_id: string, user: any, player: any): Promise<LobbyInfo> {
+        const lobby = await DatabaseService.getLobby(lobby_id)
+        if (!lobby) {
+            return {
+                name: 'Lobby not found',
+                lobbyId: lobby_id,
+                combats: [],
+                gm: '',
+                players: [],
+                layout: 'default',
+                controlledEntity: null,
+            }
+        }
         const combatInfo = []
         const combats = this.managingCombats.get(lobby_id)
         if (combats) {
             for (const combat_id in combats) {
                 const combat = CombatManager.get(combat_id)
                 if (combat) {
+                    const playerIds = (await CombatManager.getPlayersInCombat(combat)) || []
+                    const activePlayers = playerIds.map(async (playerId) => {
+                        const userInDB = await DatabaseService.getUser(playerId)
+                        return {
+                            handle: userInDB?.handle || '',
+                            nickname: lobby.players.find((p) => p.userId === playerId)?.nickname || '',
+                        }
+                    })
                     combatInfo.push({
                         nickname: combat?.combatNickname || '',
                         isActive: combat?.isActive() || false,
                         roundCount: combat?.isActive() ? combat?.getRoundCount() : 0,
                         _id: combat_id || '',
-                        activePlayers: CombatManager.getPlayersInCombat(combat),
+                        activePlayers: await Promise.all(activePlayers),
                     })
                 }
             }
@@ -63,18 +83,6 @@ class LobbyService {
             } else {
                 name = 'Character not found'
                 _id = ''
-            }
-        }
-        const lobby = await DatabaseService.getLobby(lobby_id)
-        if (!lobby) {
-            return {
-                name: 'Lobby not found',
-                lobbyId: lobby_id,
-                combats: combatInfo || [],
-                gm: '',
-                players: [],
-                layout: 'default',
-                controlledEntity: null,
             }
         }
         const getCharacter = async (characterId: string) => {
@@ -165,7 +173,6 @@ class LobbyService {
             if (key !== '_doc') continue
             new_obj = { ...atr, _id: undefined }
         }
-        console.log(new_obj)
         return {
             ...(character as any)._doc,
             attributes: {
