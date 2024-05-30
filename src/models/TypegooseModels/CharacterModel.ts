@@ -1,8 +1,7 @@
-// import { getModelForClass, prop } from '@typegoose/typegoose'
-//
-//
-// const betterProp = () => prop({ required: true })
-//
+import { getModelForClass, prop } from '@typegoose/typegoose'
+
+const betterProp = () => prop({ required: true })
+
 // class SpellClass {
 //
 // }
@@ -54,6 +53,7 @@
 //     statusEffects: Array<StatusEffectClass>
 // }
 //
-// export const CharacterModel = getModelForClass(CharacterClass)
 
-export {}
+class CharacterClass {}
+
+export const CharacterModel = getModelForClass(CharacterClass)
