@@ -2,6 +2,7 @@ import { DocumentType } from '@typegoose/typegoose'
 import mongoose, { Types } from 'mongoose'
 import { BadRequest, InternalServerError, NotFound } from '../models/ErrorModels'
 import {
+    CharacterClass,
     CombatClass,
     CombatModel,
     EntityClass,
@@ -51,6 +52,10 @@ class DatabaseService {
 
     public getEntity = async (entityId: string): Promise<EntityClass | null> => {
         return EntityModel.findOne({ _id: new Types.ObjectId(entityId) })
+    }
+
+    public getCharacter = async (characterId: string): Promise<CharacterClass | null> => {
+        return EntityModel.findOne({ _id: new Types.ObjectId(characterId) })
     }
 
     public getCombatPreset = async (combatPresetId: string): Promise<CombatClass | null> => {

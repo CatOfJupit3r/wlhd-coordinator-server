@@ -1,6 +1,7 @@
 import { BadRequest, NotFound } from '../models/ErrorModels'
 import { GamePreset } from '../models/ServerModels'
 import DatabaseService from '../services/DatabaseService'
+import { characterModelToPreset } from './characterModelToPreset'
 
 const cookPresetFromDB = async (combatPreset: string): Promise<GamePreset | null> => {
     const result: GamePreset = {
@@ -22,9 +23,9 @@ const cookPresetFromDB = async (combatPreset: string): Promise<GamePreset | null
             owner: controlled_by,
         }
         if (source === 'embedded') {
-            const customEntity = await DatabaseService.getEntity(path)
+            const customEntity = await DatabaseService.getCharacter(path)
             if (!customEntity) throw new NotFound('Entity not found')
-            result.custom_entities[path] = customEntity
+            result.custom_entities[path] = characterModelToPreset(customEntity)
         }
     }
     return result
@@ -63,9 +64,9 @@ const cookPresetFromRequest = async (combatPreset: {
             owner: controlledBy,
         }
         if (source === 'embedded') {
-            const customEntity = await DatabaseService.getEntity(path)
+            const customEntity = await DatabaseService.getCharacter(path)
             if (!customEntity) throw new NotFound('Entity not found')
-            result.custom_entities[path] = customEntity
+            result.custom_entities[path] = characterModelToPreset(customEntity)
         }
     }
     return result

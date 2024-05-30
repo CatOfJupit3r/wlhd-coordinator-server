@@ -141,7 +141,7 @@ export interface GamePreset {
     // we can send presets of entities that are not installed by dlc.
     // For this, define field_pawn with source: 'embedded' and 'name' of a key in this object
     custom_entities: {
-        [key: string]: any
+        [key: string]: CharacterPreset
     }
 }
 
@@ -152,10 +152,12 @@ export type GameStateContainer = Array<GameMessage>
 export interface CharacterPreset {
     descriptor: string
     decorations: GameComponentDecoration
-    attributes: { [attribute: string]: number }
+    attributes: {
+        [attribute: string]: number
+    }
 
-    items: Array<unknown>
-    weapons: Array<unknown>
-    spells: Array<unknown>
+    inventory: Array<unknown>
+    weaponry: Array<unknown>
+    spellbook: Array<unknown>
     status_effects: Array<unknown>
 }
