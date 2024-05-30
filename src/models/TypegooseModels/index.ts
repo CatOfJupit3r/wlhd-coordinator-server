@@ -1,3 +1,4 @@
+export * from './AttributeClass'
 export * from './CharacterModel'
 export * from './CombatModel'
 export * from './EntityModel'
