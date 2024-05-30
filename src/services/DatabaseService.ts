@@ -1,10 +1,16 @@
 import { DocumentType } from '@typegoose/typegoose'
 import mongoose, { Types } from 'mongoose'
 import { BadRequest, InternalServerError, NotFound } from '../models/ErrorModels'
-import { CombatClass, CombatModel } from '../models/combatModel'
-import { EntityClass, EntityModel } from '../models/entityModel'
-import { LobbyClass, LobbyModel } from '../models/lobbyModel'
-import { UserClass, UserModel } from '../models/userModel'
+import {
+    CombatClass,
+    CombatModel,
+    EntityClass,
+    EntityModel,
+    LobbyClass,
+    LobbyModel,
+    UserClass,
+    UserModel,
+} from '../models/TypegooseModels'
 
 class DatabaseService {
     public connect = async (): Promise<void> => {
