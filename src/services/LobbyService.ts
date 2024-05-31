@@ -72,35 +72,13 @@ class LobbyService {
                 }
             }
         }
-        let name = ''
-        let _id: string | null = null
-        if (player.mainCharacter) {
-            const entity = await DatabaseService.getEntity(player.mainCharacter)
-            if (entity) {
-                name = entity.descriptor
-                _id = player.mainCharacter
-            } else {
-                name = 'Character not found'
-                _id = ''
-            }
-        }
-        const getCharacter = async (characterId: string) => {
-            const entity = await DatabaseService.getEntity(characterId)
-            if (!entity) {
-                return null
-            }
-            return {
-                name: entity.decorations?.name || `${entity.descriptor}.name`,
-                sprite: entity.decorations?.sprite || `${entity.descriptor}.sprite`,
-            }
-        }
         const players = []
         for (const p of lobby.players) {
-            const character = p.characterId ? await getCharacter(p.characterId) : null
             const player = await DatabaseService.getUser(p.userId)
+            const controlledCharacters = await DatabaseService.getCharactersOfPlayer(lobby_id, p.userId)
             players.push({
                 player: { handle: player?.handle || '', avatar: '', userId: p.userId, nickname: p.nickname },
-                character,
+                characters: controlledCharacters.map((character) => character.decorations) || [],
             })
         }
         return {
@@ -110,7 +88,7 @@ class LobbyService {
             gm: lobby.gm_id,
             players,
             layout: user._id === lobby.gm_id ? 'gm' : 'default',
-            controlledEntity: _id ? { name, id: _id } : null,
+            controlledEntity: null,
         }
     }
 

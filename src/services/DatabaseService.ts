@@ -8,8 +8,6 @@ import {
     CharacterModel,
     CombatClass,
     CombatModel,
-    EntityClass,
-    EntityModel,
     LobbyClass,
     LobbyModel,
     UserClass,
@@ -20,7 +18,6 @@ import { characterModelToInfo } from '../utils/characterConverters'
 type SupportedDocumentTypes =
     | DocumentType<LobbyClass>
     | DocumentType<UserClass>
-    | DocumentType<EntityClass>
     | DocumentType<CombatClass>
     | DocumentType<CharacterClass>
 
@@ -55,10 +52,6 @@ class DatabaseService {
         return UserModel.findOne({ handle })
     }
 
-    public getEntity = async (entityId: string): Promise<EntityClass | null> => {
-        return EntityModel.findOne({ _id: new Types.ObjectId(entityId) })
-    }
-
     public getCharacter = async (characterId: string): Promise<CharacterClass | null> => {
         return CharacterModel.findOne({ _id: new Types.ObjectId(characterId) })
     }
@@ -81,13 +74,7 @@ class DatabaseService {
             name: lobbyName,
             createdAt: new Date(),
             gm_id: gm_id,
-            players: [
-                {
-                    userId: gm_id,
-                    nickname: gm.handle,
-                    mainCharacter: null,
-                },
-            ],
+            players: [{ userId: gm_id, nickname: gm.handle }],
             relatedPresets: [],
         })
         await this.saveDocument(lobby)
@@ -143,28 +130,26 @@ class DatabaseService {
     public getJoinedLobbiesInfo = async (
         userId: string
     ): Promise<Array<{ name: string; isGm: boolean; _id: string }>> => {
-        const res: Array<{ name: string; isGm: boolean; _id: string; assignedCharacter: string | null }> = []
+        const res: Array<{ name: string; isGm: boolean; _id: string; characters: Array<string> }> = []
         const lobbies = await LobbyModel.find({ 'players.userId': userId })
         for (const lobby of lobbies) {
             const { _id, name, gm_id } = lobby
             if (!_id || !name || !gm_id) throw new InternalServerError()
-            const assignedCharacter: string | null = null
-            for (const player of lobby.players) {
-                // if (player.userId === userId) {
-                //     const characterId = player.characterId
-                //     if (!characterId) break
-                //     const character = await this.getEntity(characterId)
-                //     if (!character) break
-                //     assignedCharacter =
-                //         character.decorations?.name || character.descriptor ? `${character.descriptor}.name` : null
-                // }
+            const characters = []
+            for (const characterInLobby of lobby.characterBank) {
+                if (characterInLobby.controlledBy.includes(userId)) {
+                    const character = await this.getCharacter(characterInLobby.characterId)
+                    if (!character) throw new NotFound('Character not found')
+                    if (character.decorations?.name) characters.push(character.decorations.name)
+                    else if (character.descriptor) characters.push(`${character.descriptor}.name`)
+                }
             }
 
             res.push({
                 _id: _id.toString(),
                 name,
                 isGm: gm_id.toString() === userId,
-                assignedCharacter,
+                characters,
             })
         }
         return res

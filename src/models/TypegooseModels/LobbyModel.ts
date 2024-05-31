@@ -14,9 +14,6 @@ export class PlayerClass {
 
     @prop({ required: true })
     nickname: string
-
-    @prop({ default: null })
-    characterId?: string // leave for legacy code
 }
 
 @modelOptions({ schemaOptions: { collection: 'lobbies' } })

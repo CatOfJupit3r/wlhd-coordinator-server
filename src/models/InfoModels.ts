@@ -40,10 +40,10 @@ export interface LobbyInfo {
             avatar: string
             userId: string
         }
-        character: {
+        characters: Array<{
             name: string
             sprite: string
-        } | null
+        }>
     }>
     layout: 'default' | 'gm'
     controlledEntity: {
