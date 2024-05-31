@@ -1,21 +1,11 @@
 import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose'
 
-@modelOptions({ schemaOptions: { collection: 'lobbies' } })
-export class LobbyClass {
+export class CharacterInLobbyClass {
     @prop({ required: true })
-    name: string
+    characterId: string
 
-    @prop({ required: true })
-    createdAt: Date
-
-    @prop({ required: true })
-    gm_id: string // id of user in `Users` collection
-
-    @prop({ required: true, type: () => [PlayerClass], _id: false })
-    players: Array<PlayerClass>
-
-    @prop({ required: true, type: () => [String] })
-    relatedPresets: Array<string> // id of preset in `combat_presets` collection
+    @prop({ default: [], type: () => [String] })
+    controlledBy: Array<string>
 }
 
 export class PlayerClass {
@@ -27,6 +17,27 @@ export class PlayerClass {
 
     @prop({ default: null })
     characterId?: string
+}
+
+@modelOptions({ schemaOptions: { collection: 'lobbies' } })
+export class LobbyClass {
+    @prop({ required: true })
+    name: string
+
+    @prop({ required: true })
+    createdAt: Date
+
+    @prop({ required: true })
+    gm_id: string // id of user in `Users` collection
+
+    @prop({ default: [], type: () => [PlayerClass], _id: false })
+    players: Array<PlayerClass>
+
+    @prop({ default: [], type: () => [String] })
+    characterBank: Array<CharacterInLobbyClass>
+
+    @prop({ default: [], type: () => [String] })
+    relatedPresets: Array<string> // id of preset in `combat_presets` collection
 }
 
 export const LobbyModel = getModelForClass(LobbyClass, {
