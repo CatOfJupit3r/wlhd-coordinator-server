@@ -50,5 +50,5 @@ export class CombatClass {
 }
 
 export const CombatModel = getModelForClass(CombatClass, {
-    schemaOptions: { collection: 'combatPresets' },
+    schemaOptions: { collection: 'combats' },
 })
