@@ -14,7 +14,6 @@ import assetRoutes from '../routes/assetRoutes'
 
 const ExpressLoader = async (app: Express) => {
     app.use(cors())
-    app.use(errorHandlerMiddleware)
     app.use(express.json())
 
     app.use('/', indexRoutes)
@@ -24,6 +23,8 @@ const ExpressLoader = async (app: Express) => {
     app.use('/combat', combatRoutes)
     app.use('/character', characterRoutes)
     app.use('/assets', assetRoutes)
+
+    app.use(errorHandlerMiddleware)
 }
 
 export default ExpressLoader

@@ -1,5 +1,5 @@
 import { Socket } from 'socket.io'
-import { BadRequest, NotFound } from '../models/ErrorModels'
+import { InternalServerError, NotFound, Unauthorized } from '../models/ErrorModels'
 import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
 import { characterModelToInfo } from '../utils/characterConverters'
 import AuthService from './AuthService'
@@ -114,13 +114,8 @@ class LobbyService {
         }
     }
 
-    public async addPlayerToLobby(
-        lobby_id: string,
-        player_id: string,
-        nickname: string,
-        mainCharacter: string
-    ): Promise<void> {
-        await DatabaseService.addPlayerToLobby(lobby_id, player_id, nickname, mainCharacter)
+    public async addPlayerToLobby(lobby_id: string, player_id: string, nickname: string): Promise<void> {
+        await DatabaseService.addPlayerToLobby(lobby_id, player_id, nickname)
     }
 
     public manageSocket(socket: Socket, combat_id: string, userToken: string): void {
@@ -149,20 +144,17 @@ class LobbyService {
         socket.disconnect()
     }
 
-    public async getMyCharacterInfo(lobby_id: string, player_id: string): Promise<CharacterInfo> {
-        const lobby = await DatabaseService.getLobby(lobby_id)
-        if (!lobby) throw new NotFound('Lobby not found')
-        const player = lobby.players.find((p) => p.userId === player_id)
-        if (!player) throw new NotFound('Player not found')
-        if (!player.characterId) throw new BadRequest('Player has no character')
-        const character = await DatabaseService.getCharacter(player.characterId)
-        if (!character) throw new NotFound('Character not found')
-        return characterModelToInfo(character)
+    public async getMyCharacterInfo(lobby_id: string, player_id: string): Promise<Array<CharacterInfo>> {
+        const controlledCharacters = await DatabaseService.getCharactersOfPlayer(lobby_id, player_id)
+        return controlledCharacters.map(characterModelToInfo)
     }
 
     public async getCharacterInfo(lobby_id: string, character_id: string): Promise<CharacterInfo> {
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
+        if (!lobby.characterBank) throw new InternalServerError('Character bank not found')
+        const characterIsInBank = lobby.characterBank.find((c) => c.characterId === character_id)
+        if (!characterIsInBank) throw new Unauthorized('You cannot search for this character')
         const character = await DatabaseService.getCharacter(character_id)
         if (!character) throw new NotFound('Character not found')
         return characterModelToInfo(character)

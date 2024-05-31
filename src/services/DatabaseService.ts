@@ -60,7 +60,7 @@ class DatabaseService {
     }
 
     public getCharacter = async (characterId: string): Promise<CharacterClass | null> => {
-        return EntityModel.findOne({ _id: new Types.ObjectId(characterId) })
+        return CharacterModel.findOne({ _id: new Types.ObjectId(characterId) })
     }
 
     public getCombatPreset = async (combatPresetId: string): Promise<CombatClass | null> => {
@@ -94,20 +94,13 @@ class DatabaseService {
         return lobby._id
     }
 
-    public addPlayerToLobby = async (
-        lobbyId: string,
-        userId: string,
-        nickname: string,
-        mainCharacter: string
-    ): Promise<void> => {
+    public addPlayerToLobby = async (lobbyId: string, userId: string, nickname: string): Promise<void> => {
         const user = await this.getUser(userId)
         if (!user) throw new NotFound('User not found')
-        const character = await this.getEntity(mainCharacter)
-        if (!character) throw new NotFound('Character not found')
         const lobby = await this.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
 
-        lobby.players.push({ nickname, characterId: mainCharacter, userId })
+        lobby.players.push({ nickname, userId })
         await mongoose.connection
             .collection('lobbies')
             .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { players: lobby.players } })
@@ -155,16 +148,16 @@ class DatabaseService {
         for (const lobby of lobbies) {
             const { _id, name, gm_id } = lobby
             if (!_id || !name || !gm_id) throw new InternalServerError()
-            let assignedCharacter: string | null = null
+            const assignedCharacter: string | null = null
             for (const player of lobby.players) {
-                if (player.userId === userId) {
-                    const characterId = player.characterId
-                    if (!characterId) break
-                    const character = await this.getEntity(characterId)
-                    if (!character) break
-                    assignedCharacter =
-                        character.decorations?.name || character.descriptor ? `${character.descriptor}.name` : null
-                }
+                // if (player.userId === userId) {
+                //     const characterId = player.characterId
+                //     if (!characterId) break
+                //     const character = await this.getEntity(characterId)
+                //     if (!character) break
+                //     assignedCharacter =
+                //         character.decorations?.name || character.descriptor ? `${character.descriptor}.name` : null
+                // }
             }
 
             res.push({
@@ -188,11 +181,54 @@ class DatabaseService {
         if (!lobby) throw new NotFound('Lobby not found')
         const player = lobby.players.find((p) => p.userId === userId)
         if (!player) throw new NotFound('Player not found')
-
-        player.characterId = characterId
+        const characterInLobbyBank = lobby.characterBank.find((c) => c.characterId === characterId)
+        if (!characterInLobbyBank) throw new NotFound('Character not found')
+        const character = await this.getCharacter(characterId)
+        if (!character) {
+            lobby.characterBank = lobby.characterBank.filter((c) => c.characterId !== characterId)
+            await mongoose.connection
+                .collection('lobbies')
+                .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { characterBank: lobby.characterBank } })
+            throw new NotFound('Entity you were looking for was removed from Database, but not from lobby. Removing.')
+        }
+        if (!characterInLobbyBank.controlledBy) characterInLobbyBank.controlledBy = []
+        if (!characterInLobbyBank.controlledBy.includes(userId)) {
+            characterInLobbyBank.controlledBy.push(userId)
+        }
         await mongoose.connection
             .collection('lobbies')
-            .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { players: lobby.players } })
+            .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { characterBank: lobby.characterBank } })
+    }
+
+    public addCharacterToLobby = async (
+        lobbyId: string,
+        characterId: string,
+        controlledBy: Array<string>
+    ): Promise<void> => {
+        const lobby = await this.getLobby(lobbyId)
+        if (!lobby) throw new NotFound('Lobby not found')
+        const character = await this.getCharacter(characterId)
+        if (!character) throw new NotFound('Character not found')
+        lobby.characterBank.push({ characterId, controlledBy: controlledBy || [] })
+        await mongoose.connection
+            .collection('lobbies')
+            .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { characterBank: lobby.characterBank } })
+    }
+
+    public getCharactersOfPlayer = async (lobbyId: string, userId: string): Promise<Array<CharacterClass>> => {
+        const lobby = await this.getLobby(lobbyId)
+        if (!lobby) throw new NotFound('Lobby not found')
+        const player = lobby.players.find((p) => p.userId === userId)
+        if (!player) throw new NotFound('Player not found')
+        const characters: Array<CharacterClass> = []
+        for (const characterInLobby of lobby.characterBank) {
+            if (characterInLobby.controlledBy.includes(userId)) {
+                const character = await this.getCharacter(characterInLobby.characterId)
+                if (!character) throw new NotFound('Character not found')
+                characters.push(character)
+            }
+        }
+        return characters
     }
 }
 

@@ -16,7 +16,7 @@ export class PlayerClass {
     nickname: string
 
     @prop({ default: null })
-    characterId?: string
+    characterId?: string // leave for legacy code
 }
 
 @modelOptions({ schemaOptions: { collection: 'lobbies' } })

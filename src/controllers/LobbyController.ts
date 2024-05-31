@@ -1,6 +1,13 @@
 import { Request, Response } from 'express'
 import { Socket } from 'socket.io'
-import { BadRequest, Forbidden, InternalServerError, NotFound, Unauthorized } from '../models/ErrorModels'
+import {
+    BadRequest,
+    Forbidden,
+    InternalServerError,
+    MethodNotAllowed,
+    NotFound,
+    Unauthorized,
+} from '../models/ErrorModels'
 import AuthService from '../services/AuthService'
 import DatabaseService from '../services/DatabaseService'
 import InputValidator from '../services/InputValidator'
@@ -20,13 +27,13 @@ class LobbyController {
     public async addPlayerToLobby(req: Request, res: Response): Promise<void> {
         console.log('Adding player to lobby. Params:', req.body)
         const { lobby_id } = req.params
-        const { player_id, nickname, mainCharacter } = req.body
+        const { player_id, nickname } = req.body
         InputValidator.validateObject(
-            { lobby_id, player_id, nickname, mainCharacter },
-            { lobby_id: 'string', player_id: 'string', nickname: 'string', mainCharacter: 'string' },
+            { lobby_id, player_id, nickname },
+            { lobby_id: 'string', player_id: 'string', nickname: 'string' },
             true
         )
-        await LobbyService.addPlayerToLobby(lobby_id, player_id, nickname, mainCharacter)
+        await LobbyService.addPlayerToLobby(lobby_id, player_id, nickname)
         res.json({ result: 'ok', player_id })
     }
 
@@ -72,15 +79,7 @@ class LobbyController {
             { lobby_id, combatNickname, combatPreset },
             { lobby_id: 'string', combatNickname: 'string', combatPreset: 'object' }
         )
-        // if (!lobby_id || !combatPreset || !combatNickname)
-        // throw new BadRequest('Missing parameters', {
-        //     required: [
-        //         { lobby_id: 'string', present: !!lobby_id },
-        //         { combatPreset: 'object', present: !!combatPreset },
-        //         { combatNickname: 'string', present: !!combatNickname },
-        //     ],
-        //     provided: req.body,
-        // })
+
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
         const preset = await getEmittableCombatPreset(combatPreset)
@@ -97,18 +96,10 @@ class LobbyController {
         } else throw new InternalServerError('Failed to create combat')
     }
 
-    public getAllActiveCombats(req: Request, res: Response): void {
-        const { lobby_id } = req.params
-        InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string', true)
-        const combats = LobbyService.getActiveCombats(lobby_id)
-        if (!combats) throw new NotFound('No combats found')
-        res.status(200).json({ nicknames: Array.from(combats.keys()) })
-    }
-
     public async assignCharacterToPlayer(req: Request, res: Response): Promise<void> {
         console.log('Assigning character to player. Params:', req.body)
-        const { lobby_id } = req.params
-        const { player_id, character_id } = req.body
+        const { lobby_id, character_id } = req.params
+        const { player_id } = req.body
         InputValidator.validateObject({ lobby_id, player_id }, { lobby_id: 'string', player_id: 'string' }, true)
         await DatabaseService.assignCharacterToPlayer(lobby_id, player_id, character_id)
         res.status(200).json({ message: 'ok' })
@@ -123,10 +114,70 @@ class LobbyController {
     }
 
     public async getCharacterInfo(req: Request, res: Response): Promise<void> {
-        const { lobby_id, character } = req.params
-        InputValidator.validateObject({ lobby_id, character }, { lobby_id: 'string', character: 'string' }, true)
-        const characterInfo = await LobbyService.getCharacterInfo(lobby_id, character)
+        const { lobby_id, character_id } = req.params
+        InputValidator.validateObject({ lobby_id, character_id }, { lobby_id: 'string', character_id: 'string' }, true)
+        const characterInfo = await LobbyService.getCharacterInfo(lobby_id, character_id)
         res.status(200).json(characterInfo)
+    }
+
+    public async createCharacter(req: Request, res: Response): Promise<void> {
+        const { descriptor, decorations, attributes, controlledBy } = req.body
+        const { lobby_id } = req.params
+        InputValidator.validateObject(
+            { descriptor, decorations, attributes, lobby_id },
+            { descriptor: 'string', attributes: 'array', decorations: 'any', lobby_id: 'string' }
+        )
+        InputValidator.validateObject(decorations, { name: 'string', description: 'string', sprite: 'string' })
+        for (const attribute of attributes) {
+            InputValidator.validateObject(attribute, { dlc: 'string', descriptor: 'string', value: 'number' })
+        }
+        const entity_id = await DatabaseService.createNewCharacter(descriptor, decorations, attributes)
+        await DatabaseService.addCharacterToLobby(lobby_id, entity_id.toString(), controlledBy)
+        res.json({ result: 'ok', entity_id })
+    }
+
+    public async getCharacterWeaponry(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed()
+    }
+
+    public async getCharacterSpellbook(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed()
+    }
+
+    public async getCharacterStatusEffects(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed()
+    }
+
+    public async getCharacterInventory(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed()
+    }
+
+    public async getCharacterAttributes(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed()
+    }
+
+    public async addWeaponToCharacter(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed()
+    }
+
+    public async addSpellToCharacter(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed()
+    }
+
+    public async addStatusEffectToCharacter(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed()
+    }
+
+    public async addItemToCharacter(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed()
+    }
+
+    public async addAttributeToCharacter(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed()
+    }
+
+    public async updateCharacter(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed()
     }
 
     public onConnection(socket: Socket): void {
