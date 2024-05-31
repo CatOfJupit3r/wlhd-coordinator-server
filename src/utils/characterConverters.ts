@@ -1,6 +1,21 @@
+import { EntityInfoFull } from '../models/ClientModels'
+import { CharacterInfo } from '../models/InfoModels'
 import { CharacterPreset } from '../models/ServerModels'
 import { CharacterClass } from '../models/TypegooseModels'
 
+export const characterPresetToInfoFull = (characterModel: CharacterPreset): EntityInfoFull => {
+    const info: EntityInfoFull = {
+        decorations: characterModel.decorations,
+        square: { line: '0', column: '0' },
+        attributes: {},
+        items: [],
+        weapons: [],
+        spells: [],
+        status_effects: [],
+    }
+
+    return info
+}
 export const characterModelToPreset = (characterModel: CharacterClass): CharacterPreset => {
     const preset: CharacterPreset = {
         descriptor: `coordinator:${characterModel.descriptor}`,
@@ -63,4 +78,46 @@ export const characterModelToPreset = (characterModel: CharacterClass): Characte
         })
     }
     return preset
+}
+
+export const characterModelToInfo = (characterModel: CharacterClass): CharacterInfo => {
+    const info: CharacterInfo = {
+        descriptor: characterModel.descriptor,
+        controlledBy: null,
+        attributes: {},
+        spellBook: [],
+        spellLayout: characterModel.spellLayout.layout,
+        inventory: [],
+        weaponry: [],
+    }
+
+    for (const attribute of characterModel.attributes) {
+        const { dlc, descriptor, value } = attribute
+        const attributeKey = `${dlc}:${descriptor}`
+        info.attributes[attributeKey] = String(value)
+    }
+
+    for (const spell of characterModel.spellBook) {
+        info.spellBook.push({
+            descriptor: spell.descriptor,
+            conflictsWith: spell.conflictsWith,
+            requiresToUse: spell.requiresToUse,
+        })
+    }
+
+    for (const item of characterModel.inventory) {
+        info.inventory.push({
+            descriptor: item.descriptor,
+            count: item.quantity,
+        })
+    }
+
+    for (const weapon of characterModel.weaponry) {
+        info.weaponry.push({
+            descriptor: weapon.descriptor,
+            count: weapon.quantity,
+        })
+    }
+
+    return info
 }

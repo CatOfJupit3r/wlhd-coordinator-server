@@ -1,7 +1,8 @@
 import { BadRequest, NotFound } from '../models/ErrorModels'
 import { GamePreset } from '../models/ServerModels'
 import DatabaseService from '../services/DatabaseService'
-import { characterModelToPreset } from './characterModelToPreset'
+
+import { characterModelToPreset } from './characterConverters'
 
 const cookPresetFromDB = async (combatPreset: string): Promise<GamePreset | null> => {
     const result: GamePreset = {

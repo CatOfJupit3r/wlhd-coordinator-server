@@ -1,7 +1,7 @@
 import { Socket } from 'socket.io'
 import { BadRequest, NotFound } from '../models/ErrorModels'
 import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
-import { EntityClass, LobbyClass } from '../models/TypegooseModels'
+import { characterModelToInfo } from '../utils/characterConverters'
 import AuthService from './AuthService'
 import CombatManager from './CombatManager'
 import DatabaseService from './DatabaseService'
@@ -155,39 +155,17 @@ class LobbyService {
         const player = lobby.players.find((p) => p.userId === player_id)
         if (!player) throw new NotFound('Player not found')
         if (!player.characterId) throw new BadRequest('Player has no character')
-        const character = await DatabaseService.getCharacterInfo(player.characterId)
-        return this.parseEntityClass(character, lobby, player.characterId)
+        const character = await DatabaseService.getCharacter(player.characterId)
+        if (!character) throw new NotFound('Character not found')
+        return characterModelToInfo(character)
     }
 
     public async getCharacterInfo(lobby_id: string, character_id: string): Promise<CharacterInfo> {
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await DatabaseService.getCharacterInfo(character_id)
-        return this.parseEntityClass(character, lobby, character_id)
-    }
-
-    private parseEntityClass(character: EntityClass, lobby: LobbyClass, character_id: string | null): CharacterInfo {
-        let new_obj: { [key: string]: any } = {}
-        for (const [key, atr] of Object.entries(character.attributes)) {
-            if (key !== '_doc') continue
-            new_obj = { ...atr, _id: undefined }
-        }
-        return {
-            ...(character as any)._doc,
-            attributes: {
-                ...Object.entries(new_obj).reduce((acc: { [key: string]: string }, [key, value]) => {
-                    acc[`builtins:${key}`] = String(value) // Convert number to string
-                    return acc
-                }, {}),
-                ...character.customAttributes.reduce((acc: { [key: string]: string }, value: any) => {
-                    acc[`${value.dlc}:${value.descriptor}`] = String(value.value) // Convert number to string
-                    return acc
-                }, {}),
-            },
-            controlledBy: character_id
-                ? lobby.players.find((p) => p.characterId === character_id)?.userId || null
-                : null,
-        }
+        const character = await DatabaseService.getCharacter(character_id)
+        if (!character) throw new NotFound('Character not found')
+        return characterModelToInfo(character)
     }
 }
 

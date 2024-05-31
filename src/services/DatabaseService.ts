@@ -1,8 +1,11 @@
 import { DocumentType } from '@typegoose/typegoose'
 import mongoose, { Types } from 'mongoose'
 import { BadRequest, InternalServerError, NotFound } from '../models/ErrorModels'
+import { CharacterInfo } from '../models/InfoModels'
 import {
+    AttributeClass,
     CharacterClass,
+    CharacterModel,
     CombatClass,
     CombatModel,
     EntityClass,
@@ -12,19 +15,21 @@ import {
     UserClass,
     UserModel,
 } from '../models/TypegooseModels'
+import { characterModelToInfo } from '../utils/characterConverters'
+
+type SupportedDocumentTypes =
+    | DocumentType<LobbyClass>
+    | DocumentType<UserClass>
+    | DocumentType<EntityClass>
+    | DocumentType<CombatClass>
+    | DocumentType<CharacterClass>
 
 class DatabaseService {
     public connect = async (): Promise<void> => {
         await mongoose.connect('mongodb://localhost:27017/gameDB')
     }
 
-    private saveDocument = async (
-        document:
-            | DocumentType<LobbyClass>
-            | DocumentType<UserClass>
-            | DocumentType<EntityClass>
-            | DocumentType<CombatClass>
-    ) => {
+    private saveDocument = async (document: SupportedDocumentTypes) => {
         try {
             await document.save({
                 validateBeforeSave: true,
@@ -108,14 +113,12 @@ class DatabaseService {
             .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { players: lobby.players } })
     }
 
-    public createNewEntity = async (
+    public createNewCharacter = async (
         descriptor: string,
         decorations: { name: string; description: string; sprite: string },
-        attributes: { [key: string]: string },
-        customAttributes: Array<{ dlc: string; descriptor: string; value: number }>
+        attributes: Array<AttributeClass>
     ): Promise<Types.ObjectId> => {
-        console.log('Creating entity', descriptor, attributes, customAttributes)
-        const entity = new EntityModel({ descriptor, decorations, attributes, customAttributes })
+        const entity = new CharacterModel({ descriptor, decorations, attributes })
         await this.saveDocument(entity)
         return entity._id
     }
@@ -174,10 +177,10 @@ class DatabaseService {
         return res
     }
 
-    public getCharacterInfo = async (characterId: string): Promise<EntityClass> => {
-        const character = await this.getEntity(characterId)
+    public getCharacterInfo = async (characterId: string): Promise<CharacterInfo> => {
+        const character = await this.getCharacter(characterId)
         if (!character) throw new NotFound('Character not found')
-        return character
+        return characterModelToInfo(character)
     }
 
     public assignCharacterToPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {

@@ -2,8 +2,8 @@ import cors from 'cors'
 import express, { Express } from 'express'
 import 'express-async-errors'
 
+import characterRoutes from '../routes/characterRoutes'
 import combatRoutes from '../routes/combatRoutes'
-import entityRoutes from '../routes/entityRoutes'
 import indexRoutes from '../routes/intexRoutes'
 import lobbyRoutes from '../routes/lobbyRoutes'
 import translationRoutes from '../routes/translationRoutes'
@@ -14,6 +14,7 @@ import assetRoutes from '../routes/assetRoutes'
 
 const ExpressLoader = async (app: Express) => {
     app.use(cors())
+    app.use(errorHandlerMiddleware)
     app.use(express.json())
 
     app.use('/', indexRoutes)
@@ -21,10 +22,8 @@ const ExpressLoader = async (app: Express) => {
     app.use('/user', userRoutes)
     app.use('/lobby', lobbyRoutes)
     app.use('/combat', combatRoutes)
-    app.use('/entity', entityRoutes)
+    app.use('/character', characterRoutes)
     app.use('/assets', assetRoutes)
-
-    app.use(errorHandlerMiddleware)
 }
 
 export default ExpressLoader

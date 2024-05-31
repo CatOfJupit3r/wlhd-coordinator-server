@@ -1,23 +1,20 @@
 import { Request, Response } from 'express'
 import { MethodNotAllowed } from '../models/ErrorModels'
-import EntityEditorService from '../services/EntityEditorService'
+import CharacterEditorService from '../services/CharacterEditorService'
 import InputValidator from '../services/InputValidator'
 
-class EntityEditorController {
+class CharacterEditorController {
     async createEntity(req: Request, res: Response) {
-        console.log('Creating entity. Params:', req.body)
-        const { descriptor, decorations, attributes, customAttributes } = req.body
+        const { descriptor, decorations, attributes } = req.body
         InputValidator.validateObject(
-            { descriptor, decorations, attributes, customAttributes },
-            { descriptor: 'string', attributes: 'any', customAttributes: 'any', decorations: 'any' }
+            { descriptor, decorations, attributes },
+            { descriptor: 'string', attributes: 'array', decorations: 'any' }
         )
         InputValidator.validateObject(decorations, { name: 'string', description: 'string', sprite: 'string' })
-        const entity_id = await EntityEditorService.createNewEntity(
-            descriptor,
-            decorations,
-            attributes,
-            customAttributes
-        )
+        for (const attribute of attributes) {
+            InputValidator.validateObject(attribute, { dlc: 'string', descriptor: 'string', value: 'number' })
+        }
+        const entity_id = await CharacterEditorService.createNewEntity(descriptor, decorations, attributes)
         res.json({ result: 'ok', entity_id })
     }
 
@@ -54,4 +51,4 @@ class EntityEditorController {
     }
 }
 
-export default new EntityEditorController()
+export default new CharacterEditorController()
