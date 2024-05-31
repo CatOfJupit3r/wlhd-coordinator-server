@@ -5,6 +5,11 @@ import { characterModelToPreset } from './characterModelToPreset'
 
 const cookPresetFromDB = async (combatPreset: string): Promise<GamePreset | null> => {
     const result: GamePreset = {
+        round_counter: 0,
+        turn_info: {
+            current_entity: '',
+            turn_queue: [],
+        },
         field_pawns: {},
         custom_entities: {},
     }
@@ -52,6 +57,11 @@ const cookPresetFromRequest = async (combatPreset: {
     }
 }): Promise<GamePreset> => {
     const result: GamePreset = {
+        round_counter: 0,
+        turn_info: {
+            current_entity: '',
+            turn_queue: [],
+        },
         field_pawns: {},
         custom_entities: {},
     }

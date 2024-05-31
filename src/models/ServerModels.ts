@@ -132,6 +132,11 @@ export interface EntityAction {
 }
 
 export interface GamePreset {
+    round_counter: number
+    turn_info: {
+        current_entity: string
+        turn_queue: Array<string>
+    }
     field_pawns: {
         [square: string]: {
             entity_preset: { source: 'dlc' | 'embedded'; name: string }
@@ -156,8 +161,30 @@ export interface CharacterPreset {
         [attribute: string]: number
     }
 
-    inventory: Array<unknown>
-    weaponry: Array<unknown>
-    spellbook: Array<unknown>
-    status_effects: Array<unknown>
+    inventory: Array<ItemPartialPreset>
+    weaponry: Array<WeaponPartialPreset>
+    spell_book: Array<SpellPartialPreset>
+    status_effects: Array<StatusEffectPartialPreset>
+}
+
+interface ItemPartialPreset {
+    descriptor: string
+    quantity?: number
+}
+
+interface WeaponPartialPreset {
+    descriptor: string
+    quantity?: number
+    is_active?: boolean
+}
+
+interface SpellPartialPreset {
+    descriptor: string
+    duration?: number
+    current_consecutive_uses?: number
+}
+
+interface StatusEffectPartialPreset {
+    descriptor: string
+    duration?: number
 }
