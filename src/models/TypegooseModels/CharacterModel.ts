@@ -1,8 +1,20 @@
 import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose'
-import { AttributeClass, CustomAttributeClass } from './AttributeClass'
 
-const requiredProp = (options: { [key: string]: any } = {}) => prop({ required: true, ...options })
+const requiredProp = (options: { [key: string]: unknown } = {}) => prop({ required: true, ...options })
 
+@modelOptions({ schemaOptions: { _id: false } })
+export class AttributeClass {
+    @prop({ required: true, default: 'builtins' })
+    dlc: string
+
+    @prop({ required: true })
+    descriptor: string
+
+    @prop({ default: 0 })
+    value: number
+}
+
+@modelOptions({ schemaOptions: { _id: false } })
 class AbilitiesPointsClass {
     @requiredProp()
     will: number
@@ -17,14 +29,16 @@ class AbilitiesPointsClass {
     unallocated: number
 }
 
+@modelOptions({ schemaOptions: { _id: false } })
 class ItemClass {
     @requiredProp()
     descriptor: string
 
     @prop({ default: 1 })
-    count: number
+    quantity: number
 }
 
+@modelOptions({ schemaOptions: { _id: false } })
 class SpellClass {
     @requiredProp()
     descriptor: string
@@ -36,6 +50,7 @@ class SpellClass {
     requiresToUse: Array<string>
 }
 
+@modelOptions({ schemaOptions: { _id: false } })
 class StatusEffectClass {
     @requiredProp()
     descriptor: string
@@ -44,6 +59,7 @@ class StatusEffectClass {
     duration: number
 }
 
+@modelOptions({ schemaOptions: { _id: false } })
 class SpellLayoutClass {
     @requiredProp()
     max: number
@@ -52,6 +68,7 @@ class SpellLayoutClass {
     layout: Array<string>
 }
 
+@modelOptions({ schemaOptions: { _id: false } })
 class CharacterDecorationsClass {
     @requiredProp()
     name: string
@@ -71,9 +88,6 @@ export class CharacterClass {
     @prop({ required: true, _id: false, type: () => CharacterDecorationsClass })
     decorations: CharacterDecorationsClass
 
-    @prop({ default: [], type: () => [String] })
-    controlledBy: Array<string>
-
     @requiredProp()
     level: number
 
@@ -87,25 +101,22 @@ export class CharacterClass {
     })
     abilitiesPoints: AbilitiesPointsClass
 
-    @prop({ type: () => AttributeClass, _id: false })
-    attributes: AttributeClass
+    @prop({ type: () => [AttributeClass], default: [] })
+    attributes: Array<AttributeClass>
 
-    @prop({ type: () => [CustomAttributeClass], default: [], _id: false })
-    customAttributes: Array<CustomAttributeClass>
-
-    @prop({ type: () => [ItemClass], default: [], _id: false })
+    @prop({ type: () => [ItemClass], default: [] })
     inventory: Array<ItemClass>
 
-    @prop({ type: () => [ItemClass], default: [], _id: false })
+    @prop({ type: () => [ItemClass], default: [] })
     weaponry: Array<ItemClass>
 
-    @prop({ type: () => [SpellClass], default: [], _id: false })
+    @prop({ type: () => [SpellClass], default: [] })
     spellBook: Array<SpellClass>
 
     @prop({ default: { max: 4, layout: [] }, _id: false, type: () => SpellLayoutClass })
     spellLayout: SpellLayoutClass
 
-    @prop({ type: () => [StatusEffectClass], default: [], _id: false })
+    @prop({ type: () => [StatusEffectClass], default: [] })
     statusEffects: Array<StatusEffectClass>
 }
 

@@ -1,5 +1,5 @@
 import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose'
-import { AttributeClass, CustomAttributeClass } from './AttributeClass'
+import { AttributeHolderClass, CustomAttributeClass } from './AttributeHolderClass'
 
 const requiredProp = (options: { [key: string]: any } = {}) => prop({ required: true, ...options })
 
@@ -43,8 +43,8 @@ export class EntityClass {
     @prop({ required: true, _id: false })
     decorations: EntityDecorations
 
-    @prop({ required: true, type: () => AttributeClass, _id: false })
-    attributes: AttributeClass
+    @prop({ required: true, type: () => AttributeHolderClass, _id: false })
+    attributes: AttributeHolderClass
 
     @prop({ type: () => [CustomAttributeClass], _id: false })
     customAttributes: Array<CustomAttributeClass>

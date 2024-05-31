@@ -1,8 +1,8 @@
-import { prop } from '@typegoose/typegoose'
+import { modelOptions, prop } from '@typegoose/typegoose'
 
 const attributeProp = (defaultVal: number = 0) => prop({ default: defaultVal })
 
-export class AttributeClass {
+export class AttributeHolderClass {
     @attributeProp()
     current_health: number
 
@@ -88,6 +88,7 @@ export class AttributeClass {
     gold: number
 }
 
+@modelOptions({ schemaOptions: { _id: false } })
 export class CustomAttributeClass {
     @prop({ required: true, default: 'builtins' })
     dlc: string
