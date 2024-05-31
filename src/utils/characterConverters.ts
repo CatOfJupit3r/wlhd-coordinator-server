@@ -16,6 +16,7 @@ export const characterPresetToInfoFull = (characterModel: CharacterPreset): Enti
 
     return info
 }
+
 export const characterModelToPreset = (characterModel: CharacterClass): CharacterPreset => {
     const preset: CharacterPreset = {
         descriptor: `coordinator:${characterModel.descriptor}`,
@@ -25,19 +26,7 @@ export const characterModelToPreset = (characterModel: CharacterClass): Characte
             sprite: `coordinator:${characterModel.descriptor}.sprite`,
         },
         attributes: {
-            'builtins:current_health': 0,
-            'builtins:max_health': 0,
-            'builtins:current_action_points': 0,
-            'builtins:max_action_points': 0,
-            'builtins:current_armor': 0,
-            'builtins:base_armor': 0,
-            'builtins:weapon_bonus_damage': 0,
-            'builtins:weapon_healing_damage': 0,
-            'builtins:athletics': 0,
-            'builtins:caution': 0,
-            'builtins:dexterity': 0,
-            'builtins:persuasion': 0,
-            'builtins:medicine': 0,
+            ...DEFAULT_CHARACTER_ATTRIBUTES,
             'builtins:will': characterModel.abilitiesPoints.will || 0,
             'builtins:reflexes': characterModel.abilitiesPoints.reflexes || 0,
             'builtins:strength': characterModel.abilitiesPoints.strength || 0,
@@ -84,7 +73,14 @@ export const characterModelToInfo = (characterModel: CharacterClass): CharacterI
     const info: CharacterInfo = {
         descriptor: characterModel.descriptor,
         controlledBy: null,
-        attributes: {},
+        attributes: {
+            ...Object.fromEntries(
+                Object.entries(DEFAULT_CHARACTER_ATTRIBUTES).map(([key, value]) => [key, String(value)])
+            ),
+            'builtins:will': String(characterModel.abilitiesPoints.will || 0),
+            'builtins:reflexes': String(characterModel.abilitiesPoints.reflexes || 0),
+            'builtins:strength': String(characterModel.abilitiesPoints.strength || 0),
+        },
         spellBook: [],
         spellLayout: characterModel.spellLayout.layout,
         inventory: [],
@@ -120,4 +116,23 @@ export const characterModelToInfo = (characterModel: CharacterClass): CharacterI
     }
 
     return info
+}
+
+const DEFAULT_CHARACTER_ATTRIBUTES = {
+    'builtins:current_health': 0,
+    'builtins:max_health': 0,
+    'builtins:current_action_points': 0,
+    'builtins:max_action_points': 0,
+    'builtins:current_armor': 0,
+    'builtins:base_armor': 0,
+    'builtins:weapon_bonus_damage': 0,
+    'builtins:weapon_healing_damage': 0,
+    'builtins:athletics': 0,
+    'builtins:caution': 0,
+    'builtins:dexterity': 0,
+    'builtins:persuasion': 0,
+    'builtins:medicine': 0,
+    'builtins:will': 0,
+    'builtins:reflexes': 0,
+    'builtins:strength': 0,
 }
