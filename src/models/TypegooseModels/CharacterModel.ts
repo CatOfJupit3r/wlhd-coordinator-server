@@ -88,7 +88,7 @@ export class CharacterClass {
     @prop({ required: true, _id: false, type: () => CharacterDecorationsClass })
     decorations: CharacterDecorationsClass
 
-    @requiredProp()
+    @prop({ default: 1 })
     level: number
 
     @prop({ type: () => [String], default: [] })
