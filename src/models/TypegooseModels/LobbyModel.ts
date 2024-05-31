@@ -33,7 +33,7 @@ export class LobbyClass {
     @prop({ default: [], type: () => [PlayerClass], _id: false })
     players: Array<PlayerClass>
 
-    @prop({ default: [], type: () => [String] })
+    @prop({ default: [], type: () => [CharacterInLobbyClass] })
     characterBank: Array<CharacterInLobbyClass>
 
     @prop({ default: [], type: () => [String] })
