@@ -123,8 +123,7 @@ class InputValidator {
                         )
                     return INVALID_INPUT([{ key, type: 'array' }])
                 }
-            }
-            if (typeof value !== expectedType) {
+            } else if (typeof value !== expectedType) {
                 if (throwRequestError)
                     throw new BadRequest(
                         this.VALIDATION_FAILED(),
