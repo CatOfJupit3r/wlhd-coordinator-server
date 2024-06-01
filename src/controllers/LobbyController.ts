@@ -12,8 +12,7 @@ class LobbyController {
     public async getCustomTranslations(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
         InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string')
-        const token = AuthService.removeBearerPrefix(req.headers.authorization as string)
-        const user = AuthService.verifyAccessToken(token)
+        const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const translations = await LobbyService.getCustomTranslations(lobby_id, user._id)
         res.status(200).json(translations)
     }
@@ -44,8 +43,7 @@ class LobbyController {
         const { lobby_id } = req.params
         InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string')
         const lobby = await DatabaseService.getLobby(lobby_id)
-        const token = AuthService.removeBearerPrefix(req.headers.authorization as string)
-        const user = AuthService.verifyAccessToken(token as string)
+        const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         if (!lobby) throw new BadRequest('Lobby not found!')
 
         const player = lobby.players.find((player) => player.userId === user._id)
@@ -111,8 +109,7 @@ class LobbyController {
     public async getMyCharacterInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
         InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string')
-        const token = AuthService.removeBearerPrefix(req.headers.authorization as string)
-        const user = AuthService.verifyAccessToken(token)
+        const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const characters = await LobbyService.getMyCharactersInfo(lobby_id, user._id)
         res.status(200).json({
             characters,

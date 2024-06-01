@@ -10,8 +10,7 @@ export const authenticationMiddleware = (req: Request, res: Response, next: Next
                 reason: 'Authorization header is missing',
             })
         }
-        const token = AuthService.removeBearerPrefix(req.headers.authorization)
-        const decoded = AuthService.verifyAccessToken(token)
+        const decoded = AuthService.verifyAuthorizationHeader(req.headers.authorization)
 
         if (!decoded) {
             throw new Unauthorized('Authentication Failed', {

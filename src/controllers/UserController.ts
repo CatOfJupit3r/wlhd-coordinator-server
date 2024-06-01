@@ -4,8 +4,7 @@ import UserService from '../services/UserService'
 
 class UserController {
     async getProfile(req: Request, res: Response) {
-        const token = AuthService.removeBearerPrefix(req.headers.authorization as string)
-        const user = AuthService.verifyAccessToken(token)
+        const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const { handle, createdAt } = await UserService.getProfile(user._id)
 
         res.status(200).json({
@@ -15,8 +14,7 @@ class UserController {
     }
 
     async getJoinedLobbies(req: Request, res: Response) {
-        const token = AuthService.removeBearerPrefix(req.headers.authorization as string)
-        const user = AuthService.verifyAccessToken(token)
+        const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const data = await UserService.getJoinedLobbiesInfo(user._id)
 
         res.status(200).json({

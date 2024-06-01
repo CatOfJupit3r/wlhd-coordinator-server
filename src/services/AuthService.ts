@@ -29,7 +29,26 @@ class AuthService {
     }
 
     verifyAccessToken(accessToken: string) {
+        if (!accessToken) {
+            throw new BadRequest('Access token is missing')
+        }
         return jwt.verify(accessToken, JWT_ACCESS_SECRET()) as { _id: string; handle: string }
+    }
+
+    verifyAuthorizationHeader(header: unknown): { _id: string; handle: string } {
+        if (!header) {
+            throw new BadRequest('Authorization header is missing')
+        } else if (!(typeof header === 'string')) {
+            throw new BadRequest('Authorization header is not a string')
+        } else if (!header.startsWith('Bearer ')) {
+            throw new BadRequest('Authorization header does not start with "Bearer "')
+        } else {
+            const token = header.replace('Bearer ', '')
+            const user = this.verifyAccessToken(token)
+
+            if (!user) throw new BadRequest('Invalid token')
+            else return user as { _id: string; handle: string }
+        }
     }
 
     verifyRefreshToken(refreshToken: string): { _id: string; handle: string } {
@@ -43,10 +62,6 @@ class AuthService {
 
     invalidateRefreshToken(refreshToken: string) {
         this.refreshTokens = this.refreshTokens.filter((t) => t !== refreshToken)
-    }
-
-    removeBearerPrefix(token: string) {
-        return token.replace('Bearer ', '')
     }
 }
 
