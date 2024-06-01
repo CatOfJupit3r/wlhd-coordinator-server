@@ -1,4 +1,4 @@
-import jwt, { TokenExpiredError } from 'jsonwebtoken'
+import jwt from 'jsonwebtoken'
 import { Types } from 'mongoose'
 import { JWT_ACCESS_SECRET, JWT_REFRESH_SECRET } from '../configs'
 import { BadRequest } from '../models/ErrorModels'
@@ -6,12 +6,10 @@ import { BadRequest } from '../models/ErrorModels'
 class AuthService {
     refreshTokens: Array<string> = []
 
-    isTokenExpiredError = (error: Error) => error instanceof TokenExpiredError
-
     generateAccessToken(user: { _id: Types.ObjectId; handle: string }) {
         const payload = { _id: user._id, handle: user.handle }
         return jwt.sign(payload, JWT_ACCESS_SECRET(), {
-            expiresIn: '60m',
+            expiresIn: '7d',
         })
     }
 
