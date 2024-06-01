@@ -122,7 +122,7 @@ class LobbyService {
         socket.disconnect()
     }
 
-    public async getMyCharacterInfo(lobby_id: string, player_id: string): Promise<Array<CharacterInfo>> {
+    public async getMyCharactersInfo(lobby_id: string, player_id: string): Promise<Array<CharacterInfo>> {
         const controlledCharacters = await DatabaseService.getCharactersOfPlayer(lobby_id, player_id)
         return controlledCharacters.map(characterModelToInfo)
     }

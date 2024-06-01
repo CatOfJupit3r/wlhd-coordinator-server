@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
 import { Socket } from 'socket.io'
+import { DESCRIPTOR_REGEX } from '../configs'
 import {
     BadRequest,
     Forbidden,
@@ -18,7 +19,7 @@ class LobbyController {
     public async createNewLobby(req: Request, res: Response): Promise<void> {
         console.log('Creating lobby. Params:', req.body)
         const { lobbyName, gm_id } = req.body
-        InputValidator.validateObject({ lobbyName, gm_id }, { lobbyName: 'string', gm_id: 'string' }, true)
+        InputValidator.validateObject({ lobbyName, gm_id }, { lobbyName: 'string', gm_id: 'string' })
         const lobby_id = await DatabaseService.createNewLobby(lobbyName, gm_id)
         console.log('Lobby created', lobby_id)
         res.status(200).json({ result: 'ok', lobby_id })
@@ -39,7 +40,7 @@ class LobbyController {
 
     public async getLobbyInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-        InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string', true)
+        InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string')
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!req.headers.authorization) throw new Unauthorized('No token provided!')
         const user = AuthService.verifyAccessToken(req.headers.authorization)
@@ -100,7 +101,7 @@ class LobbyController {
         console.log('Assigning character to player. Params:', req.body)
         const { lobby_id, character_id } = req.params
         const { player_id } = req.body
-        InputValidator.validateObject({ lobby_id, player_id }, { lobby_id: 'string', player_id: 'string' }, true)
+        InputValidator.validateObject({ lobby_id, player_id }, { lobby_id: 'string', player_id: 'string' })
         await DatabaseService.assignCharacterToPlayer(lobby_id, player_id, character_id)
         res.status(200).json({ message: 'ok' })
     }
@@ -109,13 +110,15 @@ class LobbyController {
         const { lobby_id } = req.params
         if (!req.headers.authorization) throw new Unauthorized('No token provided!')
         const user = AuthService.verifyAccessToken(req.headers.authorization)
-        const character = await LobbyService.getMyCharacterInfo(lobby_id, user._id)
-        res.status(200).json(character)
+        const characters = await LobbyService.getMyCharactersInfo(lobby_id, user._id)
+        res.status(200).json({
+            characters,
+        })
     }
 
     public async getCharacterInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id, character_id } = req.params
-        InputValidator.validateObject({ lobby_id, character_id }, { lobby_id: 'string', character_id: 'string' }, true)
+        InputValidator.validateObject({ lobby_id, character_id }, { lobby_id: 'string', character_id: 'string' })
         const characterInfo = await LobbyService.getCharacterInfo(lobby_id, character_id)
         res.status(200).json(characterInfo)
     }
@@ -133,51 +136,90 @@ class LobbyController {
         }
         const entity_id = await DatabaseService.createNewCharacter(descriptor, decorations, attributes)
         await DatabaseService.addCharacterToLobby(lobby_id, entity_id.toString(), controlledBy)
-        res.json({ result: 'ok', entity_id })
-    }
-
-    public async getCharacterWeaponry(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed()
-    }
-
-    public async getCharacterSpellbook(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed()
-    }
-
-    public async getCharacterStatusEffects(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed()
-    }
-
-    public async getCharacterInventory(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed()
-    }
-
-    public async getCharacterAttributes(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed()
+        res.status(200).json({ result: 'ok', entity_id })
     }
 
     public async addWeaponToCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed()
+        const { lobby_id, character_id } = req.params
+        InputValidator.validateObject({ lobby_id, character_id }, { lobby_id: 'string', character_id: 'string' })
+        const { descriptor } = req.body
+        InputValidator.validateField({ key: 'descriptor', value: descriptor }, 'string')
+        if (!DESCRIPTOR_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
+        const quantity = req.body.quantity || 1
+        InputValidator.validateField({ key: 'quantity', value: quantity }, 'number')
+        await DatabaseService.addWeaponToCharacter(lobby_id, character_id, descriptor, quantity)
+        res.status(200).json({ message: 'ok', character_id, descriptor, quantity })
     }
 
     public async addSpellToCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed()
+        const { lobby_id, character_id } = req.params
+        InputValidator.validateObject({ lobby_id, character_id }, { lobby_id: 'string', character_id: 'string' })
+        const { descriptor } = req.body
+        InputValidator.validateField({ key: 'descriptor', value: descriptor }, 'string')
+        if (!DESCRIPTOR_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
+        const { conflictsWith, requiresToUse } = {
+            conflictsWith: req.body.conflictsWith || [],
+            requiresToUse: req.body.requiresToUse || [],
+        }
+        console.log({ conflictsWith, requiresToUse })
+        InputValidator.validateObject(
+            { conflictsWith, requiresToUse },
+            { conflictsWith: 'array', requiresToUse: 'array' }
+        )
+        await DatabaseService.addSpellToCharacter(lobby_id, character_id, descriptor, conflictsWith, requiresToUse)
+        res.status(200).json({ message: 'ok', character_id, descriptor, conflictsWith, requiresToUse })
     }
 
     public async addStatusEffectToCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed()
+        const { lobby_id, character_id } = req.params
+        InputValidator.validateObject({ lobby_id, character_id }, { lobby_id: 'string', character_id: 'string' })
+        const { descriptor, duration } = req.body
+        InputValidator.validateObject({ descriptor, duration }, { descriptor: 'string', duration: 'number' })
+        if (!DESCRIPTOR_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
+        await DatabaseService.addStatusEffectToCharacter(lobby_id, character_id, descriptor, duration)
+        res.status(200).json({ message: 'ok', character_id, descriptor, duration })
     }
 
     public async addItemToCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed()
+        const { lobby_id, character_id } = req.params
+        InputValidator.validateObject({ lobby_id, character_id }, { lobby_id: 'string', character_id: 'string' })
+        const { descriptor } = req.body
+        InputValidator.validateField({ key: 'descriptor', value: descriptor }, 'string')
+        if (!DESCRIPTOR_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
+        const quantity = req.body.quantity || 1
+        InputValidator.validateField({ key: 'quantity', value: quantity }, 'number')
+        await DatabaseService.addItemToCharacter(lobby_id, character_id, descriptor, quantity)
+        res.status(200).json({ message: 'ok', character_id, descriptor, quantity })
     }
 
     public async addAttributeToCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed()
+        const { lobby_id, character_id } = req.params
+        InputValidator.validateObject({ lobby_id, character_id }, { lobby_id: 'string', character_id: 'string' })
+        const { dlc, descriptor, value } = req.body
+        if (!DESCRIPTOR_REGEX().test(`${dlc}:${descriptor}`)) throw new BadRequest('Invalid descriptor')
+        InputValidator.validateObject(
+            { dlc, descriptor, value },
+            {
+                dlc: 'string',
+                descriptor: 'string',
+                value: 'number',
+            }
+        )
+        await DatabaseService.addAttributeToCharacter(lobby_id, character_id, dlc, descriptor, value)
+        res.status(200).json({ message: 'ok', character_id, dlc, descriptor, value })
+    }
+
+    public async changeSpellLayoutOfCharacter(req: Request, res: Response): Promise<void> {
+        const { lobby_id, character_id } = req.params
+        InputValidator.validateObject({ lobby_id, character_id }, { lobby_id: 'string', character_id: 'string' })
+        const { layout } = req.body
+        InputValidator.validateField({ key: 'layout', value: layout }, 'array')
+        await DatabaseService.changeSpellLayoutOfCharacter(lobby_id, character_id, layout)
+        res.status(200).json({ message: 'ok', character_id, layout })
     }
 
     public async updateCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed()
+        throw new MethodNotAllowed('Not implemented')
     }
 
     public onConnection(socket: Socket): void {

@@ -41,7 +41,7 @@ class InputValidator {
     public validateObject(
         input: Input,
         expected: Schema,
-        throwRequestError: boolean = false
+        throwRequestError: boolean = true
     ): FailedValidation | SuccessfulValidation {
         try {
             for (const [key, type] of Object.entries(expected)) {
@@ -58,7 +58,7 @@ class InputValidator {
                         )
                     return INVALID_INPUT([{ key, type }])
                 }
-                const validation = this.validateField({ key, value: input[key] }, type)
+                const validation = this.validateField({ key, value: input[key] }, type, false)
                 if (!validation.success) {
                     if (throwRequestError)
                         throw new BadRequest(
@@ -97,7 +97,7 @@ class InputValidator {
     public validateField(
         input: { key: string; value: unknown },
         expectedType: SupportedTypes,
-        throwRequestError: boolean = false
+        throwRequestError: boolean = true
     ): FailedValidation | SuccessfulValidation {
         try {
             const { key, value } = input

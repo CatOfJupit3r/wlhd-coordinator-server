@@ -9,7 +9,7 @@ import DatabaseService from './DatabaseService'
 class UserService {
     #privateFields = ['hashedPassword']
 
-    #omitPrivateFields = (user: any) => omit(user, this.#privateFields)
+    #omitPrivateFields = (user: UserClass) => omit(user, this.#privateFields)
 
     async createAccount({ handle, password }: { handle: string; password: string }) {
         const user = await this.findByHandle(handle, false)

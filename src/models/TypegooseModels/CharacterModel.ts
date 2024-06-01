@@ -26,7 +26,7 @@ class AbilitiesPointsClass {
     strength: number
 
     @requiredProp()
-    unallocated: number
+    max: number
 }
 
 @modelOptions({ schemaOptions: { _id: false } })
@@ -96,7 +96,7 @@ export class CharacterClass {
 
     @prop({
         _id: false,
-        default: { will: 0, reflexes: 0, strength: 0, unallocated: 0 },
+        default: { will: 0, reflexes: 0, strength: 0, max: 0 },
         type: () => AbilitiesPointsClass,
     })
     abilitiesPoints: AbilitiesPointsClass
@@ -133,7 +133,7 @@ export class CharacterClass {
 //         will: number
 //         reflexes: number
 //         strength: number
-//         unallocated: number
+//         max: number
 //     }
 //     inventory: Array<{
 //         descriptor: string
