@@ -5,6 +5,7 @@ import { Forbidden, NotFound } from '../models/ErrorModels'
 import { UserClass } from '../models/TypegooseModels'
 import AuthService from './AuthService'
 import DatabaseService from './DatabaseService'
+import LobbyService from './LobbyService'
 
 class UserService {
     #privateFields = ['hashedPassword']
@@ -55,7 +56,7 @@ class UserService {
         const decoded = AuthService.verifyAccessToken(token)
         const user = await DatabaseService.getUser(decoded._id)
         if (!user) throw new NotFound('User not found')
-        return DatabaseService.getJoinedLobbiesInfo(decoded._id)
+        return LobbyService.getJoinedLobbiesInfo(decoded._id)
     }
 
     async getProfile(token: string) {

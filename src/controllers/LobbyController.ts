@@ -20,7 +20,7 @@ class LobbyController {
         console.log('Creating lobby. Params:', req.body)
         const { lobbyName, gm_id } = req.body
         InputValidator.validateObject({ lobbyName, gm_id }, { lobbyName: 'string', gm_id: 'string' })
-        const lobby_id = await DatabaseService.createNewLobby(lobbyName, gm_id)
+        const lobby_id = await LobbyService.createNewLobby(lobbyName, gm_id)
         console.log('Lobby created', lobby_id)
         res.status(200).json({ result: 'ok', lobby_id })
     }
@@ -102,7 +102,7 @@ class LobbyController {
         const { lobby_id, character_id } = req.params
         const { player_id } = req.body
         InputValidator.validateObject({ lobby_id, player_id }, { lobby_id: 'string', player_id: 'string' })
-        await DatabaseService.assignCharacterToPlayer(lobby_id, player_id, character_id)
+        await LobbyService.assignCharacterToPlayer(lobby_id, player_id, character_id)
         res.status(200).json({ message: 'ok' })
     }
 
@@ -134,8 +134,13 @@ class LobbyController {
         for (const attribute of attributes) {
             InputValidator.validateObject(attribute, { dlc: 'string', descriptor: 'string', value: 'number' })
         }
-        const entity_id = await DatabaseService.createNewCharacter(descriptor, decorations, attributes)
-        await DatabaseService.addCharacterToLobby(lobby_id, entity_id.toString(), controlledBy)
+        const entity_id = await LobbyService.createNewCharacter(
+            lobby_id,
+            controlledBy,
+            descriptor,
+            decorations,
+            attributes
+        )
         res.status(200).json({ result: 'ok', entity_id })
     }
 
@@ -147,7 +152,7 @@ class LobbyController {
         if (!DESCRIPTOR_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
         const quantity = req.body.quantity || 1
         InputValidator.validateField({ key: 'quantity', value: quantity }, 'number')
-        await DatabaseService.addWeaponToCharacter(lobby_id, character_id, descriptor, quantity)
+        await LobbyService.addWeaponToCharacter(lobby_id, character_id, descriptor, quantity)
         res.status(200).json({ message: 'ok', character_id, descriptor, quantity })
     }
 
@@ -161,12 +166,11 @@ class LobbyController {
             conflictsWith: req.body.conflictsWith || [],
             requiresToUse: req.body.requiresToUse || [],
         }
-        console.log({ conflictsWith, requiresToUse })
         InputValidator.validateObject(
             { conflictsWith, requiresToUse },
             { conflictsWith: 'array', requiresToUse: 'array' }
         )
-        await DatabaseService.addSpellToCharacter(lobby_id, character_id, descriptor, conflictsWith, requiresToUse)
+        await LobbyService.addSpellToCharacter(lobby_id, character_id, descriptor, conflictsWith, requiresToUse)
         res.status(200).json({ message: 'ok', character_id, descriptor, conflictsWith, requiresToUse })
     }
 
@@ -176,7 +180,7 @@ class LobbyController {
         const { descriptor, duration } = req.body
         InputValidator.validateObject({ descriptor, duration }, { descriptor: 'string', duration: 'number' })
         if (!DESCRIPTOR_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
-        await DatabaseService.addStatusEffectToCharacter(lobby_id, character_id, descriptor, duration)
+        await LobbyService.addStatusEffectToCharacter(lobby_id, character_id, descriptor, duration)
         res.status(200).json({ message: 'ok', character_id, descriptor, duration })
     }
 
@@ -188,7 +192,7 @@ class LobbyController {
         if (!DESCRIPTOR_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
         const quantity = req.body.quantity || 1
         InputValidator.validateField({ key: 'quantity', value: quantity }, 'number')
-        await DatabaseService.addItemToCharacter(lobby_id, character_id, descriptor, quantity)
+        await LobbyService.addItemToCharacter(lobby_id, character_id, descriptor, quantity)
         res.status(200).json({ message: 'ok', character_id, descriptor, quantity })
     }
 
@@ -205,7 +209,7 @@ class LobbyController {
                 value: 'number',
             }
         )
-        await DatabaseService.addAttributeToCharacter(lobby_id, character_id, dlc, descriptor, value)
+        await LobbyService.addAttributeToCharacter(lobby_id, character_id, dlc, descriptor, value)
         res.status(200).json({ message: 'ok', character_id, dlc, descriptor, value })
     }
 
@@ -214,7 +218,7 @@ class LobbyController {
         InputValidator.validateObject({ lobby_id, character_id }, { lobby_id: 'string', character_id: 'string' })
         const { layout } = req.body
         InputValidator.validateField({ key: 'layout', value: layout }, 'array')
-        await DatabaseService.changeSpellLayoutOfCharacter(lobby_id, character_id, layout)
+        await LobbyService.changeSpellLayoutOfCharacter(lobby_id, character_id, layout)
         res.status(200).json({ message: 'ok', character_id, layout })
     }
 

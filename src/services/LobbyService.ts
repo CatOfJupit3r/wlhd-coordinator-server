@@ -1,6 +1,8 @@
+import { Types } from 'mongoose'
 import { Socket } from 'socket.io'
-import { InternalServerError, NotFound, Unauthorized } from '../models/ErrorModels'
+import { BadRequest, InternalServerError, NotFound, Unauthorized } from '../models/ErrorModels'
 import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
+import { AttributeClass, LobbyModel } from '../models/TypegooseModels'
 import { characterModelToInfo } from '../utils/characterConverters'
 import AuthService from './AuthService'
 import CombatManager from './CombatManager'
@@ -11,6 +13,10 @@ class LobbyService {
 
     public getActiveCombats(lobby_id: string): string[] {
         return this.managingCombats.get(lobby_id) || []
+    }
+
+    public createNewLobby(name: string, gm_id: string): Promise<Types.ObjectId> {
+        return DatabaseService.createNewLobby(name, gm_id)
     }
 
     public createCombat(
@@ -136,6 +142,142 @@ class LobbyService {
         const character = await DatabaseService.getCharacter(character_id)
         if (!character) throw new NotFound('Character not found')
         return characterModelToInfo(character)
+    }
+
+    async createNewCharacter(
+        lobby_id: string,
+        controlledBy: Array<string>,
+        descriptor: string,
+        decorations: {
+            name: string
+            description: string
+            sprite: string
+        },
+        attributes: Array<AttributeClass>
+    ): Promise<Types.ObjectId> {
+        const entity_id = await DatabaseService.createNewCharacter(descriptor, decorations, attributes)
+        await DatabaseService.addCharacterToLobby(lobby_id, entity_id.toString(), controlledBy)
+        return entity_id
+    }
+
+    public createNewCombatPreset = async (
+        field: Array<{
+            path: string
+            square: string
+            source: 'embedded' | 'dlc'
+            controlled_by: {
+                type: 'player' | 'ai' | 'game_logic'
+                id: string | null
+            }
+        }>
+    ): Promise<Types.ObjectId> => {
+        const occupiedSquares: Array<string> = []
+        for (const pawn of field) {
+            if (occupiedSquares.includes(pawn.square)) throw new BadRequest('Multiple pawns on the same square')
+            occupiedSquares.push(pawn.square)
+        }
+        return await DatabaseService.createNewCombatPreset(field)
+    }
+
+    public getJoinedLobbiesInfo = async (
+        userId: string
+    ): Promise<Array<{ name: string; isGm: boolean; _id: string }>> => {
+        const res: Array<{ name: string; isGm: boolean; _id: string; characters: Array<string> }> = []
+        const lobbies = await LobbyModel.find({ 'players.userId': userId })
+        for (const lobby of lobbies) {
+            const { _id, name, gm_id } = lobby
+            if (!_id || !name || !gm_id) throw new InternalServerError()
+            const characters = []
+            for (const characterInLobby of lobby.characterBank) {
+                if (characterInLobby.controlledBy.includes(userId)) {
+                    const character = await DatabaseService.getCharacter(characterInLobby.characterId)
+                    if (!character) throw new NotFound('Character not found')
+                    if (character.decorations?.name) characters.push(character.decorations.name)
+                    else if (character.descriptor) characters.push(`${character.descriptor}.name`)
+                }
+            }
+
+            res.push({
+                _id: _id.toString(),
+                name,
+                isGm: gm_id.toString() === userId,
+                characters,
+            })
+        }
+        return res
+    }
+
+    public assignCharacterToPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {
+        return await DatabaseService.assignCharacterToPlayer(lobbyId, userId, characterId)
+    }
+
+    public addCharacterToLobby = async (
+        lobbyId: string,
+        characterId: string,
+        controlledBy: Array<string>
+    ): Promise<void> => {
+        return await DatabaseService.addCharacterToLobby(lobbyId, characterId, controlledBy)
+    }
+
+    public addWeaponToCharacter = async (
+        lobby_id: string,
+        character_id: string,
+        descriptor: string,
+        quantity: number
+    ): Promise<void> => {
+        return await DatabaseService.addWeaponToCharacter(lobby_id, character_id, descriptor, quantity)
+    }
+
+    public addSpellToCharacter = async (
+        lobby_id: string,
+        character_id: string,
+        descriptor: string,
+        conflictsWith: Array<string>,
+        requiresToUse: Array<string>
+    ): Promise<void> => {
+        return await DatabaseService.addSpellToCharacter(
+            lobby_id,
+            character_id,
+            descriptor,
+            conflictsWith,
+            requiresToUse
+        )
+    }
+
+    public addStatusEffectToCharacter = async (
+        lobby_id: string,
+        character_id: string,
+        descriptor: string,
+        duration: number
+    ): Promise<void> => {
+        return await DatabaseService.addStatusEffectToCharacter(lobby_id, character_id, descriptor, duration)
+    }
+
+    public addItemToCharacter = async (
+        lobby_id: string,
+        character_id: string,
+        descriptor: string,
+        quantity: number
+    ): Promise<void> => {
+        return await DatabaseService.addItemToCharacter(lobby_id, character_id, descriptor, quantity)
+    }
+
+    public addAttributeToCharacter = async (
+        lobby_id: string,
+        character_id: string,
+        dlc: string,
+        descriptor: string,
+        value: number
+    ): Promise<void> => {
+        return await DatabaseService.addAttributeToCharacter(lobby_id, character_id, dlc, descriptor, value)
+    }
+
+    public changeSpellLayoutOfCharacter = async (
+        lobby_id: string,
+        character_id: string,
+        spells: Array<string>
+    ): Promise<void> => {
+        return await DatabaseService.changeSpellLayoutOfCharacter(lobby_id, character_id, spells)
     }
 }
 

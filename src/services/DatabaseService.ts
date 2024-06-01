@@ -1,7 +1,6 @@
 import { DocumentType } from '@typegoose/typegoose'
 import mongoose, { Types } from 'mongoose'
 import { BadRequest, InternalServerError, NotFound } from '../models/ErrorModels'
-import { CharacterInfo } from '../models/InfoModels'
 import {
     AttributeClass,
     CharacterClass,
@@ -13,7 +12,6 @@ import {
     UserClass,
     UserModel,
 } from '../models/TypegooseModels'
-import { characterModelToInfo } from '../utils/characterConverters'
 
 type SupportedDocumentTypes =
     | DocumentType<LobbyClass>
@@ -62,7 +60,6 @@ class DatabaseService {
 
     public createNewUser = async (handle: string, hashedPassword: string): Promise<Types.ObjectId> => {
         const user = new UserModel({ handle, hashedPassword, createdAt: new Date() })
-        console.log('Creating user', user)
         await this.saveDocument(user)
         return user._id
     }
@@ -114,51 +111,18 @@ class DatabaseService {
             }
         }>
     ): Promise<Types.ObjectId> => {
-        // eslint-disable-next-line no-extra-semi
-        ;(() => {
-            const occupiedSquares: Array<string> = []
-            for (const pawn of field) {
-                if (occupiedSquares.includes(pawn.square)) throw new BadRequest('Multiple pawns on the same square')
-                occupiedSquares.push(pawn.square)
-            }
-        })()
         const combatPreset = new CombatModel({ field })
         await this.saveDocument(combatPreset)
         return combatPreset._id
     }
 
-    public getJoinedLobbiesInfo = async (
-        userId: string
-    ): Promise<Array<{ name: string; isGm: boolean; _id: string }>> => {
-        const res: Array<{ name: string; isGm: boolean; _id: string; characters: Array<string> }> = []
-        const lobbies = await LobbyModel.find({ 'players.userId': userId })
-        for (const lobby of lobbies) {
-            const { _id, name, gm_id } = lobby
-            if (!_id || !name || !gm_id) throw new InternalServerError()
-            const characters = []
-            for (const characterInLobby of lobby.characterBank) {
-                if (characterInLobby.controlledBy.includes(userId)) {
-                    const character = await this.getCharacter(characterInLobby.characterId)
-                    if (!character) throw new NotFound('Character not found')
-                    if (character.decorations?.name) characters.push(character.decorations.name)
-                    else if (character.descriptor) characters.push(`${character.descriptor}.name`)
-                }
-            }
-
-            res.push({
-                _id: _id.toString(),
-                name,
-                isGm: gm_id.toString() === userId,
-                characters,
-            })
-        }
-        return res
-    }
-
-    public getCharacterInfo = async (characterId: string): Promise<CharacterInfo> => {
-        const character = await this.getCharacter(characterId)
-        if (!character) throw new NotFound('Character not found')
-        return characterModelToInfo(character)
+    public updateCharacterBank = async (
+        lobbyId: string,
+        newCharacterBank: Array<{ characterId: string; controlledBy: Array<string> }>
+    ): Promise<void> => {
+        await mongoose.connection
+            .collection('lobbies')
+            .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { characterBank: newCharacterBank } })
     }
 
     public assignCharacterToPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {
@@ -180,9 +144,7 @@ class DatabaseService {
         if (!characterInLobbyBank.controlledBy.includes(userId)) {
             characterInLobbyBank.controlledBy.push(userId)
         }
-        await mongoose.connection
-            .collection('lobbies')
-            .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { characterBank: lobby.characterBank } })
+        await this.updateCharacterBank(lobbyId, lobby.characterBank)
     }
 
     public addCharacterToLobby = async (
@@ -198,31 +160,6 @@ class DatabaseService {
         await mongoose.connection
             .collection('lobbies')
             .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { characterBank: lobby.characterBank } })
-    }
-
-    public getCharactersOfPlayer = async (lobbyId: string, userId: string): Promise<Array<CharacterClass>> => {
-        const lobby = await this.getLobby(lobbyId)
-        if (!lobby) throw new NotFound('Lobby not found')
-        const player = lobby.players.find((p) => p.userId === userId)
-        if (!player) throw new NotFound('Player not found')
-        const characters: Array<CharacterClass> = []
-        for (const { controlledBy, characterId } of lobby.characterBank) {
-            if (controlledBy.includes(userId)) {
-                const character = await this.getCharacter(characterId)
-                if (!character) {
-                    lobby.characterBank = lobby.characterBank.filter((c) => c.characterId !== characterId)
-                    await mongoose.connection
-                        .collection('lobbies')
-                        .updateOne(
-                            { _id: new Types.ObjectId(lobbyId) },
-                            { $set: { characterBank: lobby.characterBank } }
-                        )
-                    continue
-                }
-                characters.push(character)
-            }
-        }
-        return characters
     }
 
     public addWeaponToCharacter = async (
@@ -327,6 +264,26 @@ class DatabaseService {
         await mongoose.connection
             .collection('characters')
             .updateOne({ _id: new Types.ObjectId(character_id) }, { $set: { spellLayout: character.spellLayout } })
+    }
+
+    public getCharactersOfPlayer = async (lobbyId: string, userId: string): Promise<Array<CharacterClass>> => {
+        const lobby = await this.getLobby(lobbyId)
+        if (!lobby) throw new NotFound('Lobby not found')
+        const player = lobby.players.find((p) => p.userId === userId)
+        if (!player) throw new NotFound('Player not found')
+        const characters: Array<CharacterClass> = []
+        for (const { controlledBy, characterId } of lobby.characterBank) {
+            if (controlledBy.includes(userId)) {
+                const character = await this.getCharacter(characterId)
+                if (!character) {
+                    lobby.characterBank = lobby.characterBank.filter((c) => c.characterId !== characterId)
+                    await this.updateCharacterBank(lobbyId, lobby.characterBank)
+                    continue
+                }
+                characters.push(character)
+            }
+        }
+        return characters
     }
 }
 
