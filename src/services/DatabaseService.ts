@@ -243,7 +243,12 @@ class DatabaseService {
         const character = await this.getCharacter(character_id)
         if (!character) throw new NotFound('Character not found')
         if (!character.attributes) character.attributes = []
-        character.attributes.push({ dlc, descriptor, value })
+        const attribute = character.attributes.find((a) => a.dlc === dlc && a.descriptor === descriptor)
+        if (attribute) {
+            attribute.value = value
+        } else {
+            character.attributes.push({ dlc, descriptor, value })
+        }
         await mongoose.connection
             .collection('characters')
             .updateOne({ _id: new Types.ObjectId(character_id) }, { $set: { attributes: character.attributes } })
@@ -282,6 +287,22 @@ class DatabaseService {
                 }
                 characters.push(character)
             }
+        }
+        return characters
+    }
+
+    public getCharactersOfLobby = async (lobbyId: string): Promise<Array<CharacterClass>> => {
+        const lobby = await this.getLobby(lobbyId)
+        if (!lobby) throw new NotFound('Lobby not found')
+        const characters: Array<CharacterClass> = []
+        for (const { characterId } of lobby.characterBank) {
+            const character = await this.getCharacter(characterId)
+            if (!character) {
+                lobby.characterBank = lobby.characterBank.filter((c) => c.characterId !== characterId)
+                await this.updateCharacterBank(lobbyId, lobby.characterBank)
+                continue
+            }
+            characters.push(character)
         }
         return characters
     }

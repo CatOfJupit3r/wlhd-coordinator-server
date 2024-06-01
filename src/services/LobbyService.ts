@@ -2,6 +2,7 @@ import { Types } from 'mongoose'
 import { Socket } from 'socket.io'
 import { BadRequest, InternalServerError, NotFound, Unauthorized } from '../models/ErrorModels'
 import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
+import { TranslationSnippet } from '../models/Translation'
 import { AttributeClass, LobbyModel } from '../models/TypegooseModels'
 import { characterModelToInfo } from '../utils/characterConverters'
 import AuthService from './AuthService'
@@ -203,6 +204,34 @@ class LobbyService {
                 isGm: gm_id.toString() === userId,
                 characters,
             })
+        }
+        return res
+    }
+
+    public getCustomTranslations = async (lobby_id: string, user_id: string): Promise<TranslationSnippet> => {
+        const lobby = await DatabaseService.getLobby(lobby_id)
+        if (!lobby) throw new NotFound('Lobby not found')
+        if (!lobby.players.find((p) => p.userId === user_id)) {
+            throw new Unauthorized('You are not a player in this lobby')
+        }
+        const characters = await DatabaseService.getCharactersOfLobby(lobby_id)
+        const res: TranslationSnippet = {}
+        for (const character of characters) {
+            if (character.decorations?.name)
+                res[character.descriptor] = {
+                    name: character.decorations.name,
+                    description: character.decorations.description,
+                }
+            else if (character.descriptor) {
+                res[character.descriptor] = {
+                    name: `${character.descriptor}.name`,
+                    description: `${character.descriptor}.description`,
+                }
+            } else {
+                throw new InternalServerError(
+                    'Character is missing both descriptor and decorations! Report this issue to the developers. Sorry for the inconvenience!'
+                )
+            }
         }
         return res
     }

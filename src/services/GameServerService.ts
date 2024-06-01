@@ -3,7 +3,7 @@ import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs'
 import AssetController from '../controllers/AssetController'
 import TranslationController from '../controllers/TranslationController'
 import { GameServerStatus, Manifest } from '../models/dlc_manifest'
-import DatabaseService from './DatabaseService'
+import LobbyService from './LobbyService'
 
 class GameServerService {
     // private gameServerConnection = io(GAME_SERVER_URL, {
@@ -39,7 +39,7 @@ class GameServerService {
     }
 
     async createCombatPreset(field: any) {
-        return await DatabaseService.createNewCombatPreset(field)
+        return await LobbyService.createNewCombatPreset(field)
     }
 
     async checkGameServers(): Promise<GameServerStatus> {

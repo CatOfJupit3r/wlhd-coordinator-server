@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express'
-import { TokenExpiredError } from 'jsonwebtoken'
+import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken'
 import { Exception, Unauthorized } from '../models/ErrorModels'
 import AuthService from '../services/AuthService'
 
@@ -22,6 +22,11 @@ export const authenticationMiddleware = (req: Request, res: Response, next: Next
     } catch (err: unknown) {
         if (err instanceof TokenExpiredError)
             throw new Unauthorized('Authentication Failed', { reason: 'Token expired' })
+        if (err instanceof JsonWebTokenError) {
+            throw new Unauthorized('Authentication Failed', {
+                reason: 'Invalid token',
+            })
+        }
         if (!(err instanceof Unauthorized)) console.log('Error in Authentication Middleware:', err)
         if (err instanceof Exception)
             throw new Unauthorized('Authentication Failed', {

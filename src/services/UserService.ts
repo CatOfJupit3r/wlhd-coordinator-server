@@ -52,16 +52,14 @@ class UserService {
         AuthService.invalidateRefreshToken(refreshToken)
     }
 
-    async getJoinedLobbiesInfo(token: string) {
-        const decoded = AuthService.verifyAccessToken(token)
-        const user = await DatabaseService.getUser(decoded._id)
+    async getJoinedLobbiesInfo(user_id: string) {
+        const user = await DatabaseService.getUser(user_id)
         if (!user) throw new NotFound('User not found')
-        return LobbyService.getJoinedLobbiesInfo(decoded._id)
+        return LobbyService.getJoinedLobbiesInfo(user_id)
     }
 
-    async getProfile(token: string) {
-        const decoded = AuthService.verifyAccessToken(token)
-        const user = await DatabaseService.getUser(decoded._id)
+    async getProfile(user_id: string) {
+        const user = await DatabaseService.getUser(user_id)
         if (!user) throw new NotFound('User not found')
         return user
     }

@@ -1,13 +1,12 @@
 import { Request, Response } from 'express'
-import { Unauthorized } from '../models/ErrorModels'
 import AuthService from '../services/AuthService'
 import UserService from '../services/UserService'
 
 class UserController {
     async getProfile(req: Request, res: Response) {
-        if (!req.headers.authorization) throw new Unauthorized('No authorization header') // although this case is already handled by authenticationMiddleware
-        const token = AuthService.removeBearerPrefix(req.headers.authorization)
-        const { handle, createdAt } = await UserService.getProfile(token)
+        const token = AuthService.removeBearerPrefix(req.headers.authorization as string)
+        const user = AuthService.verifyAccessToken(token)
+        const { handle, createdAt } = await UserService.getProfile(user._id)
 
         res.status(200).json({
             handle,
@@ -16,9 +15,9 @@ class UserController {
     }
 
     async getJoinedLobbies(req: Request, res: Response) {
-        if (!req.headers.authorization) throw new Unauthorized('No authorization header') // although this case is already handled by authenticationMiddleware
-        const token = AuthService.removeBearerPrefix(req.headers.authorization)
-        const data = await UserService.getJoinedLobbiesInfo(token)
+        const token = AuthService.removeBearerPrefix(req.headers.authorization as string)
+        const user = AuthService.verifyAccessToken(token)
+        const data = await UserService.getJoinedLobbiesInfo(user._id)
 
         res.status(200).json({
             joinedLobbies: data,

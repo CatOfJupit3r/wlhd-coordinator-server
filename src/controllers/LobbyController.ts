@@ -1,14 +1,7 @@
 import { Request, Response } from 'express'
 import { Socket } from 'socket.io'
 import { DESCRIPTOR_REGEX } from '../configs'
-import {
-    BadRequest,
-    Forbidden,
-    InternalServerError,
-    MethodNotAllowed,
-    NotFound,
-    Unauthorized,
-} from '../models/ErrorModels'
+import { BadRequest, Forbidden, InternalServerError, MethodNotAllowed, NotFound } from '../models/ErrorModels'
 import AuthService from '../services/AuthService'
 import DatabaseService from '../services/DatabaseService'
 import InputValidator from '../services/InputValidator'
@@ -16,6 +9,15 @@ import LobbyService from '../services/LobbyService'
 import { getEmittableCombatPreset } from '../utils/getEmittableCombatPreset'
 
 class LobbyController {
+    public async getCustomTranslations(req: Request, res: Response): Promise<void> {
+        const { lobby_id } = req.params
+        InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string')
+        const token = AuthService.removeBearerPrefix(req.headers.authorization as string)
+        const user = AuthService.verifyAccessToken(token)
+        const translations = await LobbyService.getCustomTranslations(lobby_id, user._id)
+        res.status(200).json(translations)
+    }
+
     public async createNewLobby(req: Request, res: Response): Promise<void> {
         console.log('Creating lobby. Params:', req.body)
         const { lobbyName, gm_id } = req.body
@@ -42,8 +44,8 @@ class LobbyController {
         const { lobby_id } = req.params
         InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string')
         const lobby = await DatabaseService.getLobby(lobby_id)
-        if (!req.headers.authorization) throw new Unauthorized('No token provided!')
-        const user = AuthService.verifyAccessToken(req.headers.authorization)
+        const token = AuthService.removeBearerPrefix(req.headers.authorization as string)
+        const user = AuthService.verifyAccessToken(token as string)
         if (!lobby) throw new BadRequest('Lobby not found!')
 
         const player = lobby.players.find((player) => player.userId === user._id)
@@ -108,8 +110,9 @@ class LobbyController {
 
     public async getMyCharacterInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-        if (!req.headers.authorization) throw new Unauthorized('No token provided!')
-        const user = AuthService.verifyAccessToken(req.headers.authorization)
+        InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string')
+        const token = AuthService.removeBearerPrefix(req.headers.authorization as string)
+        const user = AuthService.verifyAccessToken(token)
         const characters = await LobbyService.getMyCharactersInfo(lobby_id, user._id)
         res.status(200).json({
             characters,
