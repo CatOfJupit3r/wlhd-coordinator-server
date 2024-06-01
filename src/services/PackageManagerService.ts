@@ -142,7 +142,7 @@ class PackageManagerService {
     }
 
     private verifyGithubLink(url: string): boolean {
-        return GITHUB_LINK_REGEX.test(url)
+        return GITHUB_LINK_REGEX().test(url)
     }
 
     private injectGithubToken(url: string): string {
