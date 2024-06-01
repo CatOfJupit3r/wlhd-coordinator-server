@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { simpleGit, SimpleGit } from 'simple-git'
 
-import { GITHUB_TOKEN, PATH_TO_INSTALLED_PACKAGES } from '../configs'
+import { GITHUB_LINK_REGEX, GITHUB_TOKEN, PATH_TO_INSTALLED_PACKAGES } from '../configs'
 import { Manifest } from '../models/dlc_manifest'
 
 class PackageManagerService {
@@ -142,8 +142,7 @@ class PackageManagerService {
     }
 
     private verifyGithubLink(url: string): boolean {
-        const githubLink = /https?:\/\/github\.com\/(?:[^/\s]+\/)+(?:wlhd-[A-Za-z]+-package|)/gm
-        return githubLink.test(url)
+        return GITHUB_LINK_REGEX.test(url)
     }
 
     private injectGithubToken(url: string): string {
