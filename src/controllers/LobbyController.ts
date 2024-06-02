@@ -74,8 +74,6 @@ class LobbyController {
             combatNickname: string
             combatPreset: CombatPreset
         } = req.body
-
-        console.log('Creating combat for lobby', req.body)
         InputValidator.validateObject(
             { lobby_id, combatNickname, combatPreset },
             { lobby_id: 'string', combatNickname: 'string', combatPreset: 'object' }
@@ -98,12 +96,19 @@ class LobbyController {
     }
 
     public async assignCharacterToPlayer(req: Request, res: Response): Promise<void> {
-        console.log('Assigning character to player. Params:', req.body)
         const { lobby_id, character_id } = req.params
         const { player_id } = req.body
         InputValidator.validateObject({ lobby_id, player_id }, { lobby_id: 'string', player_id: 'string' })
         await LobbyService.assignCharacterToPlayer(lobby_id, player_id, character_id)
-        res.status(200).json({ message: 'ok' })
+        res.status(200).json({ message: 'ok', player_id, character_id })
+    }
+
+    public async removeCharacterFromPlayer(req: Request, res: Response): Promise<void> {
+        const { lobby_id, character_id } = req.params
+        const { player_id } = req.body
+        InputValidator.validateObject({ lobby_id, player_id }, { lobby_id: 'string', player_id: 'string' })
+        await LobbyService.removeCharacterFromPlayer(lobby_id, player_id, character_id)
+        res.status(200).json({ message: 'ok', player_id, character_id })
     }
 
     public async getMyCharacterInfo(req: Request, res: Response): Promise<void> {

@@ -1,5 +1,6 @@
 import { DocumentType } from '@typegoose/typegoose'
 import mongoose, { Types } from 'mongoose'
+import { DESCRIPTOR_REGEX } from '../configs'
 import { BadRequest, InternalServerError, NotFound } from '../models/ErrorModels'
 import {
     AttributeClass,
@@ -95,6 +96,9 @@ class DatabaseService {
         decorations: { name: string; description: string; sprite: string },
         attributes: Array<AttributeClass>
     ): Promise<Types.ObjectId> => {
+        if (!DESCRIPTOR_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
+        const isDescriptorTaken = await CharacterModel.findOne({ descriptor }, { _id: 1 }).lean()
+        if (isDescriptorTaken) throw new BadRequest('Descriptor already taken')
         const entity = new CharacterModel({ descriptor, decorations, attributes })
         await this.saveDocument(entity)
         return entity._id
@@ -147,6 +151,20 @@ class DatabaseService {
         await this.updateCharacterBank(lobbyId, lobby.characterBank)
     }
 
+    public removeCharacterFromPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {
+        const lobby = await this.getLobby(lobbyId)
+        if (!lobby) throw new NotFound('Lobby not found')
+        const player = lobby.players.find((p) => p.userId === userId)
+        if (!player) throw new NotFound('Player not found')
+        const characterInLobbyBank = lobby.characterBank.find((c) => c.characterId === characterId)
+        if (!characterInLobbyBank) throw new NotFound('Character not found')
+        if (!characterInLobbyBank.controlledBy) characterInLobbyBank.controlledBy = []
+        if (characterInLobbyBank.controlledBy.includes(userId)) {
+            characterInLobbyBank.controlledBy = characterInLobbyBank.controlledBy.filter((c) => c !== userId)
+        }
+        await this.updateCharacterBank(lobbyId, lobby.characterBank)
+    }
+
     public addCharacterToLobby = async (
         lobbyId: string,
         characterId: string,
@@ -191,6 +209,7 @@ class DatabaseService {
         const character = await this.getCharacter(character_id)
         if (!character) throw new NotFound('Character not found')
         if (!character.spellBook) character.spellBook = []
+        if (character.spellBook.find((s) => s.descriptor === descriptor)) throw new BadRequest('Spell already exists')
         character.spellBook.push({ descriptor, conflictsWith, requiresToUse })
         await mongoose.connection
             .collection('characters')
@@ -277,29 +296,47 @@ class DatabaseService {
         const player = lobby.players.find((p) => p.userId === userId)
         if (!player) throw new NotFound('Player not found')
         const characters: Array<CharacterClass> = []
+        await this.checkIfThereAreCharacterMissing(lobby, lobbyId)
         for (const { controlledBy, characterId } of lobby.characterBank) {
             if (controlledBy.includes(userId)) {
                 const character = await this.getCharacter(characterId)
                 if (!character) {
-                    lobby.characterBank = lobby.characterBank.filter((c) => c.characterId !== characterId)
-                    await this.updateCharacterBank(lobbyId, lobby.characterBank)
-                    continue
-                }
-                characters.push(character)
+                    console.log(
+                        "Found character that doesn't exist in Database. DatabaseService.checkIfThereAreCharacterMissing() has failed!"
+                    )
+                } else characters.push(character)
             }
         }
         return characters
+    }
+
+    private checkIfThereAreCharacterMissing = async (lobby: LobbyClass, lobby_id: string): Promise<void> => {
+        let missingCharacters = false
+        const misses: Array<string> = []
+        for (const { characterId } of lobby.characterBank) {
+            const character = await this.getCharacter(characterId)
+            if (!character) {
+                missingCharacters = true
+                misses.push(characterId)
+            }
+        }
+        if (missingCharacters) {
+            lobby.characterBank = lobby.characterBank.filter((c) => !misses.includes(c.characterId))
+            await this.updateCharacterBank(lobby_id, lobby.characterBank)
+        }
     }
 
     public getCharactersOfLobby = async (lobbyId: string): Promise<Array<CharacterClass>> => {
         const lobby = await this.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
         const characters: Array<CharacterClass> = []
+        await this.checkIfThereAreCharacterMissing(lobby, lobbyId)
         for (const { characterId } of lobby.characterBank) {
             const character = await this.getCharacter(characterId)
             if (!character) {
-                lobby.characterBank = lobby.characterBank.filter((c) => c.characterId !== characterId)
-                await this.updateCharacterBank(lobbyId, lobby.characterBank)
+                console.log(
+                    "Found character that doesn't exist in Database. DatabaseService.checkIfThereAreCharacterMissing() has failed!"
+                )
                 continue
             }
             characters.push(character)

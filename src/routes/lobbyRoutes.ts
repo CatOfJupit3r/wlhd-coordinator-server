@@ -17,7 +17,7 @@ router.get('/:lobby_id/character/:character_id', LobbyController.getCharacterInf
 
 router.post('/create', LobbyController.createNewLobby.bind(LobbyController))
 router.post('/:lobby_id/create_combat', LobbyController.createCombatForLobby.bind(LobbyController))
-router.post('/:lobby_id/character/add', LobbyController.createCharacter.bind(LobbyController))
+router.post('/:lobby_id/character/new', LobbyController.createCharacter.bind(LobbyController))
 router.post('/:lobby_id/character/:character_id/weaponry', LobbyController.addWeaponToCharacter.bind(LobbyController))
 router.post('/:lobby_id/character/:character_id/spellbook', LobbyController.addSpellToCharacter.bind(LobbyController))
 router.post(
@@ -34,10 +34,20 @@ router.post(
 
 router.patch('/:lobby_id/add_player', LobbyController.addPlayerToLobby.bind(LobbyController))
 router.patch('/:lobby_id/character/:character_id', LobbyController.updateCharacter.bind(LobbyController))
-router.patch('/:lobby_id/character/:character_id/assign', LobbyController.assignCharacterToPlayer.bind(LobbyController))
+router.patch(
+    '/:lobby_id/character/:character_id/assign_player',
+    LobbyController.assignCharacterToPlayer.bind(LobbyController)
+)
 router.patch(
     '/:lobby_id/character/:character_id/spell_layout',
     LobbyController.changeSpellLayoutOfCharacter.bind(LobbyController)
+)
+
+// DELETE
+
+router.delete(
+    '/:lobby_id/character/:character_id/remove_player',
+    LobbyController.removeCharacterFromPlayer.bind(LobbyController)
 )
 
 export default router

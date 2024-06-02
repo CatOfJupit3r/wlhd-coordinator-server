@@ -12,10 +12,6 @@ import DatabaseService from './DatabaseService'
 class LobbyService {
     private managingCombats: Map<string, Array<string>> = new Map()
 
-    public getActiveCombats(lobby_id: string): string[] {
-        return this.managingCombats.get(lobby_id) || []
-    }
-
     public createNewLobby(name: string, gm_id: string): Promise<Types.ObjectId> {
         return DatabaseService.createNewLobby(name, gm_id)
     }
@@ -238,6 +234,10 @@ class LobbyService {
 
     public assignCharacterToPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {
         return await DatabaseService.assignCharacterToPlayer(lobbyId, userId, characterId)
+    }
+
+    public removeCharacterFromPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {
+        return await DatabaseService.removeCharacterFromPlayer(lobbyId, userId, characterId)
     }
 
     public addCharacterToLobby = async (
