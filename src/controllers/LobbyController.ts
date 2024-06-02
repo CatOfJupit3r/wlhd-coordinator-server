@@ -45,10 +45,15 @@ class LobbyController {
         const lobby = await DatabaseService.getLobby(lobby_id)
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         if (!lobby) throw new BadRequest('Lobby not found!')
-
         const player = lobby.players.find((player) => player.userId === user._id)
         if (!player) throw new Forbidden('You are not a player in this lobby!')
-        res.status(200).json(await LobbyService.getLobbyInfo(lobby_id, user, player))
+
+        const { short } = req.query
+        if (short && short === 'true') {
+            res.status(200).json(await LobbyService.getShortLobbyInfo(lobby_id, user._id))
+        } else {
+            res.status(200).json(await LobbyService.getFullLobbyInfo(lobby_id, user, player))
+        }
     }
 
     public async createCombatForLobby(req: Request, res: Response): Promise<void> {

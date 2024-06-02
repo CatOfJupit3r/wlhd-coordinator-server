@@ -3,7 +3,7 @@ import { Socket } from 'socket.io'
 import { BadRequest, InternalServerError, NotFound, Unauthorized } from '../models/ErrorModels'
 import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
 import { TranslationSnippet } from '../models/Translation'
-import { AttributeClass, LobbyModel } from '../models/TypegooseModels'
+import { AttributeClass } from '../models/TypegooseModels'
 import { characterModelToInfo } from '../utils/characterConverters'
 import AuthService from './AuthService'
 import CombatManager from './CombatManager'
@@ -38,7 +38,7 @@ class LobbyService {
         return null
     }
 
-    public async getLobbyInfo(lobby_id: string, user: any, player: any): Promise<LobbyInfo> {
+    public async getFullLobbyInfo(lobby_id: string, user: any, player: any): Promise<LobbyInfo> {
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) {
             return {
@@ -176,32 +176,27 @@ class LobbyService {
         return await DatabaseService.createNewCombatPreset(field)
     }
 
-    public getJoinedLobbiesInfo = async (
-        userId: string
-    ): Promise<Array<{ name: string; isGm: boolean; _id: string }>> => {
-        const res: Array<{ name: string; isGm: boolean; _id: string; characters: Array<string> }> = []
-        const lobbies = await LobbyModel.find({ 'players.userId': userId })
-        for (const lobby of lobbies) {
-            const { _id, name, gm_id } = lobby
-            if (!_id || !name || !gm_id) throw new InternalServerError()
-            const characters = []
-            for (const characterInLobby of lobby.characterBank) {
-                if (characterInLobby.controlledBy.includes(userId)) {
-                    const character = await DatabaseService.getCharacter(characterInLobby.characterId)
-                    if (!character) throw new NotFound('Character not found')
-                    if (character.decorations?.name) characters.push(character.decorations.name)
-                    else if (character.descriptor) characters.push(`${character.descriptor}.name`)
-                }
+    public getShortLobbyInfo = async (lobbyId: string, userId: string) => {
+        const lobby = await DatabaseService.getLobby(lobbyId)
+        if (!lobby) throw new NotFound('Lobby not found')
+        const { name, gm_id } = lobby
+        if (!lobbyId || !name || !gm_id) throw new InternalServerError()
+        const characters = []
+        for (const characterInLobby of lobby.characterBank) {
+            if (characterInLobby.controlledBy.includes(userId)) {
+                const character = await DatabaseService.getCharacter(characterInLobby.characterId)
+                if (!character) throw new NotFound('Character not found')
+                if (character.decorations?.name) characters.push(character.decorations.name)
+                else if (character.descriptor) characters.push(`${character.descriptor}.name`)
             }
-
-            res.push({
-                _id: _id.toString(),
-                name,
-                isGm: gm_id.toString() === userId,
-                characters,
-            })
         }
-        return res
+
+        return {
+            _id: lobbyId,
+            name,
+            isGm: gm_id.toString() === userId,
+            characters,
+        }
     }
 
     public getCustomTranslations = async (lobby_id: string, user_id: string): Promise<TranslationSnippet> => {

@@ -1,4 +1,5 @@
 import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose'
+import { Types } from 'mongoose'
 
 export class CharacterInLobbyClass {
     @prop({ required: true })
@@ -18,6 +19,9 @@ export class PlayerClass {
 
 @modelOptions({ schemaOptions: { collection: 'lobbies' } })
 export class LobbyClass {
+    @prop()
+    _id: Types.ObjectId
+
     @prop({ required: true })
     name: string
 

@@ -5,7 +5,6 @@ import { Forbidden, NotFound } from '../models/ErrorModels'
 import { UserClass } from '../models/TypegooseModels'
 import AuthService from './AuthService'
 import DatabaseService from './DatabaseService'
-import LobbyService from './LobbyService'
 
 class UserService {
     #privateFields = ['hashedPassword']
@@ -52,10 +51,11 @@ class UserService {
         AuthService.invalidateRefreshToken(refreshToken)
     }
 
-    async getJoinedLobbiesInfo(user_id: string) {
+    async getJoinedLobbies(user_id: string): Promise<Array<string>> {
         const user = await DatabaseService.getUser(user_id)
         if (!user) throw new NotFound('User not found')
-        return LobbyService.getJoinedLobbiesInfo(user_id)
+
+        return (await DatabaseService.getLobbiesWithPlayer(user_id)).map((lobby) => lobby._id.toString())
     }
 
     async getProfile(user_id: string) {

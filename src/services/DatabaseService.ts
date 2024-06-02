@@ -43,6 +43,10 @@ class DatabaseService {
         return LobbyModel.findOne({ _id: new Types.ObjectId(lobbyId) })
     }
 
+    public getLobbiesWithPlayer = async (userId: string): Promise<Array<LobbyClass>> => {
+        return LobbyModel.find({ 'players.userId': userId })
+    }
+
     public getUser = async (userId: string): Promise<UserClass | null> => {
         return UserModel.findOne({ _id: new Types.ObjectId(userId) })
     }
