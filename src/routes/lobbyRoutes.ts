@@ -11,7 +11,7 @@ router.use(authenticationMiddleware)
 router.get('/:lobby_id', LobbyController.getLobbyInfo.bind(LobbyController))
 router.get('/:lobby_id/custom_translations', LobbyController.getCustomTranslations.bind(LobbyController))
 router.get('/:lobby_id/my_characters', LobbyController.getMyCharacterInfo.bind(LobbyController))
-router.get('/:lobby_id/character/:character_id', LobbyController.getCharacterInfo.bind(LobbyController))
+router.get('/:lobby_id/character/:descriptor', LobbyController.getCharacterInfo.bind(LobbyController))
 
 // POST
 

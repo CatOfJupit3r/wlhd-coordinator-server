@@ -1,6 +1,6 @@
 import { DocumentType } from '@typegoose/typegoose'
 import mongoose, { Types } from 'mongoose'
-import { DESCRIPTOR_REGEX } from '../configs'
+import { DESCRIPTOR_NO_DLC_REGEX } from '../configs'
 import { BadRequest, InternalServerError, NotFound } from '../models/ErrorModels'
 import {
     AttributeClass,
@@ -59,6 +59,10 @@ class DatabaseService {
         return CharacterModel.findOne({ _id: new Types.ObjectId(characterId) })
     }
 
+    public getCharacterByDescriptor = async (descriptor: string): Promise<CharacterClass | null> => {
+        return CharacterModel.findOne({ descriptor })
+    }
+
     public getCombatPreset = async (combatPresetId: string): Promise<CombatClass | null> => {
         return CombatModel.findOne({ _id: new Types.ObjectId(combatPresetId) })
     }
@@ -100,7 +104,7 @@ class DatabaseService {
         decorations: { name: string; description: string; sprite: string },
         attributes: Array<AttributeClass>
     ): Promise<Types.ObjectId> => {
-        if (!DESCRIPTOR_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
+        if (!DESCRIPTOR_NO_DLC_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
         const isDescriptorTaken = await CharacterModel.findOne({ descriptor }, { _id: 1 }).lean()
         if (isDescriptorTaken) throw new BadRequest('Descriptor already taken')
         const entity = new CharacterModel({ descriptor, decorations, attributes })

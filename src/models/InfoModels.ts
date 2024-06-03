@@ -1,5 +1,10 @@
 export interface CharacterInfo {
     descriptor: string
+    decorations: {
+        name: string
+        description: string
+        sprite: string
+    }
     controlledBy: string | null
     attributes: {
         [key: string]: string
@@ -32,6 +37,12 @@ export interface LobbyInfo {
             nickname: string
         }>
     }>
+    characters: Array<{
+        descriptor: string
+        name: string
+        description: string
+        sprite: string
+    }>
     gm: string
     players: Array<{
         player: {
@@ -41,6 +52,7 @@ export interface LobbyInfo {
             userId: string
         }
         characters: Array<{
+            descriptor: string
             name: string
             sprite: string
         }>

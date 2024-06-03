@@ -1,6 +1,6 @@
 import { Types } from 'mongoose'
 import { Socket } from 'socket.io'
-import { BadRequest, InternalServerError, NotFound, Unauthorized } from '../models/ErrorModels'
+import { BadRequest, Forbidden, InternalServerError, NotFound } from '../models/ErrorModels'
 import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
 import { TranslationSnippet } from '../models/Translation'
 import { AttributeClass } from '../models/TypegooseModels'
@@ -45,8 +45,9 @@ class LobbyService {
                 name: 'Lobby not found',
                 lobbyId: lobby_id,
                 combats: [],
-                gm: '',
                 players: [],
+                characters: [],
+                gm: '',
                 layout: 'default',
                 controlledEntity: null,
             }
@@ -81,15 +82,32 @@ class LobbyService {
             const controlledCharacters = await DatabaseService.getCharactersOfPlayer(lobby_id, p.userId)
             players.push({
                 player: { handle: player?.handle || '', avatar: '', userId: p.userId, nickname: p.nickname },
-                characters: controlledCharacters.map((character) => character.decorations) || [],
+                characters:
+                    controlledCharacters.map((character) => ({
+                        name: character.decorations?.name || '',
+                        sprite: character.decorations?.sprite || '',
+                        descriptor: character.descriptor,
+                    })) || [],
+            })
+        }
+        const characters = []
+        for (const characterInLobby of lobby.characterBank) {
+            const character = await DatabaseService.getCharacter(characterInLobby.characterId)
+            if (!character) throw new NotFound('Character not found')
+            characters.push({
+                descriptor: character.descriptor,
+                name: character.decorations?.name || '',
+                description: character.decorations?.description || '',
+                sprite: character.decorations?.sprite || '',
             })
         }
         return {
             name: lobby.name,
             lobbyId: lobby_id,
             combats: combatInfo || [],
-            gm: lobby.gm_id,
             players,
+            characters,
+            gm: lobby.gm_id,
             layout: user._id === lobby.gm_id ? 'gm' : 'default',
             controlledEntity: null,
         }
@@ -130,13 +148,14 @@ class LobbyService {
         return controlledCharacters.map(characterModelToInfo)
     }
 
-    public async getCharacterInfo(lobby_id: string, character_id: string): Promise<CharacterInfo> {
+    public async getCharacterInfo(lobby_id: string, user_id: string, descriptor: string): Promise<CharacterInfo> {
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
         if (!lobby.characterBank) throw new InternalServerError('Character bank not found')
-        const characterIsInBank = lobby.characterBank.find((c) => c.characterId === character_id)
-        if (!characterIsInBank) throw new Unauthorized('You cannot search for this character')
-        const character = await DatabaseService.getCharacter(character_id)
+        if (!lobby.players.find((p) => p.userId === user_id)) {
+            throw new Forbidden('You are not a player in this lobby')
+        }
+        const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         return characterModelToInfo(character)
     }
@@ -203,7 +222,7 @@ class LobbyService {
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
         if (!lobby.players.find((p) => p.userId === user_id)) {
-            throw new Unauthorized('You are not a player in this lobby')
+            throw new Forbidden('You are not a player in this lobby')
         }
         const characters = await DatabaseService.getCharactersOfLobby(lobby_id)
         const res: TranslationSnippet = {}

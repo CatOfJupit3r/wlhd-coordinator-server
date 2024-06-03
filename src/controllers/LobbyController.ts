@@ -127,9 +127,10 @@ class LobbyController {
     }
 
     public async getCharacterInfo(req: Request, res: Response): Promise<void> {
-        const { lobby_id, character_id } = req.params
-        InputValidator.validateObject({ lobby_id, character_id }, { lobby_id: 'string', character_id: 'string' })
-        const characterInfo = await LobbyService.getCharacterInfo(lobby_id, character_id)
+        const { lobby_id, descriptor } = req.params
+        InputValidator.validateObject({ lobby_id, descriptor }, { lobby_id: 'string', descriptor: 'string' })
+        const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
+        const characterInfo = await LobbyService.getCharacterInfo(lobby_id, user._id, descriptor)
         res.status(200).json(characterInfo)
     }
 

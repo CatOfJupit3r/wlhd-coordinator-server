@@ -73,6 +73,11 @@ export const characterModelToInfo = (characterModel: CharacterClass): CharacterI
     const info: CharacterInfo = {
         descriptor: characterModel.descriptor,
         controlledBy: null,
+        decorations: {
+            name: `coordinator:${characterModel.descriptor}.name`,
+            description: `coordinator:${characterModel.descriptor}.description`,
+            sprite: characterModel.decorations.sprite,
+        },
         attributes: {
             ...Object.fromEntries(
                 Object.entries(DEFAULT_CHARACTER_ATTRIBUTES).map(([key, value]) => [key, String(value)])
