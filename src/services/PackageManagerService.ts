@@ -91,7 +91,7 @@ class PackageManagerService {
     }
 
     private async gitPull(packageName: string) {
-        const dir = `${PATH_TO_INSTALLED_PACKAGES}/${packageName}`
+        const dir = path.join(PATH_TO_INSTALLED_PACKAGES, packageName)
         const dlc_git = simpleGit({
             baseDir: dir,
             binary: 'git',
