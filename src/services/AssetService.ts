@@ -25,7 +25,7 @@ class AssetService {
     }
 
     public getAsset(dlc: string, asset: string) {
-        const available_assets = this.getAssetsInfo(dlc)
+        const available_assets = this.getAssetsInfo(dlc, dlc === 'coordinator')
         const assetFormats = available_assets[asset]
         if (!assetFormats) {
             return null
@@ -46,9 +46,14 @@ class AssetService {
         return null
     }
 
-    private getAssetsInfo(dlc: string): AssetInfo {
+    private getAssetsInfo(dlc: string, user_assets?: boolean): AssetInfo {
         const assetsInfo: AssetInfo = {}
-        const rawAssets = fs.readdirSync(`${PATH_TO_INSTALLED_PACKAGES}/${dlc}/assets`)
+        let rawAssets
+        if (user_assets) {
+            rawAssets = fs.readdirSync(path.join(process.cwd(), 'public', 'user_assets'))
+        } else {
+            rawAssets = fs.readdirSync(path.join(PATH_TO_INSTALLED_PACKAGES, dlc, 'assets'))
+        }
         for (const asset of rawAssets) {
             const assetName = asset.split('.')[0]
             const assetFormat = asset.split('.')[1]
