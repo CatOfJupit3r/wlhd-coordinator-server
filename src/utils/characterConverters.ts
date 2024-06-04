@@ -123,7 +123,7 @@ export const characterModelToInfo = (characterModel: CharacterClass): CharacterI
     return info
 }
 
-const DEFAULT_CHARACTER_ATTRIBUTES = {
+const DEFAULT_CHARACTER_ATTRIBUTES: { [attribute: string]: number } = {
     'builtins:current_health': 0,
     'builtins:max_health': 0,
     'builtins:current_action_points': 0,
@@ -140,4 +140,12 @@ const DEFAULT_CHARACTER_ATTRIBUTES = {
     'builtins:will': 0,
     'builtins:reflexes': 0,
     'builtins:strength': 0,
+    ...['nature', 'fire', 'water', 'earth', 'air', 'light', 'dark'].reduce(
+        (acc, element) => {
+            acc[`builtins:${element}_defense`] = 0
+            acc[`builtins:${element}_attack`] = 0
+            return acc
+        },
+        {} as { [attribute: string]: number }
+    ),
 }
