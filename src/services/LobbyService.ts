@@ -3,7 +3,7 @@ import { Socket } from 'socket.io'
 import { BadRequest, Forbidden, InternalServerError, NotFound } from '../models/ErrorModels'
 import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
 import { TranslationSnippet } from '../models/Translation'
-import { AttributeClass } from '../models/TypegooseModels'
+import { AttributeClass, CombatClass } from '../models/TypegooseModels'
 import { characterModelToInfo } from '../utils/characterConverters'
 import AuthService from './AuthService'
 import CombatManager from './CombatManager'
@@ -91,8 +91,8 @@ class LobbyService {
             })
         }
         const characters = []
-        for (const characterInLobby of lobby.characterBank) {
-            const character = await DatabaseService.getCharacter(characterInLobby.characterId)
+        for (const { characterId } of lobby.characterBank) {
+            const character = await DatabaseService.getCharacter(characterId)
             if (!character) throw new NotFound('Character not found')
             characters.push({
                 descriptor: character.descriptor,
@@ -145,7 +145,7 @@ class LobbyService {
 
     public async getMyCharactersInfo(lobby_id: string, player_id: string): Promise<Array<CharacterInfo>> {
         const controlledCharacters = await DatabaseService.getCharactersOfPlayer(lobby_id, player_id)
-        return controlledCharacters.map(characterModelToInfo)
+        return controlledCharacters.map((character) => characterModelToInfo(character, false))
     }
 
     public async getCharacterInfo(lobby_id: string, user_id: string, descriptor: string): Promise<CharacterInfo> {
@@ -157,7 +157,7 @@ class LobbyService {
         }
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
-        return characterModelToInfo(character)
+        return characterModelToInfo(character, false)
     }
 
     async createNewCharacter(
@@ -176,17 +176,7 @@ class LobbyService {
         return entity_id
     }
 
-    public createNewCombatPreset = async (
-        field: Array<{
-            path: string
-            square: string
-            source: 'embedded' | 'dlc'
-            controlled_by: {
-                type: 'player' | 'ai' | 'game_logic'
-                id: string | null
-            }
-        }>
-    ): Promise<Types.ObjectId> => {
+    public createNewCombatPreset = async (field: CombatClass['field']): Promise<Types.ObjectId> => {
         const occupiedSquares: Array<string> = []
         for (const pawn of field) {
             if (occupiedSquares.includes(pawn.square)) throw new BadRequest('Multiple pawns on the same square')
@@ -201,9 +191,9 @@ class LobbyService {
         const { name, gm_id } = lobby
         if (!lobbyId || !name || !gm_id) throw new InternalServerError()
         const characters = []
-        for (const characterInLobby of lobby.characterBank) {
-            if (characterInLobby.controlledBy.includes(userId)) {
-                const character = await DatabaseService.getCharacter(characterInLobby.characterId)
+        for (const { controlledBy, characterId } of lobby.characterBank) {
+            if (controlledBy.includes(userId)) {
+                const character = await DatabaseService.getCharacter(characterId)
                 if (!character) throw new NotFound('Character not found')
                 if (character.decorations?.name) characters.push(character.decorations.name)
                 else if (character.descriptor) characters.push(`${character.descriptor}.name`)
@@ -246,42 +236,50 @@ class LobbyService {
         return res
     }
 
-    public assignCharacterToPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {
-        return await DatabaseService.assignCharacterToPlayer(lobbyId, userId, characterId)
+    public assignCharacterToPlayer = async (
+        lobbyId: string,
+        userId: string,
+        characterDescriptor: string
+    ): Promise<void> => {
+        return await DatabaseService.assignCharacterToPlayer(lobbyId, userId, characterDescriptor)
     }
 
-    public removeCharacterFromPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {
-        return await DatabaseService.removeCharacterFromPlayer(lobbyId, userId, characterId)
+    public removeCharacterFromPlayer = async (
+        lobbyId: string,
+        userId: string,
+        characterDescriptor: string
+    ): Promise<void> => {
+        return await DatabaseService.removeCharacterFromPlayer(lobbyId, userId, characterDescriptor)
     }
 
     public addCharacterToLobby = async (
         lobbyId: string,
-        characterId: string,
+        characterDescriptor: string,
         controlledBy: Array<string>
     ): Promise<void> => {
-        return await DatabaseService.addCharacterToLobby(lobbyId, characterId, controlledBy)
+        return await DatabaseService.addCharacterToLobbyByDescriptor(lobbyId, characterDescriptor, controlledBy)
     }
 
     public addWeaponToCharacter = async (
         lobby_id: string,
-        character_id: string,
-        descriptor: string,
+        characterDescriptor: string,
+        weaponDescriptor: string,
         quantity: number
     ): Promise<void> => {
-        return await DatabaseService.addWeaponToCharacter(lobby_id, character_id, descriptor, quantity)
+        return await DatabaseService.addWeaponToCharacter(lobby_id, characterDescriptor, weaponDescriptor, quantity)
     }
 
     public addSpellToCharacter = async (
         lobby_id: string,
-        character_id: string,
-        descriptor: string,
+        characterDescriptor: string,
+        spellDescriptor: string,
         conflictsWith: Array<string>,
         requiresToUse: Array<string>
     ): Promise<void> => {
         return await DatabaseService.addSpellToCharacter(
             lobby_id,
-            character_id,
-            descriptor,
+            characterDescriptor,
+            spellDescriptor,
             conflictsWith,
             requiresToUse
         )
@@ -289,38 +287,49 @@ class LobbyService {
 
     public addStatusEffectToCharacter = async (
         lobby_id: string,
-        character_id: string,
-        descriptor: string,
+        characterDescriptor: string,
+        effectDescriptor: string,
         duration: number
     ): Promise<void> => {
-        return await DatabaseService.addStatusEffectToCharacter(lobby_id, character_id, descriptor, duration)
+        return await DatabaseService.addStatusEffectToCharacter(
+            lobby_id,
+            characterDescriptor,
+            effectDescriptor,
+            duration
+        )
     }
 
     public addItemToCharacter = async (
         lobby_id: string,
-        character_id: string,
-        descriptor: string,
+        characterDescriptor: string,
+        itemDescriptor: string,
         quantity: number
     ): Promise<void> => {
-        return await DatabaseService.addItemToCharacter(lobby_id, character_id, descriptor, quantity)
+        return await DatabaseService.addItemToCharacter(lobby_id, characterDescriptor, itemDescriptor, quantity)
     }
 
     public addAttributeToCharacter = async (
         lobby_id: string,
-        character_id: string,
+        characterDescriptor: string,
         dlc: string,
-        descriptor: string,
+        attributeDescriptor: string,
         value: number
     ): Promise<void> => {
-        return await DatabaseService.addAttributeToCharacter(lobby_id, character_id, dlc, descriptor, value)
+        return await DatabaseService.addAttributeToCharacter(
+            lobby_id,
+            characterDescriptor,
+            dlc,
+            attributeDescriptor,
+            value
+        )
     }
 
     public changeSpellLayoutOfCharacter = async (
         lobby_id: string,
-        character_id: string,
+        characterDescriptor: string,
         spells: Array<string>
     ): Promise<void> => {
-        return await DatabaseService.changeSpellLayoutOfCharacter(lobby_id, character_id, spells)
+        return await DatabaseService.changeSpellLayoutOfCharacter(lobby_id, characterDescriptor, spells)
     }
 }
 

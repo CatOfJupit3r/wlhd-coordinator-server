@@ -2,6 +2,7 @@ import axios, { isAxiosError } from 'axios'
 import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs'
 import AssetController from '../controllers/AssetController'
 import TranslationController from '../controllers/TranslationController'
+import { CombatClass } from '../models/TypegooseModels'
 import { GameServerStatus, Manifest } from '../models/dlc_manifest'
 import LobbyService from './LobbyService'
 import PackageManagerService from './PackageManagerService'
@@ -39,7 +40,7 @@ class GameServerService {
         AssetController.reloadAssets()
     }
 
-    async createCombatPreset(field: any) {
+    async createCombatPreset(field: CombatClass['field']) {
         return await LobbyService.createNewCombatPreset(field)
     }
 
@@ -55,12 +56,11 @@ class GameServerService {
     }
 
     private async fetch(url: string) {
-        const result = await axios.get(url, {
+        return await axios.get(url, {
             headers: {
                 Authorization: `Bearer ${GAME_SECRET_TOKEN()}`,
             },
         })
-        return result
     }
 
     // private addListeners() {

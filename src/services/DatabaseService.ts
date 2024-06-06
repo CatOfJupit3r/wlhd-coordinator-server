@@ -107,22 +107,12 @@ class DatabaseService {
         if (!DESCRIPTOR_NO_DLC_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
         const isDescriptorTaken = await CharacterModel.findOne({ descriptor }, { _id: 1 }).lean()
         if (isDescriptorTaken) throw new BadRequest('Descriptor already taken')
-        const entity = new CharacterModel({ descriptor, decorations, attributes })
+        const entity = new CharacterModel({ descriptor, decorations, attributes, _id: new Types.ObjectId() })
         await this.saveDocument(entity)
         return entity._id
     }
 
-    public createNewCombatPreset = async (
-        field: Array<{
-            path: string
-            square: string
-            source: 'embedded' | 'dlc'
-            controlled_by: {
-                type: 'player' | 'ai' | 'game_logic'
-                id: string | null
-            }
-        }>
-    ): Promise<Types.ObjectId> => {
+    public createNewCombatPreset = async (field: CombatClass['field']): Promise<Types.ObjectId> => {
         const combatPreset = new CombatModel({ field })
         await this.saveDocument(combatPreset)
         return combatPreset._id
@@ -130,28 +120,22 @@ class DatabaseService {
 
     public updateCharacterBank = async (
         lobbyId: string,
-        newCharacterBank: Array<{ characterId: string; controlledBy: Array<string> }>
+        newCharacterBank: LobbyClass['characterBank']
     ): Promise<void> => {
         await mongoose.connection
             .collection('lobbies')
             .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { characterBank: newCharacterBank } })
     }
 
-    public assignCharacterToPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {
+    public assignCharacterToPlayer = async (lobbyId: string, userId: string, descriptor: string): Promise<void> => {
         const lobby = await this.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
         const player = lobby.players.find((p) => p.userId === userId)
         if (!player) throw new NotFound('Player not found')
-        const characterInLobbyBank = lobby.characterBank.find((c) => c.characterId === characterId)
+        const character = await this.getCharacterByDescriptor(descriptor)
+        if (!character) throw new NotFound('Entity you were looking for was removed from Database.')
+        const characterInLobbyBank = lobby.characterBank.find((c) => c.characterId === character._id.toString())
         if (!characterInLobbyBank) throw new NotFound('Character not found')
-        const character = await this.getCharacter(characterId)
-        if (!character) {
-            lobby.characterBank = lobby.characterBank.filter((c) => c.characterId !== characterId)
-            await mongoose.connection
-                .collection('lobbies')
-                .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { characterBank: lobby.characterBank } })
-            throw new NotFound('Entity you were looking for was removed from Database, but not from lobby. Removing.')
-        }
         if (!characterInLobbyBank.controlledBy) characterInLobbyBank.controlledBy = []
         if (!characterInLobbyBank.controlledBy.includes(userId)) {
             characterInLobbyBank.controlledBy.push(userId)
@@ -159,12 +143,14 @@ class DatabaseService {
         await this.updateCharacterBank(lobbyId, lobby.characterBank)
     }
 
-    public removeCharacterFromPlayer = async (lobbyId: string, userId: string, characterId: string): Promise<void> => {
+    public removeCharacterFromPlayer = async (lobbyId: string, userId: string, descriptor: string): Promise<void> => {
         const lobby = await this.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
         const player = lobby.players.find((p) => p.userId === userId)
         if (!player) throw new NotFound('Player not found')
-        const characterInLobbyBank = lobby.characterBank.find((c) => c.characterId === characterId)
+        const character = await this.getCharacterByDescriptor(descriptor)
+        if (!character) throw new NotFound('Character not found')
+        const characterInLobbyBank = lobby.characterBank.find((c) => c.characterId === character._id.toString())
         if (!characterInLobbyBank) throw new NotFound('Character not found')
         if (!characterInLobbyBank.controlledBy) characterInLobbyBank.controlledBy = []
         if (characterInLobbyBank.controlledBy.includes(userId)) {
@@ -188,114 +174,130 @@ class DatabaseService {
             .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { characterBank: lobby.characterBank } })
     }
 
+    public addCharacterToLobbyByDescriptor = async (
+        lobbyId: string,
+        descriptor: string,
+        controlledBy: Array<string>
+    ): Promise<void> => {
+        const lobby = await this.getLobby(lobbyId)
+        if (!lobby) throw new NotFound('Lobby not found')
+        const character = await this.getCharacterByDescriptor(descriptor)
+        if (!character) throw new NotFound('Character not found')
+        lobby.characterBank.push({ characterId: character._id.toString(), controlledBy: controlledBy || [] })
+        await mongoose.connection
+            .collection('lobbies')
+            .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { characterBank: lobby.characterBank } })
+    }
+
     public addWeaponToCharacter = async (
         lobby_id: string,
-        character_id: string,
-        descriptor: string,
+        characterDescriptor: string,
+        weaponDescriptor: string,
         quantity: number
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacter(character_id)
+        const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.weaponry) character.weaponry = []
-        character.weaponry.push({ descriptor, quantity })
+        character.weaponry.push({ descriptor: weaponDescriptor, quantity })
         await mongoose.connection
             .collection('characters')
-            .updateOne({ _id: new Types.ObjectId(character_id) }, { $set: { weaponry: character.weaponry } })
+            .updateOne({ descriptor: characterDescriptor }, { $set: { weaponry: character.weaponry } })
     }
 
     public addSpellToCharacter = async (
         lobby_id: string,
-        character_id: string,
-        descriptor: string,
+        characterDescriptor: string,
+        spellDescriptor: string,
         conflictsWith: Array<string>,
         requiresToUse: Array<string>
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacter(character_id)
+        const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.spellBook) character.spellBook = []
-        if (character.spellBook.find((s) => s.descriptor === descriptor)) throw new BadRequest('Spell already exists')
-        character.spellBook.push({ descriptor, conflictsWith, requiresToUse })
+        if (character.spellBook.find((s) => s.descriptor === characterDescriptor))
+            throw new BadRequest('Spell already exists')
+        character.spellBook.push({ descriptor: spellDescriptor, conflictsWith, requiresToUse })
         await mongoose.connection
             .collection('characters')
-            .updateOne({ _id: new Types.ObjectId(character_id) }, { $set: { spellBook: character.spellBook } })
+            .updateOne({ descriptor: characterDescriptor }, { $set: { spellBook: character.spellBook } })
     }
 
     public addStatusEffectToCharacter = async (
         lobby_id: string,
-        character_id: string,
-        descriptor: string,
+        characterDescriptor: string,
+        effectDescriptor: string,
         duration: number
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacter(character_id)
+        const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.statusEffects) character.statusEffects = []
-        character.statusEffects.push({ descriptor, duration })
+        character.statusEffects.push({ descriptor: effectDescriptor, duration })
         await mongoose.connection
             .collection('characters')
-            .updateOne({ _id: new Types.ObjectId(character_id) }, { $set: { statusEffects: character.statusEffects } })
+            .updateOne({ descriptor: characterDescriptor }, { $set: { statusEffects: character.statusEffects } })
     }
 
     public addItemToCharacter = async (
         lobby_id: string,
-        character_id: string,
-        descriptor: string,
+        characterDescriptor: string,
+        itemDescriptor: string,
         quantity: number
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacter(character_id)
+        const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.inventory) character.inventory = []
-        character.inventory.push({ descriptor, quantity })
+        character.inventory.push({ descriptor: itemDescriptor, quantity })
         await mongoose.connection
             .collection('characters')
-            .updateOne({ _id: new Types.ObjectId(character_id) }, { $set: { inventory: character.inventory } })
+            .updateOne({ descriptor: characterDescriptor }, { $set: { inventory: character.inventory } })
     }
 
     public addAttributeToCharacter = async (
         lobby_id: string,
-        character_id: string,
+        characterDescriptor: string,
         dlc: string,
-        descriptor: string,
+        attributeDescriptor: string,
         value: number
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacter(character_id)
+        const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.attributes) character.attributes = []
-        const attribute = character.attributes.find((a) => a.dlc === dlc && a.descriptor === descriptor)
+        const attribute = character.attributes.find((a) => a.dlc === dlc && a.descriptor === characterDescriptor)
         if (attribute) {
             attribute.value = value
         } else {
-            character.attributes.push({ dlc, descriptor, value })
+            character.attributes.push({ dlc, descriptor: attributeDescriptor, value })
         }
         await mongoose.connection
             .collection('characters')
-            .updateOne({ _id: new Types.ObjectId(character_id) }, { $set: { attributes: character.attributes } })
+            .updateOne({ descriptor: characterDescriptor }, { $set: { attributes: character.attributes } })
     }
 
     public changeSpellLayoutOfCharacter = async (
         lobby_id: string,
-        character_id: string,
+        characterDescriptor: string,
         spells: Array<string>
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacter(character_id)
+        const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.spellLayout) character.spellLayout = { max: 4, layout: [] }
         if (spells.length > character.spellLayout.max) throw new BadRequest('Too many spells')
         character.spellLayout.layout = spells
         await mongoose.connection
             .collection('characters')
-            .updateOne({ _id: new Types.ObjectId(character_id) }, { $set: { spellLayout: character.spellLayout } })
+            .updateOne({ descriptor: characterDescriptor }, { $set: { spellLayout: character.spellLayout } })
     }
 
     public getCharactersOfPlayer = async (lobbyId: string, userId: string): Promise<Array<CharacterClass>> => {

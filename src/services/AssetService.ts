@@ -52,7 +52,7 @@ class AssetService {
         if (user_assets) {
             rawAssets = fs.readdirSync(path.join(process.cwd(), 'public', 'user_assets'))
         } else {
-            rawAssets = fs.readdirSync(path.join(PATH_TO_INSTALLED_PACKAGES, dlc, 'assets'))
+            rawAssets = fs.readdirSync(path.join(PATH_TO_INSTALLED_PACKAGES, dlc, 'assets')) // cache it probably
         }
         for (const asset of rawAssets) {
             const assetName = asset.split('.')[0]

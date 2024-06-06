@@ -1,4 +1,5 @@
 import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose'
+import { Types } from 'mongoose'
 
 const requiredProp = (options: { [key: string]: unknown } = {}) => prop({ required: true, ...options })
 
@@ -82,6 +83,9 @@ class CharacterDecorationsClass {
 
 @modelOptions({ schemaOptions: { collection: 'characters' } })
 export class CharacterClass {
+    @prop()
+    _id: Types.ObjectId
+
     @requiredProp()
     descriptor: string
 

@@ -29,7 +29,7 @@ const cookPresetFromDB = async (combatPreset: string): Promise<GamePreset | null
             owner: controlled_by,
         }
         if (source === 'embedded') {
-            const customEntity = await DatabaseService.getCharacter(path)
+            const customEntity = await DatabaseService.getCharacterByDescriptor(path)
             if (!customEntity) throw new NotFound('Entity not found')
             result.custom_entities[path] = characterModelToPreset(customEntity)
         }
@@ -75,7 +75,7 @@ const cookPresetFromRequest = async (combatPreset: {
             owner: controlledBy,
         }
         if (source === 'embedded') {
-            const customEntity = await DatabaseService.getCharacter(path)
+            const customEntity = await DatabaseService.getCharacterByDescriptor(path)
             if (!customEntity) throw new NotFound('Entity not found')
             result.custom_entities[path] = characterModelToPreset(customEntity)
         }

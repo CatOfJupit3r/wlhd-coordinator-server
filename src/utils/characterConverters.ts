@@ -69,15 +69,20 @@ export const characterModelToPreset = (characterModel: CharacterClass): Characte
     return preset
 }
 
-export const characterModelToInfo = (characterModel: CharacterClass): CharacterInfo => {
+export const characterModelToInfo = (
+    characterModel: CharacterClass,
+    decorationsAsDescriptors?: boolean
+): CharacterInfo => {
     const info: CharacterInfo = {
         descriptor: characterModel.descriptor,
         controlledBy: null,
-        decorations: {
-            name: `coordinator:${characterModel.descriptor}.name`,
-            description: `coordinator:${characterModel.descriptor}.description`,
-            sprite: characterModel.decorations.sprite,
-        },
+        decorations: decorationsAsDescriptors
+            ? {
+                  name: `coordinator:${characterModel.descriptor}.name`,
+                  description: `coordinator:${characterModel.descriptor}.description`,
+                  sprite: characterModel.decorations.sprite,
+              }
+            : characterModel.decorations,
         attributes: {
             ...Object.fromEntries(
                 Object.entries(DEFAULT_CHARACTER_ATTRIBUTES).map(([key, value]) => [key, String(value)])
