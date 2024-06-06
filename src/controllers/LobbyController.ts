@@ -137,6 +137,26 @@ class LobbyController {
         res.status(200).json({ result: 'ok', descriptor })
     }
 
+    public async getWeaponryOfCharacter(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed('Not implemented')
+    }
+
+    public async getSpellbookOfCharacter(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed('Not implemented')
+    }
+
+    public async getStatusEffectsOfCharacter(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed('Not implemented')
+    }
+
+    public async getInventoryOfCharacter(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed('Not implemented')
+    }
+
+    public async getAttributesOfCharacter(req: Request, res: Response): Promise<void> {
+        throw new MethodNotAllowed('Not implemented')
+    }
+
     public async addWeaponToCharacter(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor: characterDescriptor } = req.params
         InputValidator.validateParams(

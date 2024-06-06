@@ -12,14 +12,17 @@ router.get('/:lobby_id', LobbyController.getLobbyInfo.bind(LobbyController))
 router.get('/:lobby_id/custom_translations', LobbyController.getCustomTranslations.bind(LobbyController))
 router.get('/:lobby_id/my_characters', LobbyController.getMyCharacterInfo.bind(LobbyController))
 router.get('/:lobby_id/character/:descriptor', LobbyController.getCharacterInfo.bind(LobbyController))
-router.get('/:lobby_id/character/:descriptor/weaponry', LobbyController.addWeaponToCharacter.bind(LobbyController))
-router.get('/:lobby_id/character/:descriptor/spellbook', LobbyController.addSpellToCharacter.bind(LobbyController))
+router.get('/:lobby_id/character/:descriptor/weaponry', LobbyController.getWeaponryOfCharacter.bind(LobbyController))
+router.get('/:lobby_id/character/:descriptor/spellbook', LobbyController.getSpellbookOfCharacter.bind(LobbyController))
 router.get(
     '/:lobby_id/character/:descriptor/status_effects',
-    LobbyController.addStatusEffectToCharacter.bind(LobbyController)
+    LobbyController.getStatusEffectsOfCharacter.bind(LobbyController)
 )
-router.get('/:lobby_id/character/:descriptor/inventory', LobbyController.addItemToCharacter.bind(LobbyController))
-router.get('/:lobby_id/character/:descriptor/attributes', LobbyController.addAttributeToCharacter.bind(LobbyController))
+router.get('/:lobby_id/character/:descriptor/inventory', LobbyController.getInventoryOfCharacter.bind(LobbyController))
+router.get(
+    '/:lobby_id/character/:descriptor/attributes',
+    LobbyController.getAttributesOfCharacter.bind(LobbyController)
+)
 
 // POST
 
