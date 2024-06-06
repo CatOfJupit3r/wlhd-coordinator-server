@@ -10,7 +10,7 @@ class LoginController {
 
         try {
             const { accessToken, refreshToken } = await UserService.loginWithPassword({ handle, password })
-            return res.json({
+            return res.status(200).json({
                 accessToken,
                 refreshToken,
             })

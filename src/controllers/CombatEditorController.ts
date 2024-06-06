@@ -8,7 +8,7 @@ class CombatEditorController {
         const { field } = req.body
         InputValidator.validateField({ key: 'field', value: field }, 'array', true)
         const preset_id = await CombatEditorService.createCombatPreset(field)
-        res.json({ result: 'ok', preset_id })
+        res.status(200).json({ result: 'ok', preset_id })
     }
 }
 

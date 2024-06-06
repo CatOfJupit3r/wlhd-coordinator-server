@@ -33,7 +33,7 @@ class LobbyController {
         const { player_id, nickname } = req.body
         InputValidator.validateObject({ player_id, nickname }, { player_id: 'objectId', nickname: 'string' })
         await LobbyService.addPlayerToLobby(lobby_id, player_id, nickname)
-        res.json({ result: 'ok', player_id })
+        res.status(200).json({ result: 'ok', player_id })
     }
 
     public async getLobbyInfo(req: Request, res: Response): Promise<void> {
