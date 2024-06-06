@@ -1,4 +1,4 @@
-export type SupportedTypes = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'any'
+export type SupportedTypes = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'any' // TODO: Add `ObjectId` with ObjectId.isValid(value) check.
 
 export interface Schema {
     [key: string]: SupportedTypes
@@ -36,4 +36,4 @@ export interface FailDetails {
 
 export const VALID_INPUT = (): SuccessfulValidation => ({ success: true })
 
-export const INVALID_INPUT = (misses: Misses): FailedValidation => ({ success: false, misses: misses })
+export const INVALID_INPUT = (misses?: Misses): FailedValidation => ({ success: false, misses: misses || [] })

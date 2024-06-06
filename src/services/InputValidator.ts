@@ -149,6 +149,21 @@ class InputValidator {
             }
         }
     }
+
+    public validateParams = (
+        input: Input,
+        expected: Schema,
+        throwRequestError: boolean = true
+    ): FailedValidation | SuccessfulValidation => {
+        try {
+            return this.validateObject(input, expected, throwRequestError)
+        } catch (error: unknown) {
+            if (error instanceof Exception) {
+                error.message = 'Invalid route parameters! Check your input and try again.'
+            }
+            throw error
+        }
+    }
 }
 
 export default new InputValidator()

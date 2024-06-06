@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { Socket } from 'socket.io'
 import { DESCRIPTOR_REGEX } from '../configs'
 import { BadRequest, Forbidden, InternalServerError, MethodNotAllowed, NotFound } from '../models/ErrorModels'
+import { CombatClass } from '../models/TypegooseModels'
 import AuthService from '../services/AuthService'
 import DatabaseService from '../services/DatabaseService'
 import InputValidator from '../services/InputValidator'
@@ -11,7 +12,7 @@ import { getEmittableCombatPreset } from '../utils/getEmittableCombatPreset'
 class LobbyController {
     public async getCustomTranslations(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-        InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string')
+        InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const translations = await LobbyService.getCustomTranslations(lobby_id, user._id)
         res.status(200).json(translations)
@@ -27,21 +28,17 @@ class LobbyController {
     }
 
     public async addPlayerToLobby(req: Request, res: Response): Promise<void> {
-        console.log('Adding player to lobby. Params:', req.body)
         const { lobby_id } = req.params
+        InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
         const { player_id, nickname } = req.body
-        InputValidator.validateObject(
-            { lobby_id, player_id, nickname },
-            { lobby_id: 'string', player_id: 'string', nickname: 'string' },
-            true
-        )
+        InputValidator.validateObject({ player_id, nickname }, { player_id: 'string', nickname: 'string' })
         await LobbyService.addPlayerToLobby(lobby_id, player_id, nickname)
         res.json({ result: 'ok', player_id })
     }
 
     public async getLobbyInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-        InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string')
+        InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
         const lobby = await DatabaseService.getLobby(lobby_id)
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         if (!lobby) throw new BadRequest('Lobby not found!')
@@ -58,30 +55,18 @@ class LobbyController {
 
     public async createCombatForLobby(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-
-        interface CombatPreset {
-            field: {
-                [square: string]: {
-                    path: string
-                    source: string
-                    controlledBy: {
-                        type: string
-                        id: string
-                    }
-                }
-            }
-        }
+        InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
 
         const {
             combatNickname,
             combatPreset,
         }: {
             combatNickname: string
-            combatPreset: CombatPreset
+            combatPreset: CombatClass['field']
         } = req.body
         InputValidator.validateObject(
-            { lobby_id, combatNickname, combatPreset },
-            { lobby_id: 'string', combatNickname: 'string', combatPreset: 'object' }
+            { combatNickname, combatPreset },
+            { combatNickname: 'string', combatPreset: 'object' }
         )
 
         const lobby = await DatabaseService.getLobby(lobby_id)
@@ -102,23 +87,25 @@ class LobbyController {
 
     public async assignCharacterToPlayer(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor } = req.params
+        InputValidator.validateParams({ lobby_id, descriptor }, { lobby_id: 'string', descriptor: 'string' })
         const { player_id } = req.body
-        InputValidator.validateObject({ lobby_id, player_id }, { lobby_id: 'string', player_id: 'string' })
+        InputValidator.validateField({ key: 'player_id', value: player_id }, 'string')
         await LobbyService.assignCharacterToPlayer(lobby_id, player_id, descriptor)
         res.status(200).json({ message: 'ok', player_id, descriptor })
     }
 
     public async removeCharacterFromPlayer(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor } = req.params
+        InputValidator.validateParams({ lobby_id, descriptor }, { lobby_id: 'string', descriptor: 'string' })
         const { player_id } = req.body
-        InputValidator.validateObject({ lobby_id, player_id }, { lobby_id: 'string', player_id: 'string' })
+        InputValidator.validateField({ key: 'player_id', value: player_id }, 'string')
         await LobbyService.removeCharacterFromPlayer(lobby_id, player_id, descriptor)
         res.status(200).json({ message: 'ok', player_id, descriptor })
     }
 
     public async getMyCharacterInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-        InputValidator.validateField({ key: 'lobby_id', value: lobby_id }, 'string')
+        InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const characters = await LobbyService.getMyCharactersInfo(lobby_id, user._id)
         res.status(200).json({
@@ -128,18 +115,19 @@ class LobbyController {
 
     public async getCharacterInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor } = req.params
-        InputValidator.validateObject({ lobby_id, descriptor }, { lobby_id: 'string', descriptor: 'string' })
+        InputValidator.validateParams({ lobby_id, descriptor }, { lobby_id: 'string', descriptor: 'string' })
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const characterInfo = await LobbyService.getCharacterInfo(lobby_id, user._id, descriptor)
         res.status(200).json(characterInfo)
     }
 
     public async createCharacter(req: Request, res: Response): Promise<void> {
-        const { descriptor, decorations, attributes, controlledBy } = req.body
         const { lobby_id } = req.params
+        InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
+        const { descriptor, decorations, attributes, controlledBy } = req.body
         InputValidator.validateObject(
-            { descriptor, decorations, attributes, lobby_id },
-            { descriptor: 'string', attributes: 'array', decorations: 'any', lobby_id: 'string' }
+            { descriptor, decorations, attributes },
+            { descriptor: 'string', attributes: 'array', decorations: 'any' }
         )
         InputValidator.validateObject(decorations, { name: 'string', description: 'string', sprite: 'string' })
         for (const attribute of attributes) {
@@ -151,15 +139,15 @@ class LobbyController {
 
     public async addWeaponToCharacter(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor: characterDescriptor } = req.params
-        InputValidator.validateObject(
-            { lobby_id, characterDescriptor },
+        InputValidator.validateParams(
+            { lobby_id, descriptor: characterDescriptor },
             {
                 lobby_id: 'string',
-                characterDescriptor: 'string',
+                descriptor: 'string',
             }
         )
         const { descriptor: weaponDescriptor } = req.body
-        InputValidator.validateField({ key: 'weaponDescriptor', value: weaponDescriptor }, 'string')
+        InputValidator.validateField({ key: 'descriptor', value: weaponDescriptor }, 'string')
         if (!DESCRIPTOR_REGEX().test(weaponDescriptor)) throw new BadRequest('Invalid descriptor')
         const quantity = req.body.quantity || 1
         InputValidator.validateField({ key: 'quantity', value: quantity }, 'number')
@@ -169,15 +157,15 @@ class LobbyController {
 
     public async addSpellToCharacter(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor: characterDescriptor } = req.params
-        InputValidator.validateObject(
-            { lobby_id, characterDescriptor },
+        InputValidator.validateParams(
+            { lobby_id, descriptor: characterDescriptor },
             {
                 lobby_id: 'string',
-                characterDescriptor: 'string',
+                descriptor: 'string',
             }
         )
         const { descriptor: spellDescriptor } = req.body
-        InputValidator.validateField({ key: 'spellDescriptor', value: spellDescriptor }, 'string')
+        InputValidator.validateField({ key: 'descriptor', value: spellDescriptor }, 'string')
         if (!DESCRIPTOR_REGEX().test(spellDescriptor)) throw new BadRequest('Invalid descriptor')
         const { conflictsWith, requiresToUse } = {
             conflictsWith: req.body.conflictsWith || [],
@@ -199,19 +187,18 @@ class LobbyController {
 
     public async addStatusEffectToCharacter(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor: characterDescriptor } = req.params
-        InputValidator.validateObject(
-            { lobby_id, characterDescriptor },
+        InputValidator.validateParams(
+            { lobby_id, descriptor: characterDescriptor },
             {
                 lobby_id: 'string',
-                characterDescriptor: 'string',
-            },
-            false
+                descriptor: 'string',
+            }
         )
         const { descriptor: effectDescriptor, duration } = req.body
         InputValidator.validateObject(
-            { effectDescriptor, duration },
+            { descriptor: effectDescriptor, duration },
             {
-                effectDescriptor: 'string',
+                descriptor: 'string',
                 duration: 'number',
             }
         )
@@ -222,15 +209,15 @@ class LobbyController {
 
     public async addItemToCharacter(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor: characterDescriptor } = req.params
-        InputValidator.validateObject(
-            { lobby_id, characterDescriptor },
+        InputValidator.validateParams(
+            { lobby_id, descriptor: characterDescriptor },
             {
                 lobby_id: 'string',
-                characterDescriptor: 'string',
+                descriptor: 'string',
             }
         )
         const { descriptor: itemDescriptor } = req.body
-        InputValidator.validateField({ key: 'itemDescriptor', value: itemDescriptor }, 'string')
+        InputValidator.validateField({ key: 'descriptor', value: itemDescriptor }, 'string')
         if (!DESCRIPTOR_REGEX().test(itemDescriptor)) throw new BadRequest('Invalid descriptor')
         const quantity = req.body.quantity || 1
         InputValidator.validateField({ key: 'quantity', value: quantity }, 'number')
@@ -240,20 +227,20 @@ class LobbyController {
 
     public async addAttributeToCharacter(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor: characterDescriptor } = req.params
-        InputValidator.validateObject(
-            { lobby_id, characterDescriptor },
+        InputValidator.validateParams(
+            { lobby_id, descriptor: characterDescriptor },
             {
                 lobby_id: 'string',
-                characterDescriptor: 'string',
+                descriptor: 'string',
             }
         )
         const { dlc, descriptor: attributeDescriptor, value } = req.body
         if (!DESCRIPTOR_REGEX().test(`${dlc}:${attributeDescriptor}`)) throw new BadRequest('Invalid descriptor')
         InputValidator.validateObject(
-            { dlc, attributeDescriptor, value },
+            { dlc, descriptor: attributeDescriptor, value },
             {
                 dlc: 'string',
-                attributeDescriptor: 'string',
+                descriptor: 'string',
                 value: 'number',
             }
         )
@@ -263,11 +250,11 @@ class LobbyController {
 
     public async changeSpellLayoutOfCharacter(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor: characterDescriptor } = req.params
-        InputValidator.validateObject(
-            { lobby_id, characterDescriptor },
+        InputValidator.validateParams(
+            { lobby_id, descriptor: characterDescriptor },
             {
                 lobby_id: 'string',
-                characterDescriptor: 'string',
+                descriptor: 'string',
             }
         )
         const { layout } = req.body
