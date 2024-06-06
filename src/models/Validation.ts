@@ -1,4 +1,4 @@
-export type SupportedTypes = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'any' // TODO: Add `ObjectId` with ObjectId.isValid(value) check.
+export type SupportedTypes = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'any' | 'objectId'
 
 export interface Schema {
     [key: string]: SupportedTypes

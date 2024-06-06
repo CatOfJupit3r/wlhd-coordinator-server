@@ -12,7 +12,7 @@ import { getEmittableCombatPreset } from '../utils/getEmittableCombatPreset'
 class LobbyController {
     public async getCustomTranslations(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-        InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
+        InputValidator.validateParams({ lobby_id }, { lobby_id: 'objectId' })
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const translations = await LobbyService.getCustomTranslations(lobby_id, user._id)
         res.status(200).json(translations)
@@ -21,7 +21,7 @@ class LobbyController {
     public async createNewLobby(req: Request, res: Response): Promise<void> {
         console.log('Creating lobby. Params:', req.body)
         const { lobbyName, gm_id } = req.body
-        InputValidator.validateObject({ lobbyName, gm_id }, { lobbyName: 'string', gm_id: 'string' })
+        InputValidator.validateObject({ lobbyName, gm_id }, { lobbyName: 'string', gm_id: 'objectId' })
         const lobby_id = await LobbyService.createNewLobby(lobbyName, gm_id)
         console.log('Lobby created', lobby_id)
         res.status(200).json({ result: 'ok', lobby_id })
@@ -31,14 +31,14 @@ class LobbyController {
         const { lobby_id } = req.params
         InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
         const { player_id, nickname } = req.body
-        InputValidator.validateObject({ player_id, nickname }, { player_id: 'string', nickname: 'string' })
+        InputValidator.validateObject({ player_id, nickname }, { player_id: 'objectId', nickname: 'string' })
         await LobbyService.addPlayerToLobby(lobby_id, player_id, nickname)
         res.json({ result: 'ok', player_id })
     }
 
     public async getLobbyInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-        InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
+        InputValidator.validateParams({ lobby_id }, { lobby_id: 'objectId' })
         const lobby = await DatabaseService.getLobby(lobby_id)
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         if (!lobby) throw new BadRequest('Lobby not found!')
@@ -55,7 +55,7 @@ class LobbyController {
 
     public async createCombatForLobby(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-        InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
+        InputValidator.validateParams({ lobby_id }, { lobby_id: 'objectId' })
 
         const {
             combatNickname,
@@ -87,25 +87,25 @@ class LobbyController {
 
     public async assignCharacterToPlayer(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor } = req.params
-        InputValidator.validateParams({ lobby_id, descriptor }, { lobby_id: 'string', descriptor: 'string' })
+        InputValidator.validateParams({ lobby_id, descriptor }, { lobby_id: 'objectId', descriptor: 'string' })
         const { player_id } = req.body
-        InputValidator.validateField({ key: 'player_id', value: player_id }, 'string')
+        InputValidator.validateField({ key: 'player_id', value: player_id }, 'objectId')
         await LobbyService.assignCharacterToPlayer(lobby_id, player_id, descriptor)
         res.status(200).json({ message: 'ok', player_id, descriptor })
     }
 
     public async removeCharacterFromPlayer(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor } = req.params
-        InputValidator.validateParams({ lobby_id, descriptor }, { lobby_id: 'string', descriptor: 'string' })
+        InputValidator.validateParams({ lobby_id, descriptor }, { lobby_id: 'objectId', descriptor: 'string' })
         const { player_id } = req.body
-        InputValidator.validateField({ key: 'player_id', value: player_id }, 'string')
+        InputValidator.validateField({ key: 'player_id', value: player_id }, 'objectId')
         await LobbyService.removeCharacterFromPlayer(lobby_id, player_id, descriptor)
         res.status(200).json({ message: 'ok', player_id, descriptor })
     }
 
     public async getMyCharacterInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-        InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
+        InputValidator.validateParams({ lobby_id }, { lobby_id: 'objectId' })
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const characters = await LobbyService.getMyCharactersInfo(lobby_id, user._id)
         res.status(200).json({
@@ -115,7 +115,7 @@ class LobbyController {
 
     public async getCharacterInfo(req: Request, res: Response): Promise<void> {
         const { lobby_id, descriptor } = req.params
-        InputValidator.validateParams({ lobby_id, descriptor }, { lobby_id: 'string', descriptor: 'string' })
+        InputValidator.validateParams({ lobby_id, descriptor }, { lobby_id: 'objectId', descriptor: 'string' })
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const characterInfo = await LobbyService.getCharacterInfo(lobby_id, user._id, descriptor)
         res.status(200).json(characterInfo)
@@ -123,7 +123,7 @@ class LobbyController {
 
     public async createCharacter(req: Request, res: Response): Promise<void> {
         const { lobby_id } = req.params
-        InputValidator.validateParams({ lobby_id }, { lobby_id: 'string' })
+        InputValidator.validateParams({ lobby_id }, { lobby_id: 'objectId' })
         const { descriptor, decorations, attributes, controlledBy } = req.body
         InputValidator.validateObject(
             { descriptor, decorations, attributes },
@@ -142,7 +142,7 @@ class LobbyController {
         InputValidator.validateParams(
             { lobby_id, descriptor: characterDescriptor },
             {
-                lobby_id: 'string',
+                lobby_id: 'objectId',
                 descriptor: 'string',
             }
         )
@@ -160,7 +160,7 @@ class LobbyController {
         InputValidator.validateParams(
             { lobby_id, descriptor: characterDescriptor },
             {
-                lobby_id: 'string',
+                lobby_id: 'objectId',
                 descriptor: 'string',
             }
         )
@@ -190,7 +190,7 @@ class LobbyController {
         InputValidator.validateParams(
             { lobby_id, descriptor: characterDescriptor },
             {
-                lobby_id: 'string',
+                lobby_id: 'objectId',
                 descriptor: 'string',
             }
         )
@@ -212,7 +212,7 @@ class LobbyController {
         InputValidator.validateParams(
             { lobby_id, descriptor: characterDescriptor },
             {
-                lobby_id: 'string',
+                lobby_id: 'objectId',
                 descriptor: 'string',
             }
         )
@@ -230,7 +230,7 @@ class LobbyController {
         InputValidator.validateParams(
             { lobby_id, descriptor: characterDescriptor },
             {
-                lobby_id: 'string',
+                lobby_id: 'objectId',
                 descriptor: 'string',
             }
         )
@@ -253,7 +253,7 @@ class LobbyController {
         InputValidator.validateParams(
             { lobby_id, descriptor: characterDescriptor },
             {
-                lobby_id: 'string',
+                lobby_id: 'objectId',
                 descriptor: 'string',
             }
         )

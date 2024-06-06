@@ -1,3 +1,4 @@
+import { Types } from 'mongoose'
 import { BadRequest, Exception } from '../models/ErrorModels'
 import {
     FailDetails,
@@ -114,14 +115,25 @@ class InputValidator {
                     )
             }
             if (expectedType === 'any') return VALID_INPUT()
-            if (expectedType === 'array') {
+            if (expectedType === 'objectId') {
+                if (typeof value !== 'string' || !Types.ObjectId.isValid(value)) {
+                    if (throwRequestError)
+                        throw new BadRequest(
+                            this.VALIDATION_FAILED(),
+                            this.WRONG_TYPE_DETAILS({ [key]: value }, { [key]: expectedType }, [
+                                { key, type: 'objectId' },
+                            ])
+                        )
+                    return INVALID_INPUT([{ key, type: expectedType }])
+                }
+            } else if (expectedType === 'array') {
                 if (!Array.isArray(value)) {
                     if (throwRequestError)
                         throw new BadRequest(
                             this.VALIDATION_FAILED(),
                             this.WRONG_TYPE_DETAILS({ [key]: value }, { [key]: expectedType }, [{ key, type: 'array' }])
                         )
-                    return INVALID_INPUT([{ key, type: 'array' }])
+                    return INVALID_INPUT([{ key, type: expectedType }])
                 }
             } else if (typeof value !== expectedType) {
                 if (throwRequestError)
