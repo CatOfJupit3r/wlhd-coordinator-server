@@ -2,6 +2,7 @@ import { Request, Response } from 'express'
 import { Socket } from 'socket.io'
 import { DESCRIPTOR_REGEX } from '../configs'
 import { BadRequest, Forbidden, InternalServerError, MethodNotAllowed, NotFound } from '../models/ErrorModels'
+import { AttributeInfo, ItemInfo, SpellInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
 import { CombatClass } from '../models/TypegooseModels'
 import AuthService from '../services/AuthService'
 import DatabaseService from '../services/DatabaseService'
@@ -138,23 +139,81 @@ class LobbyController {
     }
 
     public async getWeaponryOfCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed('Not implemented')
-    }
-
-    public async getSpellbookOfCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed('Not implemented')
-    }
-
-    public async getStatusEffectsOfCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed('Not implemented')
+        const { lobby_id, descriptor } = req.params
+        InputValidator.validateParams(
+            { lobby_id, descriptor },
+            {
+                lobby_id: 'objectId',
+                descriptor: 'string',
+            }
+        )
+        res.status(200).json({
+            weaponry: await LobbyService.getWeaponryOfCharacter(lobby_id, descriptor),
+        } as { weaponry: Array<WeaponInfo> })
     }
 
     public async getInventoryOfCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed('Not implemented')
+        const { lobby_id, descriptor } = req.params
+        InputValidator.validateParams(
+            { lobby_id, descriptor },
+            {
+                lobby_id: 'objectId',
+                descriptor: 'string',
+            }
+        )
+        res.status(200).json({
+            inventory: await LobbyService.getInventoryOfCharacter(lobby_id, descriptor),
+        } as { inventory: Array<ItemInfo> })
+    }
+
+    public async getSpellbookOfCharacter(req: Request, res: Response): Promise<void> {
+        const { lobby_id, descriptor } = req.params
+        InputValidator.validateParams(
+            { lobby_id, descriptor },
+            {
+                lobby_id: 'objectId',
+                descriptor: 'string',
+            }
+        )
+        res.status(200).json({
+            spells: await LobbyService.getSpellbookOfCharacter(lobby_id, descriptor),
+        } as {
+            spells: {
+                spellBook: Array<SpellInfo>
+                spellLayout: {
+                    layout: Array<string>
+                    conflicts: unknown
+                }
+            }
+        })
+    }
+
+    public async getStatusEffectsOfCharacter(req: Request, res: Response): Promise<void> {
+        const { lobby_id, descriptor } = req.params
+        InputValidator.validateParams(
+            { lobby_id, descriptor },
+            {
+                lobby_id: 'objectId',
+                descriptor: 'string',
+            }
+        )
+        res.status(200).json({
+            status_effects: await LobbyService.getStatusEffectsOfCharacter(lobby_id, descriptor),
+        } as { status_effects: Array<StatusEffectInfo> })
     }
 
     public async getAttributesOfCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed('Not implemented')
+        const { lobby_id, descriptor } = req.params
+        InputValidator.validateParams(
+            { lobby_id, descriptor },
+            {
+                lobby_id: 'objectId',
+                descriptor: 'string',
+            }
+        )
+        res.status(200).json({
+            attributes: await LobbyService.getAttributesOfCharacter(lobby_id, descriptor),
+        } as { attributes: AttributeInfo })
     }
 
     public async addWeaponToCharacter(req: Request, res: Response): Promise<void> {

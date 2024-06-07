@@ -52,13 +52,17 @@ export interface EntityInfo {
     decorations: GameComponentDecoration
     id: string
     square: { line: string; column: string }
-    attributes: { [attribute: string]: string }
+    attributes: AttributeInfo
     controlled_by: ControlInfo
 
     items: Array<ItemInfo>
     weapons: Array<WeaponInfo>
     spells: Array<SpellInfo>
     status_effects: Array<StatusEffectInfo>
+}
+
+export interface AttributeInfo {
+    [attribute: string]: string
 }
 
 export interface WeaponInfo {
