@@ -5,10 +5,10 @@ import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
 import { AttributeInfo, ItemInfo, SpellInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
 import { TranslationSnippet } from '../models/Translation'
 import { AttributeClass, CombatClass } from '../models/TypegooseModels'
-import { convertInventory, convertSpellbook, convertStatusEffects, convertWeaponry } from '../utils/DLCPresetToInfo'
 import { characterModelToInfo, getAttributesFromCharacterModel } from '../utils/characterConverters'
 import AuthService from './AuthService'
 import CombatManager from './CombatManager'
+import DLCConversionService from './DLCConversionService'
 import DatabaseService from './DatabaseService'
 
 class LobbyService {
@@ -260,7 +260,7 @@ class LobbyService {
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         const { weaponry: databaseWeaponry } = character
-        return convertWeaponry(databaseWeaponry)
+        return DLCConversionService.convertWeaponry(databaseWeaponry)
     }
 
     public async getInventoryOfCharacter(lobbyId: string, descriptor: string): Promise<Array<ItemInfo>> {
@@ -269,7 +269,7 @@ class LobbyService {
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         const { inventory: databaseInventory } = character
-        return convertInventory(databaseInventory)
+        return DLCConversionService.convertInventory(databaseInventory)
     }
 
     public async getStatusEffectsOfCharacter(lobbyId: string, descriptor: string): Promise<Array<StatusEffectInfo>> {
@@ -278,7 +278,7 @@ class LobbyService {
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         const { statusEffects: databaseEffects } = character
-        return convertStatusEffects(databaseEffects)
+        return DLCConversionService.convertStatusEffects(databaseEffects)
     }
 
     public async getSpellbookOfCharacter(
@@ -296,7 +296,7 @@ class LobbyService {
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         return {
-            spellBook: await convertSpellbook(character.spellBook),
+            spellBook: await DLCConversionService.convertSpellbook(character.spellBook),
             spellLayout: {
                 layout: character.spellLayout.layout,
                 conflicts: '',
