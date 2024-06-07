@@ -111,6 +111,8 @@ export interface StatusEffectInfo {
     duration: string | null
 }
 
+export type FeaturesInfo = SpellInfo | ItemInfo | WeaponInfo | StatusEffectInfo
+
 export interface TranslationInfoAction {
     descriptor: string
     co_descriptor: string | null

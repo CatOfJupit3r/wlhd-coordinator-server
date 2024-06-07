@@ -3,7 +3,7 @@ import path from 'path'
 import { simpleGit, SimpleGit } from 'simple-git'
 
 import { GITHUB_LINK_REGEX, GITHUB_TOKEN, PATH_TO_INSTALLED_PACKAGES } from '../configs'
-import { DLCPreset, Manifest } from '../models/GameDLCData'
+import { DLCPreset, ItemPreset, Manifest, SpellPreset, StatusEffectPreset, WeaponPreset } from '../models/GameDLCData'
 
 type presetTypes = 'weapons' | 'spells' | 'items' | 'status_effects' | 'entities'
 
@@ -107,6 +107,7 @@ class PackageManagerService {
             binary: 'git',
             maxConcurrentProcesses: 6,
         })
+        // SOMEHOW THIS CAN ESCAPE DLC REPO AND RESET WHOLE REPO. I NEARLY LOST 4 HOUR WORTH OF DADA BECAUSE OF THIS WTF
         await dlc_git.reset(['--hard', 'origin'])
         await dlc_git.pull('origin', 'main', ['--rebase'])
     }
@@ -164,23 +165,30 @@ class PackageManagerService {
 
     private importDLCPreset(type: presetTypes, full_descriptor: string): DLCPreset | null {
         try {
-            const dlc = fs.readdirSync(PATH_TO_INSTALLED_PACKAGES)
-            for (const folder of dlc) {
-                const folderPath = path.join(PATH_TO_INSTALLED_PACKAGES, folder)
-                const dlcFiles = fs.readdirSync(folderPath)
-                if (dlcFiles.includes('data')) {
-                    const data = fs.readdirSync(path.join(folderPath, 'data'))
-                    if (data.includes(type)) {
-                        const presetJson = fs.readFileSync(path.join(folderPath, 'data', type), 'utf-8')
-                        const presets = JSON.parse(presetJson)
-                        for (const preset of presets) {
-                            // we cache ALL preset from imported DLC file for future use
-                            this.cachedPresets[folder][type][preset.descriptor] = preset
-                        }
-                        return this.cachedPresets[folder][type][full_descriptor] as DLCPreset
+            const [dlc, descriptor] = full_descriptor.split(':')
+            if (!dlc || !descriptor) {
+                console.log('Somehow, descriptor does not follow regex pattern. Look into it: ', full_descriptor)
+                return null
+            }
+            if (this.cachedPresets[dlc] && this.cachedPresets[dlc][type] && this.cachedPresets[dlc][type][descriptor]) {
+                return this.cachedPresets[dlc][type][descriptor]
+            }
+            const dlcFolderPath = path.join(PATH_TO_INSTALLED_PACKAGES, dlc)
+            const dlcFolder = fs.readdirSync(dlcFolderPath)
+            if (dlcFolder.includes('data')) {
+                const data = fs.readdirSync(path.join(dlcFolderPath, 'data'))
+                const presetFileName = `${type}.json`
+                if (data.includes(presetFileName)) {
+                    const presetJson = fs.readFileSync(path.join(dlcFolderPath, 'data', presetFileName), 'utf-8')
+                    const presets = JSON.parse(presetJson)
+                    this.hydrateCachedPresets(dlc, type)
+                    for (const descriptor in presets) {
+                        // we cache ALL preset from imported DLC file for future use
+                        this.cachedPresets[dlc][type][descriptor] = presets[descriptor]
                     }
-                    return null
+                    return (this.cachedPresets[dlc][type][descriptor] as DLCPreset) || null
                 }
+                return null
             }
             return null
         } catch (e) {
@@ -189,62 +197,34 @@ class PackageManagerService {
         }
     }
 
-    private importMultiple(type: presetTypes, descriptors: Array<string>): Array<DLCPreset> | null {
-        try {
-            const dlc = fs.readdirSync(PATH_TO_INSTALLED_PACKAGES)
-            for (const folder of dlc) {
-                const folderPath = path.join(PATH_TO_INSTALLED_PACKAGES, folder)
-                const dlcFiles = fs.readdirSync(folderPath)
-                if (dlcFiles.includes('data')) {
-                    const data = fs.readdirSync(path.join(folderPath, 'data'))
-                    if (data.includes(type)) {
-                        const presetJson = fs.readFileSync(path.join(folderPath, 'data', type), 'utf-8')
-                        const presets = JSON.parse(presetJson)
-                        for (const preset of presets) {
-                            this.cachedPresets[folder][type][preset.descriptor] = preset
-                        }
-                        return descriptors.map((descriptor) => this.cachedPresets[folder][type][descriptor])
-                    }
-                    return null
-                }
+    private hydrateCachedPresets = (dlc: string, type: presetTypes) => {
+        if (!this.cachedPresets[dlc]) {
+            this.cachedPresets[dlc] = {
+                weapons: {},
+                spells: {},
+                items: {},
+                status_effects: {},
             }
-            return null
-        } catch (e) {
-            console.log('Error importing preset', e)
-            return null
+        }
+        if (!this.cachedPresets[dlc][type]) {
+            this.cachedPresets[dlc][type] = {}
         }
     }
 
-    public getDLCWeapons(descriptors: Array<string>) {
-        return this.importMultiple('weapons', descriptors)
+    public getDLCWeapon(descriptor: string): WeaponPreset | null {
+        return this.importDLCPreset('weapons', descriptor) as WeaponPreset
     }
 
-    public getDLCWeapon(descriptor: string) {
-        return this.importDLCPreset('weapons', descriptor)
+    public getDLCSpell(descriptor: string): SpellPreset | null {
+        return this.importDLCPreset('spells', descriptor) as SpellPreset
     }
 
-    public getDLCSpells(descriptors: Array<string>) {
-        return this.importMultiple('spells', descriptors)
+    public getDLCItem(descriptor: string): ItemPreset | null {
+        return this.importDLCPreset('items', descriptor) as ItemPreset
     }
 
-    public getDLCSpell(descriptor: string) {
-        return this.importDLCPreset('spells', descriptor)
-    }
-
-    public getDLCItems(descriptors: Array<string>) {
-        return this.importMultiple('items', descriptors)
-    }
-
-    public getDLCItem(descriptor: string) {
-        return this.importDLCPreset('items', descriptor)
-    }
-
-    public getDLCStatusEffects(descriptors: Array<string>) {
-        return this.importMultiple('status_effects', descriptors)
-    }
-
-    public getDLCStatusEffect(descriptor: string) {
-        return this.importDLCPreset('status_effects', descriptor)
+    public getDLCStatusEffect(descriptor: string): StatusEffectPreset | null {
+        return this.importDLCPreset('status_effects', descriptor) as StatusEffectPreset
     }
 }
 

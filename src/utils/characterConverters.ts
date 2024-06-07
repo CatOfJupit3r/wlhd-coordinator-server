@@ -1,6 +1,6 @@
 import { EntityInfoFull } from '../models/ClientModels'
 import { CharacterInfo } from '../models/InfoModels'
-import { CharacterPreset } from '../models/ServerModels'
+import { AttributeInfo, CharacterPreset } from '../models/ServerModels'
 import { CharacterClass } from '../models/TypegooseModels'
 
 export const characterPresetToInfoFull = (characterModel: CharacterPreset): EntityInfoFull => {
@@ -126,6 +126,22 @@ export const characterModelToInfo = (
     }
 
     return info
+}
+
+export const getAttributesFromCharacterModel = (character: CharacterClass) => {
+    const attributes: AttributeInfo = {
+        ...Object.fromEntries(Object.entries(DEFAULT_CHARACTER_ATTRIBUTES).map(([key, value]) => [key, String(value)])),
+        'builtins:will': String(character.abilitiesPoints.will || 0),
+        'builtins:reflexes': String(character.abilitiesPoints.reflexes || 0),
+        'builtins:strength': String(character.abilitiesPoints.strength || 0),
+    }
+
+    for (const attribute of character.attributes) {
+        const { dlc, descriptor, value } = attribute
+        const attributeKey = `${dlc}:${descriptor}`
+        attributes[attributeKey] = String(value)
+    }
+    return attributes
 }
 
 const DEFAULT_CHARACTER_ATTRIBUTES: { [attribute: string]: number } = {
