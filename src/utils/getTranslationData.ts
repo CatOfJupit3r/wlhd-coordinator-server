@@ -2,8 +2,8 @@ import fs from 'fs'
 import path from 'path'
 
 import { PATH_TO_INSTALLED_PACKAGES } from '../configs'
+import { Manifest } from '../models/GameDLCData'
 import { TranslationLoaded, TranslationSnippet } from '../models/Translation'
-import { Manifest } from '../models/dlc_manifest'
 
 export const getTranslationData = (): TranslationLoaded => {
     const result: TranslationLoaded = {}
