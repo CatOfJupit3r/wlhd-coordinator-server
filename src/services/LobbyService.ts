@@ -2,6 +2,7 @@ import { Types } from 'mongoose'
 import { Socket } from 'socket.io'
 import { BadRequest, Forbidden, InternalServerError, NotFound } from '../models/ErrorModels'
 import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
+import { AttributeInfo, ItemInfo, SpellInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
 import { TranslationSnippet } from '../models/Translation'
 import { AttributeClass, CombatClass } from '../models/TypegooseModels'
 import { characterModelToInfo } from '../utils/characterConverters'
@@ -250,6 +251,47 @@ class LobbyService {
         characterDescriptor: string
     ): Promise<void> => {
         return await DatabaseService.removeCharacterFromPlayer(lobbyId, userId, characterDescriptor)
+    }
+
+    public async getWeaponryOfCharacter(lobbyId: string, descriptor: string): Promise<Array<WeaponInfo>> {
+        const lobby = await DatabaseService.getLobby(lobbyId)
+        if (!lobby) throw new NotFound('Lobby not found')
+        const character = await DatabaseService.getCharacterByDescriptor(descriptor)
+        if (!character) throw new NotFound('Character not found')
+        const { weaponry: databaseWeaponry } = character
+        return []
+        // const DLCWeaponryPreset = PackageManagerService.getDLCWeapons(databaseWeaponry.map((value) => value.descriptor))
+    }
+
+    public async getInventoryOfCharacter(lobbyId: string, descriptor: string): Promise<Array<ItemInfo>> {
+        return []
+    }
+
+    public async getSpellbookOfCharacter(
+        lobbyId: string,
+        descriptor: string
+    ): Promise<{
+        spellBook: Array<SpellInfo>
+        spellLayout: {
+            layout: Array<string>
+            conflicts: unknown
+        }
+    }> {
+        return {
+            spellBook: [],
+            spellLayout: {
+                layout: [],
+                conflicts: '',
+            },
+        }
+    }
+
+    public async getStatusEffectsOfCharacter(lobbyId: string, descriptor: string): Promise<Array<StatusEffectInfo>> {
+        return []
+    }
+
+    public async getAttributesOfCharacter(lobbyId: string, descriptor: string): Promise<AttributeInfo> {
+        return {}
     }
 
     public addCharacterToLobby = async (

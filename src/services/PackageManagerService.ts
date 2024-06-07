@@ -151,6 +151,24 @@ class PackageManagerService {
         }
         return url.replace('https://', `https://${GITHUB_TOKEN()}@`)
     }
+
+    private importDLCPreset(type: 'weapons' | 'spells' | 'items' | 'status_effects', full_descriptor: string) {
+        const dlc = fs.readdirSync(PATH_TO_INSTALLED_PACKAGES)
+        for (const folder of dlc) {
+            const folderPath = path.join(PATH_TO_INSTALLED_PACKAGES, folder)
+            const dlcFiles = fs.readdirSync(folderPath)
+            if (dlcFiles.includes('data')) {
+                const data = fs.readdirSync(path.join(folderPath, 'data'))
+                if (data.includes(type)) {
+                    const typeData = fs.readFileSync(path.join(folderPath, 'data'), 'utf-8')
+                }
+            }
+        }
+    }
+
+    public getDLCWeapons(descriptors: Array<string>) {
+        return []
+    }
 }
 
 export default new PackageManagerService()
