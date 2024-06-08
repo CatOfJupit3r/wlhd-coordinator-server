@@ -35,8 +35,8 @@ class LevelClass {
     @prop({ default: 1 })
     current: number
 
-    @prop({ default: 0 })
-    availableUpgrades: number
+    @prop({ default: 1 })
+    max: number
 }
 
 @modelOptions({ schemaOptions: { _id: false } })
