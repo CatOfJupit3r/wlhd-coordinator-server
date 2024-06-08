@@ -19,7 +19,9 @@ class PackageManagerService {
             title: 'builtins',
         },
     ]
-    private cachedPresets: { [dlc: string]: { [type: presetTypes | string]: { [descriptor: string]: any } } } = {
+    private cachedPresets: {
+        [dlc: string]: { [type: presetTypes | string]: { [descriptor: string]: DLCPreset | null } }
+    } = {
         builtins: {
             weapons: {},
             spells: {},
@@ -170,7 +172,7 @@ class PackageManagerService {
                 console.log('Somehow, descriptor does not follow regex pattern. Look into it: ', full_descriptor)
                 return null
             }
-            if (this.cachedPresets[dlc] && this.cachedPresets[dlc][type] && this.cachedPresets[dlc][type][descriptor]) {
+            if (this.cachedPresets[dlc]?.[type]?.[descriptor] !== undefined) {
                 return this.cachedPresets[dlc][type][descriptor]
             }
             const dlcFolderPath = path.join(PATH_TO_INSTALLED_PACKAGES, dlc)
@@ -185,6 +187,9 @@ class PackageManagerService {
                     for (const descriptor in presets) {
                         // we cache ALL preset from imported DLC file for future use
                         this.cachedPresets[dlc][type][descriptor] = presets[descriptor]
+                    }
+                    if (!this.cachedPresets[dlc][type][descriptor]) {
+                        this.cachedPresets[dlc][type][descriptor] = null
                     }
                     return (this.cachedPresets[dlc][type][descriptor] as DLCPreset) || null
                 }
@@ -220,6 +225,13 @@ class PackageManagerService {
                 status_effects: {},
             },
         }
+    }
+
+    public checkIfPresetExists(type: presetTypes, full_descriptor: string): boolean {
+        if (!full_descriptor) {
+            return false
+        }
+        return !!this.importDLCPreset(type, full_descriptor)
     }
 
     public getDLCWeapon(descriptor: string): WeaponPreset | null {
