@@ -31,6 +31,15 @@ class AbilitiesPointsClass {
 }
 
 @modelOptions({ schemaOptions: { _id: false } })
+class LevelClass {
+    @prop({ default: 1 })
+    current: number
+
+    @prop({ default: 0 })
+    availableUpgrades: number
+}
+
+@modelOptions({ schemaOptions: { _id: false } })
 class ItemClass {
     @requiredProp()
     descriptor: string
@@ -92,8 +101,11 @@ export class CharacterClass {
     @prop({ required: true, _id: false, type: () => CharacterDecorationsClass })
     decorations: CharacterDecorationsClass
 
-    @prop({ default: 1 })
-    level: number
+    @prop({ default: { current: 0, max: 0 }, _id: false, type: () => LevelClass })
+    level: LevelClass
+
+    @prop({ default: 0 })
+    gold: number
 
     @prop({ type: () => [String], default: [] })
     alignments: Array<string>
@@ -123,43 +135,5 @@ export class CharacterClass {
     @prop({ type: () => [StatusEffectClass], default: [] })
     statusEffects: Array<StatusEffectClass>
 }
-
-// interface CharacterSchema {
-//     descriptor: string
-//     decorations: { // DOES NOT CONTAIN DESCRIPTOR PATTERNS.
-//         name: string
-//         description: string
-//         sprite: string
-//     }
-//     level: number
-//     alignments: Array<string> // spec tree alignments
-//     abilitiesPoints: {
-//         will: number
-//         reflexes: number
-//         strength: number
-//         max: number
-//     }
-//     inventory: Array<{
-//         descriptor: string
-//         count: number
-//     }>
-//     weaponry: Array<{
-//         descriptor: string
-//         count: number
-//     }>
-//     spellBook: Array<{
-//         descriptor: string
-//         conflictsWith: Array<string>
-//         requiresToUse: Array<string>
-//     }>
-//     spellLayout: {
-//         max: number
-//         layout: Array<string>
-//     }
-//     statusEffects: Array<{
-//         descriptor: string
-//         duration: number
-//     }>
-// }
 
 export const CharacterModel = getModelForClass(CharacterClass)
