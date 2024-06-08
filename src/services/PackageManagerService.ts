@@ -211,6 +211,17 @@ class PackageManagerService {
         }
     }
 
+    public resetCache() {
+        this.cachedPresets = {
+            builtins: {
+                weapons: {},
+                spells: {},
+                items: {},
+                status_effects: {},
+            },
+        }
+    }
+
     public getDLCWeapon(descriptor: string): WeaponPreset | null {
         return this.importDLCPreset('weapons', descriptor) as WeaponPreset
     }

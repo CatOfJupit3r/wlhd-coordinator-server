@@ -4,6 +4,7 @@ import AssetController from '../controllers/AssetController'
 import TranslationController from '../controllers/TranslationController'
 import { GameServerStatus, Manifest } from '../models/GameDLCData'
 import { CombatClass } from '../models/TypegooseModels'
+import DLCConversionService from './DLCConversionService'
 import LobbyService from './LobbyService'
 import PackageManagerService from './PackageManagerService'
 
@@ -38,6 +39,8 @@ class GameServerService {
         }
         TranslationController.reloadTranslations()
         AssetController.reloadAssets()
+        PackageManagerService.resetCache()
+        DLCConversionService.resetCache()
     }
 
     async createCombatPreset(field: CombatClass['field']) {

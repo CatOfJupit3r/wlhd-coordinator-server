@@ -16,6 +16,15 @@ class DLCConversionService {
         status_effects: {},
     }
 
+    public resetCache = () => {
+        this.cachedConversions = {
+            weapons: {},
+            spells: {},
+            items: {},
+            status_effects: {},
+        }
+    }
+
     private getCachedWeapon = (descriptor: string): WeaponInfo | undefined => {
         return this.cachedConversions['weapons'][descriptor]
     }
