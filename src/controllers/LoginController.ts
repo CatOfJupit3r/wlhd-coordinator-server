@@ -47,8 +47,11 @@ class LoginController {
             const { accessToken } = UserService.loginWithRefreshToken(refreshToken)
             return res.status(200).json({ accessToken })
         } catch (error) {
-            console.log(error)
-            throw new Forbidden()
+            if (error instanceof Exception) throw error
+            else {
+                console.log(error)
+                throw new Forbidden()
+            }
         }
     }
 
