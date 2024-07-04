@@ -13,6 +13,7 @@ import {
     UserClass,
     UserModel,
 } from '../models/TypegooseModels'
+import PackageManagerService from './PackageManagerService'
 
 type SupportedDocumentTypes =
     | DocumentType<LobbyClass>
@@ -199,6 +200,9 @@ class DatabaseService {
         if (!lobby) throw new NotFound('Lobby not found')
         const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
+        if (!PackageManagerService.checkIfPresetExists('weapons', weaponDescriptor)) {
+            throw new BadRequest('Weapon not found in package')
+        }
         if (!character.weaponry) character.weaponry = []
         character.weaponry.push({ descriptor: weaponDescriptor, quantity })
         await mongoose.connection
@@ -220,6 +224,9 @@ class DatabaseService {
         if (!character.spellBook) character.spellBook = []
         if (character.spellBook.find((s) => s.descriptor === characterDescriptor))
             throw new BadRequest('Spell already exists')
+        if (!PackageManagerService.checkIfPresetExists('spells', spellDescriptor)) {
+            throw new BadRequest('Spell not found in package')
+        }
         character.spellBook.push({ descriptor: spellDescriptor, conflictsWith, requiresToUse })
         await mongoose.connection
             .collection('characters')
@@ -237,6 +244,12 @@ class DatabaseService {
         const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.statusEffects) character.statusEffects = []
+        if (character.statusEffects.find((s) => s.descriptor === effectDescriptor)) {
+            throw new BadRequest('Status effect already exists')
+        }
+        if (!PackageManagerService.checkIfPresetExists('status_effects', effectDescriptor)) {
+            throw new BadRequest('Status effect not found in package')
+        }
         character.statusEffects.push({ descriptor: effectDescriptor, duration })
         await mongoose.connection
             .collection('characters')
@@ -254,6 +267,9 @@ class DatabaseService {
         const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.inventory) character.inventory = []
+        if (character.inventory.find((i) => i.descriptor === itemDescriptor)) {
+            throw new BadRequest('Item already exists')
+        }
         character.inventory.push({ descriptor: itemDescriptor, quantity })
         await mongoose.connection
             .collection('characters')
