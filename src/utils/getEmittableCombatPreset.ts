@@ -2,7 +2,7 @@ import { BadRequest, NotFound } from '../models/ErrorModels'
 import { GamePreset } from '../models/ServerModels'
 import DatabaseService from '../services/DatabaseService'
 
-import { characterModelToPreset } from './characterConverters'
+import DLCConversionService from '../services/DLCConversionService'
 
 const cookPresetFromDB = async (combatPreset: string): Promise<GamePreset | null> => {
     const result: GamePreset = {
@@ -31,7 +31,7 @@ const cookPresetFromDB = async (combatPreset: string): Promise<GamePreset | null
         if (source === 'embedded') {
             const customEntity = await DatabaseService.getCharacterByDescriptor(path)
             if (!customEntity) throw new NotFound('Entity not found')
-            result.custom_entities[path] = characterModelToPreset(customEntity)
+            result.custom_entities[path] = DLCConversionService.convertCharacterModelToPreset(customEntity)
         }
     }
     return result
@@ -77,7 +77,7 @@ const cookPresetFromRequest = async (combatPreset: {
         if (source === 'embedded') {
             const customEntity = await DatabaseService.getCharacterByDescriptor(path)
             if (!customEntity) throw new NotFound('Entity not found')
-            result.custom_entities[path] = characterModelToPreset(customEntity)
+            result.custom_entities[path] = DLCConversionService.convertCharacterModelToPreset(customEntity)
         }
     }
     return result
