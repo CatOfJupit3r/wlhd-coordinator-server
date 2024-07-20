@@ -1,5 +1,5 @@
 interface AdditionalData {
-    [key: string]: any
+    [key: string]: unknown
 }
 
 export class Exception extends Error {
