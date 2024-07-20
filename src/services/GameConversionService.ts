@@ -12,7 +12,7 @@ import {
 import { CharacterClass } from '../models/TypegooseModels'
 import PackageManagerService from './PackageManagerService'
 
-class DLCConversionService {
+class GameConversionService {
     private cachedConversions: {
         weapons: { [descriptor: string]: WeaponInfo }
         spells: { [descriptor: string]: SpellInfo }
@@ -468,4 +468,4 @@ const DEFAULT_CHARACTER_ATTRIBUTES: { [attribute: string]: number } = {
     ),
 }
 
-export default new DLCConversionService()
+export default new GameConversionService()

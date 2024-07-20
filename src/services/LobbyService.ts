@@ -7,8 +7,8 @@ import { TranslationSnippet } from '../models/Translation'
 import { AttributeClass, CombatClass } from '../models/TypegooseModels'
 import AuthService from './AuthService'
 import CombatManager from './CombatManager'
-import DLCConversionService from './DLCConversionService'
 import DatabaseService from './DatabaseService'
+import GameConversionService from './GameConversionService'
 
 class LobbyService {
     private managingCombats: Map<string, Array<string>> = new Map()
@@ -147,7 +147,7 @@ class LobbyService {
     public async getMyCharactersInfo(lobby_id: string, player_id: string): Promise<Array<CharacterInfo>> {
         const controlledCharacters = await DatabaseService.getCharactersOfPlayer(lobby_id, player_id)
         return controlledCharacters.map((character) =>
-            DLCConversionService.convertCharacterModelToInfo(character, false)
+            GameConversionService.convertCharacterModelToInfo(character, false)
         )
     }
 
@@ -160,7 +160,7 @@ class LobbyService {
         }
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
-        return DLCConversionService.convertCharacterModelToInfo(character, false)
+        return GameConversionService.convertCharacterModelToInfo(character, false)
     }
 
     async createNewCharacter(
@@ -261,7 +261,7 @@ class LobbyService {
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         const { weaponry: databaseWeaponry } = character
-        return DLCConversionService.convertWeaponry(databaseWeaponry)
+        return GameConversionService.convertWeaponry(databaseWeaponry)
     }
 
     public async getInventoryOfCharacter(lobbyId: string, descriptor: string): Promise<Array<ItemInfo>> {
@@ -270,7 +270,7 @@ class LobbyService {
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         const { inventory: databaseInventory } = character
-        return DLCConversionService.convertInventory(databaseInventory)
+        return GameConversionService.convertInventory(databaseInventory)
     }
 
     public async getStatusEffectsOfCharacter(lobbyId: string, descriptor: string): Promise<Array<StatusEffectInfo>> {
@@ -279,7 +279,7 @@ class LobbyService {
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         const { statusEffects: databaseEffects } = character
-        return DLCConversionService.convertStatusEffects(databaseEffects)
+        return GameConversionService.convertStatusEffects(databaseEffects)
     }
 
     public async getSpellbookOfCharacter(
@@ -297,7 +297,7 @@ class LobbyService {
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         return {
-            spellBook: await DLCConversionService.convertSpellbook(character.spellBook),
+            spellBook: await GameConversionService.convertSpellbook(character.spellBook),
             spellLayout: {
                 layout: character.spellLayout.layout,
                 conflicts: '',
@@ -310,7 +310,7 @@ class LobbyService {
         if (!lobby) throw new NotFound('Lobby not found')
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
-        return DLCConversionService.convertAttributesFromModel(character)
+        return GameConversionService.convertAttributesFromModel(character)
     }
 
     public addCharacterToLobby = async (
