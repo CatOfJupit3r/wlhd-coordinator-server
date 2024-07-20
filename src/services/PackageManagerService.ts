@@ -165,6 +165,22 @@ class PackageManagerService {
         return url.replace('https://', `https://${GITHUB_TOKEN()}@`)
     }
 
+    public getDLCWeapon(descriptor: string): WeaponPreset | null {
+        return this.importDLCPreset('weapons', descriptor) as WeaponPreset
+    }
+
+    public getDLCSpell(descriptor: string): SpellPreset | null {
+        return this.importDLCPreset('spells', descriptor) as SpellPreset
+    }
+
+    public getDLCItem(descriptor: string): ItemPreset | null {
+        return this.importDLCPreset('items', descriptor) as ItemPreset
+    }
+
+    public getDLCStatusEffect(descriptor: string): StatusEffectPreset | null {
+        return this.importDLCPreset('status_effects', descriptor) as StatusEffectPreset
+    }
+
     private importDLCPreset(type: presetTypes, full_descriptor: string): DLCPreset | null {
         try {
             const [dlc, descriptor] = full_descriptor.split(':')
@@ -232,22 +248,6 @@ class PackageManagerService {
             return false
         }
         return !!this.importDLCPreset(type, full_descriptor)
-    }
-
-    public getDLCWeapon(descriptor: string): WeaponPreset | null {
-        return this.importDLCPreset('weapons', descriptor) as WeaponPreset
-    }
-
-    public getDLCSpell(descriptor: string): SpellPreset | null {
-        return this.importDLCPreset('spells', descriptor) as SpellPreset
-    }
-
-    public getDLCItem(descriptor: string): ItemPreset | null {
-        return this.importDLCPreset('items', descriptor) as ItemPreset
-    }
-
-    public getDLCStatusEffect(descriptor: string): StatusEffectPreset | null {
-        return this.importDLCPreset('status_effects', descriptor) as StatusEffectPreset
     }
 }
 
