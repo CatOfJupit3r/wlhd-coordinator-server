@@ -1,3 +1,5 @@
+import { EntityInfoFull } from './ClientModels'
+
 export interface CharacterInfo {
     descriptor: string
     decorations: {
@@ -5,24 +7,14 @@ export interface CharacterInfo {
         description: string
         sprite: string
     }
-    controlledBy: string | null
     attributes: {
         [key: string]: string
     }
-    spellBook: Array<{
-        descriptor: string
-        conflictsWith: Array<string>
-        requiresToUse: Array<string>
-    }>
+    spellBook: EntityInfoFull['spells']
+    inventory: EntityInfoFull['items']
+    weaponry: EntityInfoFull['weapons']
+    statusEffects: EntityInfoFull['status_effects']
     spellLayout: Array<string>
-    inventory: Array<{
-        descriptor: string
-        count: number
-    }>
-    weaponry: Array<{
-        descriptor: string
-        count: number
-    }>
 }
 
 export interface LobbyInfo {

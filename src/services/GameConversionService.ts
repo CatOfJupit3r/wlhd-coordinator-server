@@ -219,7 +219,7 @@ class GameConversionService {
 
     private filterUndefined = (value: unknown) => !!value
 
-    public convertWeaponry = async (weaponry: CharacterClass['weaponry']): Promise<Array<WeaponInfo>> => {
+    public convertWeaponry = (weaponry: CharacterClass['weaponry']): Array<WeaponInfo> => {
         return weaponry
             .map(({ descriptor, quantity }) => {
                 const cached = this.getCachedWeapon(descriptor)
@@ -237,7 +237,7 @@ class GameConversionService {
             })
             .filter(this.filterUndefined) as Array<WeaponInfo>
     }
-    public convertInventory = async (inventory: CharacterClass['inventory']): Promise<Array<ItemInfo>> => {
+    public convertInventory = (inventory: CharacterClass['inventory']): Array<ItemInfo> => {
         return inventory
             .map(({ descriptor, quantity }) => {
                 const cached = this.getCachedItem(descriptor)
@@ -254,7 +254,7 @@ class GameConversionService {
             .filter(this.filterUndefined) as Array<ItemInfo>
     }
 
-    public convertSpellbook = async (spellbook: CharacterClass['spellBook']): Promise<Array<SpellInfo>> => {
+    public convertSpellbook = (spellbook: CharacterClass['spellBook']): Array<SpellInfo> => {
         return spellbook
             .map(({ descriptor }) => {
                 const cached = this.getCachedSpell(descriptor)
@@ -273,9 +273,7 @@ class GameConversionService {
             .filter(this.filterUndefined) as Array<SpellInfo>
     }
 
-    public convertStatusEffects = async (
-        status_effects: CharacterClass['statusEffects']
-    ): Promise<Array<StatusEffectInfo>> => {
+    public convertStatusEffects = (status_effects: CharacterClass['statusEffects']): Array<StatusEffectInfo> => {
         return status_effects
             .map(({ descriptor, duration }) => {
                 const cached = this.getCachedStatusEffect(descriptor)
@@ -321,7 +319,6 @@ class GameConversionService {
     ): CharacterInfo => {
         const info: CharacterInfo = {
             descriptor: characterModel.descriptor,
-            controlledBy: null,
             decorations: decorationsAsDescriptors
                 ? {
                       name: `coordinator:${characterModel.descriptor}.name`,
@@ -337,40 +334,19 @@ class GameConversionService {
                 'builtins:reflexes': String(characterModel.abilitiesPoints.reflexes || 0),
                 'builtins:strength': String(characterModel.abilitiesPoints.strength || 0),
             },
-            spellBook: [],
-            spellLayout: characterModel.spellLayout.layout,
-            inventory: [],
-            weaponry: [],
-        }
 
+            spellBook: this.convertSpellbook(characterModel.spellBook),
+            inventory: this.convertInventory(characterModel.inventory),
+            weaponry: this.convertWeaponry(characterModel.weaponry),
+            statusEffects: this.convertStatusEffects(characterModel.statusEffects),
+
+            spellLayout: characterModel.spellLayout.layout,
+        }
         for (const attribute of characterModel.attributes) {
             const { dlc, descriptor, value } = attribute
             const attributeKey = `${dlc}:${descriptor}`
             info.attributes[attributeKey] = String(value)
         }
-
-        for (const spell of characterModel.spellBook) {
-            info.spellBook.push({
-                descriptor: spell.descriptor,
-                conflictsWith: spell.conflictsWith,
-                requiresToUse: spell.requiresToUse,
-            })
-        }
-
-        for (const item of characterModel.inventory) {
-            info.inventory.push({
-                descriptor: item.descriptor,
-                count: item.quantity,
-            })
-        }
-
-        for (const weapon of characterModel.weaponry) {
-            info.weaponry.push({
-                descriptor: weapon.descriptor,
-                count: weapon.quantity,
-            })
-        }
-
         return info
     }
 

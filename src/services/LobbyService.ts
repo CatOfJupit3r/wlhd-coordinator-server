@@ -297,7 +297,7 @@ class LobbyService {
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         return {
-            spellBook: await GameConversionService.convertSpellbook(character.spellBook),
+            spellBook: GameConversionService.convertSpellbook(character.spellBook),
             spellLayout: {
                 layout: character.spellLayout.layout,
                 conflicts: '',
