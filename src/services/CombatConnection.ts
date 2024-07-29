@@ -662,9 +662,17 @@ export class CombatConnection {
         const {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             controlled_by,
+            items,
+            weapons,
+            spells,
             ...entityInfo
         } = entity
-        return entityInfo
+        return {
+            ...entityInfo,
+            inventory: items,
+            weaponry: weapons,
+            spell_book: spells,
+        }
     }
 
     private generateEntityTurnInfo(entity: EntityInfo): EntityInfoTurn {

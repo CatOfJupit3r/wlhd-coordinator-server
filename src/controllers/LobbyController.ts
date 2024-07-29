@@ -50,7 +50,7 @@ class LobbyController {
         if (short && short === 'true') {
             res.status(200).json(await LobbyService.getShortLobbyInfo(lobby_id, user._id))
         } else {
-            res.status(200).json(await LobbyService.getFullLobbyInfo(lobby_id, user, player))
+            res.status(200).json(await LobbyService.getFullLobbyInfo(lobby_id, user._id))
         }
     }
 

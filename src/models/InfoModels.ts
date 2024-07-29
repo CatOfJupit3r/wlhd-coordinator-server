@@ -10,9 +10,9 @@ export interface CharacterInfo {
     attributes: {
         [key: string]: string
     }
-    spellBook: EntityInfoFull['spells']
-    inventory: EntityInfoFull['items']
-    weaponry: EntityInfoFull['weapons']
+    spell_book: EntityInfoFull['spell_book']
+    inventory: EntityInfoFull['inventory']
+    weaponry: EntityInfoFull['weaponry']
     statusEffects: EntityInfoFull['status_effects']
     spellLayout: Array<string>
 }
@@ -37,21 +37,11 @@ export interface LobbyInfo {
     }>
     gm: string
     players: Array<{
-        player: {
-            handle: string
-            nickname: string
-            avatar: string
-            userId: string
-        }
-        characters: Array<{
-            descriptor: string
-            name: string
-            sprite: string
-        }>
+        handle: string
+        nickname: string
+        avatar: string
+        userId: string
+        characters: Array<string>
     }>
     layout: 'default' | 'gm'
-    controlledEntity: {
-        name: string
-        id: string
-    } | null
 }

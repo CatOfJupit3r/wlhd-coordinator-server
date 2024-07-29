@@ -39,19 +39,10 @@ class LobbyService {
         return null
     }
 
-    public async getFullLobbyInfo(lobby_id: string, user: any, player: any): Promise<LobbyInfo> {
+    public async getFullLobbyInfo(lobby_id: string, userId: string): Promise<LobbyInfo> {
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) {
-            return {
-                name: 'Lobby not found',
-                lobbyId: lobby_id,
-                combats: [],
-                players: [],
-                characters: [],
-                gm: '',
-                layout: 'default',
-                controlledEntity: null,
-            }
+            throw new NotFound('Lobby not found')
         }
         const combatInfo = []
         const combats = this.managingCombats.get(lobby_id)
@@ -80,15 +71,13 @@ class LobbyService {
         const players = []
         for (const p of lobby.players) {
             const player = await DatabaseService.getUser(p.userId)
-            const controlledCharacters = await DatabaseService.getCharactersOfPlayer(lobby_id, p.userId)
+            const controlledCharacters = await DatabaseService.getCharacterDescriptorsOfPlayer(lobby_id, p.userId)
             players.push({
-                player: { handle: player?.handle || '', avatar: '', userId: p.userId, nickname: p.nickname },
-                characters:
-                    controlledCharacters.map((character) => ({
-                        name: character.decorations?.name || '',
-                        sprite: character.decorations?.sprite || '',
-                        descriptor: character.descriptor,
-                    })) || [],
+                handle: player?.handle || '',
+                avatar: '',
+                userId: p.userId,
+                nickname: p.nickname,
+                characters: controlledCharacters || [],
             })
         }
         const characters = []
@@ -109,8 +98,7 @@ class LobbyService {
             players,
             characters,
             gm: lobby.gm_id,
-            layout: user._id === lobby.gm_id ? 'gm' : 'default',
-            controlledEntity: null,
+            layout: userId === lobby.gm_id ? 'gm' : 'default',
         }
     }
 

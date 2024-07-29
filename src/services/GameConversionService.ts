@@ -255,22 +255,24 @@ class GameConversionService {
     }
 
     public convertSpellbook = (spellbook: CharacterClass['spellBook']): Array<SpellInfo> => {
-        return spellbook
-            .map(({ descriptor }) => {
-                const cached = this.getCachedSpell(descriptor)
-                if (cached) {
-                    return { ...cached, descriptor }
-                }
-                const spell = PackageManagerService.getDLCSpell(descriptor)
-                if (!spell) {
-                    return
-                } else {
-                    const converted = this.convertSpell(spell)
-                    this.cachedConversions['spells'][descriptor] = converted
-                    return { ...converted, descriptor }
-                }
-            })
-            .filter(this.filterUndefined) as Array<SpellInfo>
+        return (
+            (spellbook
+                .map(({ descriptor }) => {
+                    const cached = this.getCachedSpell(descriptor)
+                    if (cached) {
+                        return { ...cached, descriptor }
+                    }
+                    const spell = PackageManagerService.getDLCSpell(descriptor)
+                    if (!spell) {
+                        return
+                    } else {
+                        const converted = this.convertSpell(spell)
+                        this.cachedConversions['spells'][descriptor] = converted
+                        return { ...converted, descriptor }
+                    }
+                })
+                .filter(this.filterUndefined) as Array<SpellInfo>) || []
+        )
     }
 
     public convertStatusEffects = (status_effects: CharacterClass['statusEffects']): Array<StatusEffectInfo> => {
@@ -335,7 +337,7 @@ class GameConversionService {
                 'builtins:strength': String(characterModel.abilitiesPoints.strength || 0),
             },
 
-            spellBook: this.convertSpellbook(characterModel.spellBook),
+            spell_book: this.convertSpellbook(characterModel.spellBook),
             inventory: this.convertInventory(characterModel.inventory),
             weaponry: this.convertWeaponry(characterModel.weaponry),
             statusEffects: this.convertStatusEffects(characterModel.statusEffects),
@@ -355,9 +357,9 @@ class GameConversionService {
             decorations: characterModel.decorations,
             square: { line: '0', column: '0' },
             attributes: {},
-            items: [],
-            weapons: [],
-            spells: [],
+            inventory: [],
+            weaponry: [],
+            spell_book: [],
             status_effects: [],
         }
 

@@ -336,6 +336,26 @@ class DatabaseService {
         return characters
     }
 
+    public getCharacterDescriptorsOfPlayer = async (lobbyId: string, userId: string): Promise<Array<string>> => {
+        const lobby = await this.getLobby(lobbyId)
+        if (!lobby) throw new NotFound('Lobby not found')
+        const player = lobby.players.find((p) => p.userId === userId)
+        if (!player) throw new NotFound('Player not found')
+        const characters: Array<string> = []
+        await this.checkIfThereAreCharacterMissing(lobby, lobbyId)
+        for (const { controlledBy, characterId } of lobby.characterBank) {
+            if (controlledBy.includes(userId)) {
+                const character = await this.getCharacter(characterId)
+                if (!character) {
+                    console.log(
+                        "Found character that doesn't exist in Database. DatabaseService.checkIfThereAreCharacterMissing() has failed!"
+                    )
+                } else characters.push(character.descriptor)
+            }
+        }
+        return characters
+    }
+
     private checkIfThereAreCharacterMissing = async (lobby: LobbyClass, lobby_id: string): Promise<void> => {
         let missingCharacters = false
         const misses: Array<string> = []

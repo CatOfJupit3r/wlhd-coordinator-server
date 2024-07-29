@@ -38,8 +38,9 @@ export interface EntityInfoFull {
     square: { line: string; column: string }
     attributes: { [attribute: string]: string }
 
-    items: Array<ItemInfo>
-    weapons: Array<WeaponInfo>
-    spells: Array<SpellInfo>
+    inventory: Array<ItemInfo>
+    weaponry: Array<WeaponInfo>
+    spell_book: Array<SpellInfo>
     status_effects: Array<StatusEffectInfo>
+    spellLayout?: Array<string>
 }
