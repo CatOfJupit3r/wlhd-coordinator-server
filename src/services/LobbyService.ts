@@ -86,9 +86,11 @@ class LobbyService {
             if (!character) throw new NotFound('Character not found')
             characters.push({
                 descriptor: character.descriptor,
-                name: character.decorations?.name || '',
-                description: character.decorations?.description || '',
-                sprite: character.decorations?.sprite || '',
+                decorations: {
+                    name: character.decorations?.name || '',
+                    description: character.decorations?.description || '',
+                    sprite: character.decorations?.sprite || '',
+                },
             })
         }
         return {

@@ -10,14 +10,17 @@ export interface GameHandshake {
     gameId: string
     roundCount: number
     messages: Array<Array<TranslatableString>>
+    turnOrder: {
+        currentEntity: string
+        turnQueue: Array<string>
+        entityActions: EntityAction | null
+        currentPlayer: string | null
+    }
     combatStatus: 'ongoing' | 'pending'
     currentBattlefield: Battlefield
     allEntitiesInfo: {
         [key: string]: EntityInfo
     }
-    entityActions: EntityAction | null
-    currentPlayer: string | null
-    currentEntity: string | null
 }
 
 export interface Battlefield {
@@ -55,9 +58,9 @@ export interface EntityInfo {
     attributes: AttributeInfo
     controlled_by: ControlInfo
 
-    items: Array<ItemInfo>
-    weapons: Array<WeaponInfo>
-    spells: Array<SpellInfo>
+    inventory: Array<ItemInfo>
+    weaponry: Array<WeaponInfo>
+    spell_book: Array<SpellInfo>
     status_effects: Array<StatusEffectInfo>
 }
 

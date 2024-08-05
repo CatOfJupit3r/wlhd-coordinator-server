@@ -1,5 +1,6 @@
 import {
     Battlefield,
+    ControlInfo,
     GameComponentDecoration,
     GameStateContainer,
     ItemInfo,
@@ -13,9 +14,9 @@ export interface GameHandshake {
     messages: GameStateContainer // but only last 10 instead of all
     combatStatus: 'ongoing' | 'pending'
     currentBattlefield: Battlefield
-    currentEntityInfo: EntityInfoTurn | null
     entityTooltips: { [square: string]: EntityInfoTooltip | null }
     controlledEntities: Array<EntityInfoFull> | null
+    turnOrder: IndividualTurnOrder
 }
 
 export interface EntityInfoTooltip {
@@ -40,7 +41,35 @@ export interface EntityInfoFull {
 
     inventory: Array<ItemInfo>
     weaponry: Array<WeaponInfo>
-    spell_book: Array<SpellInfo>
+    spellBook: Array<SpellInfo>
     status_effects: Array<StatusEffectInfo>
     spellLayout?: Array<string>
+}
+
+export interface TurnOrder {
+    order: Array<CharacterInTurnOrder>
+    current: number | null
+}
+
+export interface IndividualTurnOrder {
+    order: Array<CharacterInTurnOrderPlayer>
+    current: number | null
+}
+
+export interface CharacterInTurnOrder {
+    controlledBy: ControlInfo
+    descriptor: string
+    decorations: {
+        name: string
+        description: string
+        sprite: string
+    }
+    square: {
+        line: string
+        column: string
+    }
+}
+
+export type CharacterInTurnOrderPlayer = Omit<CharacterInTurnOrder, 'controlledBy'> & {
+    controlledByYou: boolean
 }

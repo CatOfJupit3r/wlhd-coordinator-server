@@ -10,7 +10,7 @@ export interface CharacterInfo {
     attributes: {
         [key: string]: string
     }
-    spell_book: EntityInfoFull['spell_book']
+    spell_book: EntityInfoFull['spellBook']
     inventory: EntityInfoFull['inventory']
     weaponry: EntityInfoFull['weaponry']
     statusEffects: EntityInfoFull['status_effects']
@@ -31,9 +31,11 @@ export interface LobbyInfo {
     }>
     characters: Array<{
         descriptor: string
-        name: string
-        description: string
-        sprite: string
+        decorations: {
+            name: string
+            description: string
+            sprite: string
+        }
     }>
     gm: string
     players: Array<{

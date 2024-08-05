@@ -52,7 +52,7 @@ class PackageManagerService {
         const encounteredPackages: string[] = []
         for (const manifest of manifests) {
             const { source, title, author, descriptor } = manifest
-            console.log(`Installing DLC: ${title} by ${author}`)
+            console.log(`Installing DLC: ${title} (by ${author})`)
             if (!this.verifyGithubLink(source)) {
                 console.error(`Invalid Github link for package ${title}`)
                 continue

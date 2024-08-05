@@ -359,7 +359,7 @@ class GameConversionService {
             attributes: {},
             inventory: [],
             weaponry: [],
-            spell_book: [],
+            spellBook: [],
             status_effects: [],
         }
 
