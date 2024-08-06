@@ -213,21 +213,19 @@ class DatabaseService {
     public addSpellToCharacter = async (
         lobby_id: string,
         characterDescriptor: string,
-        spellDescriptor: string,
-        conflictsWith: Array<string>,
-        requiresToUse: Array<string>
+        spellDescriptor: string
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
         const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
-        if (!character.spellBook) character.spellBook = []
-        if (character.spellBook.find((s) => s.descriptor === characterDescriptor))
+        if (!character.spellBook.knownSpells) character.spellBook.knownSpells = []
+        if (character.spellBook.knownSpells.find((s) => s.descriptor === characterDescriptor))
             throw new BadRequest('Spell already exists')
         if (!PackageManagerService.checkIfPresetExists('spells', spellDescriptor)) {
             throw new BadRequest('Spell not found in package')
         }
-        character.spellBook.push({ descriptor: spellDescriptor, conflictsWith, requiresToUse })
+        character.spellBook.knownSpells.push({ descriptor: spellDescriptor, _id: new Types.ObjectId() })
         await mongoose.connection
             .collection('characters')
             .updateOne({ descriptor: characterDescriptor }, { $set: { spellBook: character.spellBook } })
@@ -308,12 +306,12 @@ class DatabaseService {
         if (!lobby) throw new NotFound('Lobby not found')
         const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
-        if (!character.spellLayout) character.spellLayout = { max: 4, layout: [] }
-        if (spells.length > character.spellLayout.max) throw new BadRequest('Too many spells')
-        character.spellLayout.layout = spells
+        if (character.spellBook.maxActiveSpells !== null && spells.length > character.spellBook.maxActiveSpells)
+            throw new BadRequest('Too many spells')
+        character.spellBook.activeSpells = spells
         await mongoose.connection
             .collection('characters')
-            .updateOne({ descriptor: characterDescriptor }, { $set: { spellLayout: character.spellLayout } })
+            .updateOne({ descriptor: characterDescriptor }, { $set: { spellBook: character.spellBook } })
     }
 
     public getCharactersOfPlayer = async (lobbyId: string, userId: string): Promise<Array<CharacterClass>> => {

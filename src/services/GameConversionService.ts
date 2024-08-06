@@ -193,6 +193,7 @@ class GameConversionService {
                     current: 0,
                     max: 0,
                 },
+                is_active: false,
             } as SpellInfo
         }
     }
@@ -254,10 +255,10 @@ class GameConversionService {
             .filter(this.filterUndefined) as Array<ItemInfo>
     }
 
-    public convertSpellbook = (spellbook: CharacterClass['spellBook']): Array<SpellInfo> => {
-        return (
-            (spellbook
-                .map(({ descriptor }) => {
+    public convertSpellbook = (spellbook: CharacterClass['spellBook']): CharacterInfo['spell_book'] => {
+        return {
+            spells: spellbook.knownSpells
+                .map(({ descriptor, _id }) => {
                     const cached = this.getCachedSpell(descriptor)
                     if (cached) {
                         return { ...cached, descriptor }
@@ -268,11 +269,12 @@ class GameConversionService {
                     } else {
                         const converted = this.convertSpell(spell)
                         this.cachedConversions['spells'][descriptor] = converted
-                        return { ...converted, descriptor }
+                        return { ...converted, descriptor, is_active: spellbook.activeSpells.includes(_id.toString()) }
                     }
                 })
-                .filter(this.filterUndefined) as Array<SpellInfo>) || []
-        )
+                .filter(this.filterUndefined) as Array<SpellInfo>,
+            maxActiveSpells: spellbook.maxActiveSpells,
+        }
     }
 
     public convertStatusEffects = (status_effects: CharacterClass['statusEffects']): Array<StatusEffectInfo> => {
@@ -341,8 +343,6 @@ class GameConversionService {
             inventory: this.convertInventory(characterModel.inventory),
             weaponry: this.convertWeaponry(characterModel.weaponry),
             statusEffects: this.convertStatusEffects(characterModel.statusEffects),
-
-            spellLayout: characterModel.spellLayout.layout,
         }
         for (const attribute of characterModel.attributes) {
             const { dlc, descriptor, value } = attribute
@@ -359,7 +359,10 @@ class GameConversionService {
             attributes: {},
             inventory: [],
             weaponry: [],
-            spellBook: [],
+            spellBook: {
+                spells: [],
+                maxActiveSpells: null,
+            },
             status_effects: [],
         }
 
@@ -382,7 +385,10 @@ class GameConversionService {
             },
             inventory: [],
             weaponry: [],
-            spell_book: [],
+            spell_book: {
+                spells: [],
+                max_active_spells: null,
+            },
             status_effects: [],
         }
         for (const attribute of characterModel.attributes) {
@@ -390,12 +396,16 @@ class GameConversionService {
             const attributeKey = `${dlc}:${descriptor}`
             preset.attributes[attributeKey] = (preset.attributes[attributeKey] || 0) + value
         }
-        for (const spell of characterModel.spellBook) {
-            if (characterModel.spellLayout.layout.includes(spell.descriptor)) {
-                preset.spell_book.push({
-                    descriptor: spell.descriptor,
-                })
+        const { knownSpells, maxActiveSpells, activeSpells } = characterModel.spellBook
+        preset.spell_book.max_active_spells = typeof maxActiveSpells !== 'undefined' ? maxActiveSpells : null
+        for (const spell of knownSpells) {
+            const spell_preset: CharacterPreset['spell_book']['spells'][number] = {
+                descriptor: spell.descriptor,
             }
+            if (activeSpells.includes(spell._id.toString())) {
+                spell_preset._is_active = true
+            }
+            preset.spell_book.spells.push(spell_preset)
         }
         for (const item of characterModel.inventory) {
             preset.inventory.push({

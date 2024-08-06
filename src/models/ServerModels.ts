@@ -60,7 +60,10 @@ export interface EntityInfo {
 
     inventory: Array<ItemInfo>
     weaponry: Array<WeaponInfo>
-    spell_book: Array<SpellInfo>
+    spell_book: {
+        spells: Array<SpellInfo>
+        max_active_spells: number | null
+    }
     status_effects: Array<StatusEffectInfo>
 }
 
@@ -106,6 +109,7 @@ export interface SpellInfo {
         current: number
         max: number | null
     }
+    is_active: boolean
     cooldown: { current: number; max: number | null }
 }
 
@@ -172,7 +176,7 @@ export interface CharacterPreset {
 
     inventory: Array<ItemPartialPreset>
     weaponry: Array<WeaponPartialPreset>
-    spell_book: Array<SpellPartialPreset>
+    spell_book: { spells: Array<SpellPartialPreset>; max_active_spells: number | null }
     status_effects: Array<StatusEffectPartialPreset>
 }
 
@@ -191,6 +195,7 @@ interface SpellPartialPreset {
     descriptor: string
     duration?: number
     current_consecutive_uses?: number
+    _is_active?: boolean
 }
 
 interface StatusEffectPartialPreset {

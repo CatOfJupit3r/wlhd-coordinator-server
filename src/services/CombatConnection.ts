@@ -675,7 +675,10 @@ export class CombatConnection {
         } = entity
         return {
             ...entityInfo,
-            spellBook: spell_book,
+            spellBook: {
+                spells: spell_book.spells,
+                maxActiveSpells: spell_book.max_active_spells,
+            },
         }
     }
 

@@ -2,7 +2,7 @@ import { Types } from 'mongoose'
 import { Socket } from 'socket.io'
 import { BadRequest, Forbidden, InternalServerError, NotFound } from '../models/ErrorModels'
 import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
-import { AttributeInfo, ItemInfo, SpellInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
+import { AttributeInfo, ItemInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
 import { TranslationSnippet } from '../models/Translation'
 import { AttributeClass, CombatClass } from '../models/TypegooseModels'
 import AuthService from './AuthService'
@@ -276,11 +276,7 @@ class LobbyService {
         lobbyId: string,
         descriptor: string
     ): Promise<{
-        spellBook: Array<SpellInfo>
-        spellLayout: {
-            layout: Array<string>
-            conflicts: unknown
-        }
+        spellBook: CharacterInfo['spell_book']
     }> {
         const lobby = await DatabaseService.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
@@ -288,10 +284,6 @@ class LobbyService {
         if (!character) throw new NotFound('Character not found')
         return {
             spellBook: GameConversionService.convertSpellbook(character.spellBook),
-            spellLayout: {
-                layout: character.spellLayout.layout,
-                conflicts: '',
-            },
         }
     }
 
@@ -323,17 +315,9 @@ class LobbyService {
     public addSpellToCharacter = async (
         lobby_id: string,
         characterDescriptor: string,
-        spellDescriptor: string,
-        conflictsWith: Array<string>,
-        requiresToUse: Array<string>
+        spellDescriptor: string
     ): Promise<void> => {
-        return await DatabaseService.addSpellToCharacter(
-            lobby_id,
-            characterDescriptor,
-            spellDescriptor,
-            conflictsWith,
-            requiresToUse
-        )
+        return await DatabaseService.addSpellToCharacter(lobby_id, characterDescriptor, spellDescriptor)
     }
 
     public addStatusEffectToCharacter = async (

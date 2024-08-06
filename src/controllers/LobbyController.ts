@@ -2,7 +2,7 @@ import { Request, Response } from 'express'
 import { Socket } from 'socket.io'
 import { DESCRIPTOR_REGEX } from '../configs'
 import { BadRequest, Forbidden, InternalServerError, MethodNotAllowed, NotFound } from '../models/ErrorModels'
-import { AttributeInfo, ItemInfo, SpellInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
+import { AttributeInfo, ItemInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
 import { CombatClass } from '../models/TypegooseModels'
 import AuthService from '../services/AuthService'
 import DatabaseService from '../services/DatabaseService'
@@ -177,14 +177,6 @@ class LobbyController {
         )
         res.status(200).json({
             spells: await LobbyService.getSpellbookOfCharacter(lobby_id, descriptor),
-        } as {
-            spells: {
-                spellBook: Array<SpellInfo>
-                spellLayout: {
-                    layout: Array<string>
-                    conflicts: unknown
-                }
-            }
         })
     }
 
@@ -246,22 +238,8 @@ class LobbyController {
         const { descriptor: spellDescriptor } = req.body
         InputValidator.validateField({ key: 'descriptor', value: spellDescriptor }, 'string')
         if (!DESCRIPTOR_REGEX().test(spellDescriptor)) throw new BadRequest('Invalid descriptor')
-        const { conflictsWith, requiresToUse } = {
-            conflictsWith: req.body.conflictsWith || [],
-            requiresToUse: req.body.requiresToUse || [],
-        }
-        InputValidator.validateObject(
-            { conflictsWith, requiresToUse },
-            { conflictsWith: 'array', requiresToUse: 'array' }
-        )
-        await LobbyService.addSpellToCharacter(
-            lobby_id,
-            characterDescriptor,
-            spellDescriptor,
-            conflictsWith,
-            requiresToUse
-        )
-        res.status(200).json({ message: 'ok', characterDescriptor, spellDescriptor, conflictsWith, requiresToUse })
+        await LobbyService.addSpellToCharacter(lobby_id, characterDescriptor, spellDescriptor)
+        res.status(200).json({ message: 'ok', characterDescriptor, spellDescriptor })
     }
 
     public async addStatusEffectToCharacter(req: Request, res: Response): Promise<void> {

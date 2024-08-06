@@ -48,16 +48,13 @@ class ItemClass {
     quantity: number
 }
 
-@modelOptions({ schemaOptions: { _id: false } })
+@modelOptions({ schemaOptions: { _id: true } })
 class SpellClass {
     @requiredProp()
     descriptor: string
 
-    @prop({ type: () => [String], default: [] })
-    conflictsWith: Array<string>
-
-    @prop({ type: () => [String], default: [] })
-    requiresToUse: Array<string>
+    @prop()
+    _id: Types.ObjectId
 }
 
 @modelOptions({ schemaOptions: { _id: false } })
@@ -88,6 +85,18 @@ class CharacterDecorationsClass {
 
     @requiredProp()
     sprite: string
+}
+
+@modelOptions({ schemaOptions: { _id: false } })
+class CharacterSpellBook {
+    @requiredProp({ type: () => [SpellClass] })
+    knownSpells: Array<SpellClass>
+
+    @requiredProp()
+    maxActiveSpells: number
+
+    @requiredProp({ type: () => [String] })
+    activeSpells: Array<string>
 }
 
 @modelOptions({ schemaOptions: { collection: 'characters' } })
@@ -126,11 +135,8 @@ export class CharacterClass {
     @prop({ type: () => [ItemClass], default: [] })
     weaponry: Array<ItemClass>
 
-    @prop({ type: () => [SpellClass], default: [] })
-    spellBook: Array<SpellClass>
-
-    @prop({ default: { max: 4, layout: [] }, _id: false, type: () => SpellLayoutClass })
-    spellLayout: SpellLayoutClass
+    @prop({ type: () => CharacterSpellBook, default: [] })
+    spellBook: CharacterSpellBook
 
     @prop({ type: () => [StatusEffectClass], default: [] })
     statusEffects: Array<StatusEffectClass>

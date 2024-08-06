@@ -14,7 +14,6 @@ export interface CharacterInfo {
     inventory: EntityInfoFull['inventory']
     weaponry: EntityInfoFull['weaponry']
     statusEffects: EntityInfoFull['status_effects']
-    spellLayout: Array<string>
 }
 
 export interface LobbyInfo {
