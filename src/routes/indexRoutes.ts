@@ -9,6 +9,10 @@ route.get('/', (req, res) => {
     res.send('Welcome. Actually, you are not!')
 })
 
+route.get('/health', (req, res) => {
+    res.send('OK')
+})
+
 // POST
 
 route.post('/register', LoginController.register.bind(LoginController))

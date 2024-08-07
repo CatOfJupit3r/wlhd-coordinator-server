@@ -3,7 +3,7 @@ import express, { Express } from 'express'
 import 'express-async-errors'
 
 import combatRoutes from '../routes/combatRoutes'
-import indexRoutes from '../routes/intexRoutes'
+import indexRoutes from '../routes/indexRoutes'
 import lobbyRoutes from '../routes/lobbyRoutes'
 import translationRoutes from '../routes/translationRoutes'
 import userRoutes from '../routes/userRoutes'
