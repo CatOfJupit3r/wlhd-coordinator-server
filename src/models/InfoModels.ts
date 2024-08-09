@@ -10,7 +10,7 @@ export interface CharacterInfo {
     attributes: {
         [key: string]: string
     }
-    spell_book: EntityInfoFull['spellBook']
+    spellBook: EntityInfoFull['spellBook']
     inventory: EntityInfoFull['inventory']
     weaponry: EntityInfoFull['weaponry']
     statusEffects: EntityInfoFull['status_effects']

@@ -2,7 +2,7 @@ import cors from 'cors'
 import express, { Express } from 'express'
 import 'express-async-errors'
 
-import combatRoutes from '../routes/combatRoutes'
+import gameRoutes from '../routes/gameRoutes'
 import indexRoutes from '../routes/indexRoutes'
 import lobbyRoutes from '../routes/lobbyRoutes'
 import translationRoutes from '../routes/translationRoutes'
@@ -19,7 +19,7 @@ const ExpressLoader = async (app: Express) => {
     app.use('/translations', translationRoutes)
     app.use('/user', userRoutes)
     app.use('/lobby', lobbyRoutes)
-    app.use('/combat', combatRoutes)
+    app.use('/game', gameRoutes)
     app.use('/assets', assetRoutes)
 
     app.use(errorHandlerMiddleware)

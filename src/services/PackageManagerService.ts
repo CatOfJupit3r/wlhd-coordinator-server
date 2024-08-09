@@ -7,18 +7,17 @@ import { DLCPreset, ItemPreset, Manifest, SpellPreset, StatusEffectPreset, Weapo
 
 type presetTypes = 'weapons' | 'spells' | 'items' | 'status_effects' | 'entities'
 
+const MANDATORY_PACKAGES = [
+    {
+        source: 'https://github.com/CatOfJupit3r/wlhd-builtins-package',
+        title: 'builtins',
+    },
+]
+
 class PackageManagerService {
     private git: SimpleGit
     private CLEANUP: boolean = false
-    private mandatoryPackages: Array<{
-        source: string
-        title: string
-    }> = [
-        {
-            source: 'https://github.com/CatOfJupit3r/wlhd-builtins-package',
-            title: 'builtins',
-        },
-    ]
+    private availableDLCs: Array<string>
     private cachedPresets: {
         [dlc: string]: { [type: presetTypes | string]: { [descriptor: string]: DLCPreset | null } }
     } = {
@@ -65,7 +64,7 @@ class PackageManagerService {
     }
 
     public async installMandatoryPackages(encounteredPackages: string[] = []) {
-        for (const { source, title } of this.mandatoryPackages) {
+        for (const { source, title } of MANDATORY_PACKAGES) {
             if (!encounteredPackages.includes(title)) {
                 console.log(`Installing mandatory package ${title}`)
                 await this.installPackage(source, title)
@@ -191,30 +190,35 @@ class PackageManagerService {
             if (this.cachedPresets[dlc]?.[type]?.[descriptor] !== undefined) {
                 return this.cachedPresets[dlc][type][descriptor]
             }
-            const dlcFolderPath = path.join(PATH_TO_INSTALLED_PACKAGES, dlc)
-            const dlcFolder = fs.readdirSync(dlcFolderPath)
-            if (dlcFolder.includes('data')) {
-                const data = fs.readdirSync(path.join(dlcFolderPath, 'data'))
-                const presetFileName = `${type}.json`
-                if (data.includes(presetFileName)) {
-                    const presetJson = fs.readFileSync(path.join(dlcFolderPath, 'data', presetFileName), 'utf-8')
-                    const presets = JSON.parse(presetJson)
-                    this.hydrateCachedPresets(dlc, type)
-                    for (const descriptor in presets) {
-                        // we cache ALL preset from imported DLC file for future use
-                        this.cachedPresets[dlc][type][descriptor] = presets[descriptor]
-                    }
-                    if (!this.cachedPresets[dlc][type][descriptor]) {
-                        this.cachedPresets[dlc][type][descriptor] = null
-                    }
-                    return (this.cachedPresets[dlc][type][descriptor] as DLCPreset) || null
-                }
-                return null
-            }
-            return null
+            this.cacheDLCPresets(dlc)
+            return (this.cachedPresets[dlc]?.[type]?.[descriptor] as DLCPreset) || null
         } catch (e) {
             console.log('Error importing preset', e)
             return null
+        }
+    }
+
+    public cacheDLCPresets(dlc: string) {
+        const dlcFolderPath = path.join(PATH_TO_INSTALLED_PACKAGES, dlc)
+        const dlcFolder = fs.readdirSync(dlcFolderPath)
+        if (dlcFolder.includes('data')) {
+            const data = fs.readdirSync(path.join(dlcFolderPath, 'data'))
+            for (const presetFileName of data) {
+                const type = presetFileName.split('.')[0]
+                const presetJson = fs.readFileSync(path.join(dlcFolderPath, 'data', presetFileName), 'utf-8')
+                const presets = JSON.parse(presetJson)
+                this.hydrateCachedPresets(dlc, type as presetTypes)
+                for (const descriptor in presets) {
+                    this.cachedPresets[dlc][type as presetTypes][descriptor] = presets[descriptor]
+                }
+            }
+        }
+    }
+
+    public cacheAllDLCs() {
+        this.availableDLCs = fs.readdirSync(PATH_TO_INSTALLED_PACKAGES)
+        for (const dlc of this.availableDLCs) {
+            this.cacheDLCPresets(dlc)
         }
     }
 
@@ -243,11 +247,53 @@ class PackageManagerService {
         }
     }
 
+    private presetReducer<T>([key, value]: [string, T | null], acc: { [descriptor: string]: T }) {
+        if (value) {
+            acc[key] = value as T
+        }
+        return acc
+    }
+
+    public getCachedItems(dlc: string): { [descriptor: string]: ItemPreset } {
+        if (!this.cachedPresets[dlc]) {
+            return {}
+        }
+        return Object.entries(this.cachedPresets[dlc].items).reduce((acc, item) => this.presetReducer(item, acc), {})
+    }
+
+    public getCachedWeapons(dlc: string): { [descriptor: string]: WeaponPreset } {
+        if (!this.cachedPresets[dlc]) {
+            return {}
+        }
+        return Object.entries(this.cachedPresets[dlc].weapons).reduce((acc, item) => this.presetReducer(item, acc), {})
+    }
+
+    public getCachedSpells(dlc: string): { [descriptor: string]: SpellPreset } {
+        if (!this.cachedPresets[dlc]) {
+            return {}
+        }
+        return Object.entries(this.cachedPresets[dlc].spells).reduce((acc, item) => this.presetReducer(item, acc), {})
+    }
+
+    public getCachedStatusEffects(dlc: string): { [descriptor: string]: StatusEffectPreset } {
+        if (!this.cachedPresets[dlc]) {
+            return {}
+        }
+        return Object.entries(this.cachedPresets[dlc].status_effects).reduce(
+            (acc, item) => this.presetReducer(item, acc),
+            {}
+        )
+    }
+
     public checkIfPresetExists(type: presetTypes, full_descriptor: string): boolean {
         if (!full_descriptor) {
             return false
         }
         return !!this.importDLCPreset(type, full_descriptor)
+    }
+
+    public isDLCInstalled(dlc: string): boolean {
+        return this.availableDLCs.includes(dlc)
     }
 }
 

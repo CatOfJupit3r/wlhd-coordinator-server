@@ -3,6 +3,7 @@ import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs'
 import AssetController from '../controllers/AssetController'
 import TranslationController from '../controllers/TranslationController'
 import { GameServerStatus, Manifest } from '../models/GameDLCData'
+import { ItemInfo, SpellInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
 import { CombatClass } from '../models/TypegooseModels'
 import GameConversionService from './GameConversionService'
 import LobbyService from './LobbyService'
@@ -22,8 +23,11 @@ class GameServerService {
     }
 
     async init() {
+        let installed
         try {
-            const { installed } = await this.checkGameServers()
+            const serverStatus = await this.checkGameServers()
+            installed = serverStatus.installed
+            // const { installed } = await this.checkGameServers()
             if (!installed) {
                 console.log('No DLCs found on game server')
                 return
@@ -40,6 +44,7 @@ class GameServerService {
         TranslationController.reloadTranslations()
         AssetController.reloadAssets()
         PackageManagerService.resetCache()
+        PackageManagerService.cacheAllDLCs()
         GameConversionService.resetCache()
     }
 
@@ -64,6 +69,44 @@ class GameServerService {
                 Authorization: `Bearer ${GAME_SECRET_TOKEN()}`,
             },
         })
+    }
+
+    public getLoadedItems(dlc: string): { [descriptor: string]: ItemInfo } {
+        return Object.fromEntries(
+            Object.entries(PackageManagerService.getCachedItems(dlc)).map(([descriptor, itemPreset]) => [
+                descriptor,
+                GameConversionService.convertItem(itemPreset),
+            ])
+        )
+    }
+
+    public getLoadedWeapons(dlc: string): { [descriptor: string]: WeaponInfo } {
+        return Object.fromEntries(
+            Object.entries(PackageManagerService.getCachedWeapons(dlc)).map(([descriptor, weaponPreset]) => [
+                descriptor,
+                GameConversionService.convertWeapon(weaponPreset),
+            ])
+        )
+    }
+
+    public getLoadedSpells(dlc: string): { [descriptor: string]: SpellInfo } {
+        return Object.fromEntries(
+            Object.entries(PackageManagerService.getCachedSpells(dlc)).map(([descriptor, spellPreset]) => [
+                descriptor,
+                GameConversionService.convertSpell(spellPreset),
+            ])
+        )
+    }
+
+    public getLoadedStatusEffects(dlc: string): { [descriptor: string]: StatusEffectInfo } {
+        return Object.fromEntries(
+            Object.entries(PackageManagerService.getCachedStatusEffects(dlc)).map(
+                ([descriptor, statusEffectPreset]) => [
+                    descriptor,
+                    GameConversionService.convertStatusEffect(statusEffectPreset),
+                ]
+            )
+        )
     }
 
     // private addListeners() {

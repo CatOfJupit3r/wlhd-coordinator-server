@@ -89,13 +89,13 @@ class CharacterDecorationsClass {
 
 @modelOptions({ schemaOptions: { _id: false } })
 class CharacterSpellBook {
-    @requiredProp({ type: () => [SpellClass] })
+    @requiredProp({ type: () => [SpellClass], default: [] })
     knownSpells: Array<SpellClass>
 
-    @requiredProp()
+    @requiredProp({ default: 0 })
     maxActiveSpells: number
 
-    @requiredProp({ type: () => [String] })
+    @requiredProp({ type: () => [String], default: [] })
     activeSpells: Array<string>
 }
 
@@ -135,7 +135,13 @@ export class CharacterClass {
     @prop({ type: () => [ItemClass], default: [] })
     weaponry: Array<ItemClass>
 
-    @prop({ type: () => CharacterSpellBook, default: [] })
+    @prop({
+        type: () => CharacterSpellBook,
+        default: {
+            knownSpells: [],
+            maxActiveSpells: 0,
+        },
+    })
     spellBook: CharacterSpellBook
 
     @prop({ type: () => [StatusEffectClass], default: [] })

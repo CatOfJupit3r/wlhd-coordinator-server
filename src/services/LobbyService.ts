@@ -276,7 +276,7 @@ class LobbyService {
         lobbyId: string,
         descriptor: string
     ): Promise<{
-        spellBook: CharacterInfo['spell_book']
+        spellBook: CharacterInfo['spellBook']
     }> {
         const lobby = await DatabaseService.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')

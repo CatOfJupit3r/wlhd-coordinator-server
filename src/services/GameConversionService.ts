@@ -255,7 +255,7 @@ class GameConversionService {
             .filter(this.filterUndefined) as Array<ItemInfo>
     }
 
-    public convertSpellbook = (spellbook: CharacterClass['spellBook']): CharacterInfo['spell_book'] => {
+    public convertSpellbook = (spellbook: CharacterClass['spellBook']): CharacterInfo['spellBook'] => {
         return {
             spells: spellbook.knownSpells
                 .map(({ descriptor, _id }) => {
@@ -339,7 +339,7 @@ class GameConversionService {
                 'builtins:strength': String(characterModel.abilitiesPoints.strength || 0),
             },
 
-            spell_book: this.convertSpellbook(characterModel.spellBook),
+            spellBook: this.convertSpellbook(characterModel.spellBook),
             inventory: this.convertInventory(characterModel.inventory),
             weaponry: this.convertWeaponry(characterModel.weaponry),
             statusEffects: this.convertStatusEffects(characterModel.statusEffects),
