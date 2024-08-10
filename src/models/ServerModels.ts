@@ -200,5 +200,5 @@ interface SpellPartialPreset {
 
 interface StatusEffectPartialPreset {
     descriptor: string
-    duration?: number
+    duration?: number | null
 }

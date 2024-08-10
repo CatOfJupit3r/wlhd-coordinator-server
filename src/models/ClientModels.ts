@@ -25,7 +25,7 @@ export interface EntityInfoTooltip {
     health: { current: string; max: string }
     action_points: { current: string; max: string }
     armor: { current: string; base: string }
-    status_effects: Array<StatusEffectInfo>
+    statusEffects: Array<StatusEffectInfo>
 }
 
 export interface EntityInfoTurn {
@@ -45,7 +45,7 @@ export interface EntityInfoFull {
         spells: Array<SpellInfo>
         maxActiveSpells: number | null
     }
-    status_effects: Array<StatusEffectInfo>
+    statusEffects: Array<StatusEffectInfo>
 }
 
 export interface TurnOrder {

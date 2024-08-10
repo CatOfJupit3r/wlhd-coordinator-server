@@ -62,8 +62,8 @@ class StatusEffectClass {
     @requiredProp()
     descriptor: string
 
-    @requiredProp()
-    duration: number
+    @requiredProp({ type: () => Number })
+    duration: number | null
 }
 
 @modelOptions({ schemaOptions: { _id: false } })

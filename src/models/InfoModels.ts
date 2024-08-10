@@ -1,19 +1,7 @@
 import { EntityInfoFull } from './ClientModels'
 
-export interface CharacterInfo {
+export type CharacterInfo = Omit<EntityInfoFull, 'square'> & {
     descriptor: string
-    decorations: {
-        name: string
-        description: string
-        sprite: string
-    }
-    attributes: {
-        [key: string]: string
-    }
-    spellBook: EntityInfoFull['spellBook']
-    inventory: EntityInfoFull['inventory']
-    weaponry: EntityInfoFull['weaponry']
-    statusEffects: EntityInfoFull['status_effects']
 }
 
 export interface LobbyInfo {

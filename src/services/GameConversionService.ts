@@ -203,7 +203,7 @@ class GameConversionService {
             const { decorations, duration } = statusEffect
             return {
                 decorations,
-                duration: `${duration}`,
+                duration: duration === null ? duration : `${duration}`,
             } as StatusEffectInfo
         } catch (error) {
             console.error('Error converting status effect', statusEffect, error)
@@ -213,7 +213,7 @@ class GameConversionService {
                     sprite: 'error',
                     description: 'error',
                 },
-                duration: '0',
+                duration: null,
             } as StatusEffectInfo
         }
     }
@@ -282,7 +282,7 @@ class GameConversionService {
             .map(({ descriptor, duration }) => {
                 const cached = this.getCachedStatusEffect(descriptor)
                 if (cached) {
-                    return { ...cached, duration: `${duration}` }
+                    return { ...cached, duration: duration === null ? duration : `${duration}` }
                 }
                 const effect = PackageManagerService.getDLCStatusEffect(descriptor)
                 if (!effect) {
@@ -292,7 +292,7 @@ class GameConversionService {
                     this.cachedConversions['status_effects'][descriptor] = converted
                     return {
                         ...converted,
-                        duration: `${duration}`,
+                        duration: duration === null ? duration : `${duration}`,
                     }
                 }
             })
@@ -363,7 +363,7 @@ class GameConversionService {
                 spells: [],
                 maxActiveSpells: null,
             },
-            status_effects: [],
+            statusEffects: [],
         }
 
         return info

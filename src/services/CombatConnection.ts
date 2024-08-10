@@ -655,7 +655,7 @@ export class CombatConnection {
                 current: entity.attributes['builtins:current_armor'],
                 base: entity.attributes['builtins:base_armor'],
             },
-            status_effects: entity.status_effects.map((effect) => {
+            statusEffects: entity.status_effects.map((effect) => {
                 return {
                     decorations: effect.decorations,
                     duration: effect.duration ? effect.duration.toString() : null,
@@ -671,10 +671,12 @@ export class CombatConnection {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             id,
             spell_book,
+            status_effects,
             ...entityInfo
         } = entity
         return {
             ...entityInfo,
+            statusEffects: status_effects,
             spellBook: {
                 spells: spell_book.spells,
                 maxActiveSpells: spell_book.max_active_spells,
