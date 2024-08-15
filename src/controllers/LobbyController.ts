@@ -321,21 +321,6 @@ class LobbyController {
         res.status(200).json({ message: 'ok', characterDescriptor, dlc, attributeDescriptor, value })
     }
 
-    public async changeSpellLayoutOfCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor: characterDescriptor } = req.params
-        InputValidator.validateParams(
-            { lobby_id, descriptor: characterDescriptor },
-            {
-                lobby_id: 'objectId',
-                descriptor: 'string',
-            }
-        )
-        const { layout } = req.body
-        InputValidator.validateField({ key: 'layout', value: layout }, 'array')
-        await LobbyService.changeSpellLayoutOfCharacter(lobby_id, characterDescriptor, layout)
-        res.status(200).json({ message: 'ok', characterDescriptor, layout })
-    }
-
     public async updateCharacter(req: Request, res: Response): Promise<void> {
         throw new MethodNotAllowed('Not implemented')
     }

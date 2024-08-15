@@ -49,10 +49,6 @@ router.patch(
     '/:lobby_id/character/:descriptor/assign_player',
     LobbyController.assignCharacterToPlayer.bind(LobbyController)
 )
-router.patch(
-    '/:lobby_id/character/:descriptor/spell_layout',
-    LobbyController.changeSpellLayoutOfCharacter.bind(LobbyController)
-)
 
 // DELETE
 

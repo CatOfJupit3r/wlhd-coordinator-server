@@ -370,15 +370,6 @@ class LobbyService {
             value
         )
     }
-
-    public changeSpellLayoutOfCharacter = async (
-        lobby_id: string,
-        characterDescriptor: string,
-        spells: Array<string>
-    ): Promise<void> => {
-        return
-        // return await DatabaseService.changeSpellLayoutOfCharacter(lobby_id, characterDescriptor, spells)
-    }
 }
 
 export default new LobbyService()
