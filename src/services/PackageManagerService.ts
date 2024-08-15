@@ -209,7 +209,10 @@ class PackageManagerService {
                 const presets = JSON.parse(presetJson)
                 this.hydrateCachedPresets(dlc, type as presetTypes)
                 for (const descriptor in presets) {
-                    this.cachedPresets[dlc][type as presetTypes][descriptor] = presets[descriptor]
+                    this.cachedPresets[dlc][type as presetTypes][descriptor] = {
+                        ...presets[descriptor],
+                        descriptor: `${dlc}:${descriptor}`,
+                    }
                 }
             }
         }

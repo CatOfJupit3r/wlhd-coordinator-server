@@ -200,14 +200,16 @@ class GameConversionService {
 
     public convertStatusEffect = (statusEffect: StatusEffectPreset): StatusEffectInfo => {
         try {
-            const { decorations, duration } = statusEffect
+            const { decorations, duration, descriptor } = statusEffect
             return {
+                descriptor,
                 decorations,
                 duration: duration === null ? duration : `${duration}`,
             } as StatusEffectInfo
         } catch (error) {
             console.error('Error converting status effect', statusEffect, error)
             return {
+                descriptor: 'error',
                 decorations: {
                     name: 'error',
                     sprite: 'error',
