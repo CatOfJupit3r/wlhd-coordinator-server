@@ -3,14 +3,13 @@ import { Types } from 'mongoose'
 import { DESCRIPTOR_REGEX } from '../../configs'
 
 const requiredProp = (options: { [key: string]: unknown } = {}) => prop({ required: true, ...options })
+const validateDescriptor = (value: string) => DESCRIPTOR_REGEX().test(value)
 
 @modelOptions({ schemaOptions: { _id: false } })
 export class AttributeClass {
     @prop({
         required: true,
-        validate: (value: string) => {
-            return DESCRIPTOR_REGEX().test(value)
-        },
+        validate: validateDescriptor,
     })
     descriptor: string
 
@@ -44,7 +43,7 @@ class LevelClass {
 
 @modelOptions({ schemaOptions: { _id: false } })
 class ItemClass {
-    @requiredProp()
+    @requiredProp({ validate: validateDescriptor })
     descriptor: string
 
     @prop({ default: 1 })
@@ -53,7 +52,7 @@ class ItemClass {
 
 @modelOptions({ schemaOptions: { _id: false } })
 class SpellClass {
-    @requiredProp()
+    @requiredProp({ validate: validateDescriptor })
     descriptor: string
 
     @prop({ default: false })
@@ -62,7 +61,7 @@ class SpellClass {
 
 @modelOptions({ schemaOptions: { _id: false } })
 class StatusEffectClass {
-    @requiredProp()
+    @requiredProp({ validate: validateDescriptor })
     descriptor: string
 
     @requiredProp({ type: () => Number })
