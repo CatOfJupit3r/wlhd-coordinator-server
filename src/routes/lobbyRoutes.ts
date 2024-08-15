@@ -60,5 +60,6 @@ router.delete(
     '/:lobby_id/character/:descriptor/remove_player',
     LobbyController.removeCharacterFromPlayer.bind(LobbyController)
 )
+router.delete('/:lobby_id/character/:descriptor', LobbyController.deleteCharacter.bind(LobbyController))
 
 export default router

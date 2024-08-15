@@ -113,6 +113,19 @@ class DatabaseService {
         return entity._id
     }
 
+    public deleteCharacter = async (characterId: Types.ObjectId): Promise<void> => {
+        await CharacterModel.deleteOne({ _id: characterId })
+        const lobbiesWithCharacter = await LobbyModel.find({ 'characterBank.characterId': characterId })
+        for (const lobby of lobbiesWithCharacter) {
+            lobby.characterBank = lobby.characterBank.filter((c) => c.characterId !== characterId.toString())
+            try {
+                await this.updateCharacterBank(lobby._id.toString(), lobby.characterBank)
+            } catch (e) {
+                console.log(`Failed to remove character from lobby ${lobby._id}`, e)
+            }
+        }
+    }
+
     public createNewCombatPreset = async (field: CombatClass['field']): Promise<Types.ObjectId> => {
         const combatPreset = new CombatModel({ field })
         await this.saveDocument(combatPreset)
@@ -225,7 +238,7 @@ class DatabaseService {
         if (!PackageManagerService.checkIfPresetExists('spells', spellDescriptor)) {
             throw new BadRequest('Spell not found in package')
         }
-        character.spellBook.knownSpells.push({ descriptor: spellDescriptor, _id: new Types.ObjectId() })
+        character.spellBook.knownSpells.push({ descriptor: spellDescriptor, isActive: false })
         await mongoose.connection
             .collection('characters')
             .updateOne({ descriptor: characterDescriptor }, { $set: { spellBook: character.spellBook } })
@@ -286,32 +299,16 @@ class DatabaseService {
         const character = await this.getCharacterByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.attributes) character.attributes = []
-        const attribute = character.attributes.find((a) => a.dlc === dlc && a.descriptor === characterDescriptor)
+        const fullDescriptor = `${dlc}:${attributeDescriptor}`
+        const attribute = character.attributes.find((a) => a.descriptor === fullDescriptor)
         if (attribute) {
             attribute.value = value
         } else {
-            character.attributes.push({ dlc, descriptor: attributeDescriptor, value })
+            character.attributes.push({ descriptor: fullDescriptor, value })
         }
         await mongoose.connection
             .collection('characters')
             .updateOne({ descriptor: characterDescriptor }, { $set: { attributes: character.attributes } })
-    }
-
-    public changeSpellLayoutOfCharacter = async (
-        lobby_id: string,
-        characterDescriptor: string,
-        spells: Array<string>
-    ): Promise<void> => {
-        const lobby = await this.getLobby(lobby_id)
-        if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacterByDescriptor(characterDescriptor)
-        if (!character) throw new NotFound('Character not found')
-        if (character.spellBook.maxActiveSpells !== null && spells.length > character.spellBook.maxActiveSpells)
-            throw new BadRequest('Too many spells')
-        character.spellBook.activeSpells = spells
-        await mongoose.connection
-            .collection('characters')
-            .updateOne({ descriptor: characterDescriptor }, { $set: { spellBook: character.spellBook } })
     }
 
     public getCharactersOfPlayer = async (lobbyId: string, userId: string): Promise<Array<CharacterClass>> => {

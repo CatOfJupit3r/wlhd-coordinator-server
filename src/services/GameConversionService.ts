@@ -258,7 +258,7 @@ class GameConversionService {
     public convertSpellbook = (spellbook: CharacterClass['spellBook']): CharacterInfo['spellBook'] => {
         return {
             spells: spellbook.knownSpells
-                .map(({ descriptor, _id }) => {
+                .map(({ descriptor, isActive }) => {
                     const cached = this.getCachedSpell(descriptor)
                     if (cached) {
                         return { ...cached, descriptor }
@@ -269,7 +269,7 @@ class GameConversionService {
                     } else {
                         const converted = this.convertSpell(spell)
                         this.cachedConversions['spells'][descriptor] = converted
-                        return { ...converted, descriptor, is_active: spellbook.activeSpells.includes(_id.toString()) }
+                        return { ...converted, descriptor, is_active: isActive }
                     }
                 })
                 .filter(this.filterUndefined) as Array<SpellInfo>,
@@ -310,9 +310,8 @@ class GameConversionService {
         }
 
         for (const attribute of character.attributes) {
-            const { dlc, descriptor, value } = attribute
-            const attributeKey = `${dlc}:${descriptor}`
-            attributes[attributeKey] = String(value)
+            const { descriptor, value } = attribute
+            attributes[descriptor] = String(value)
         }
         return attributes
     }
@@ -345,9 +344,8 @@ class GameConversionService {
             statusEffects: this.convertStatusEffects(characterModel.statusEffects),
         }
         for (const attribute of characterModel.attributes) {
-            const { dlc, descriptor, value } = attribute
-            const attributeKey = `${dlc}:${descriptor}`
-            info.attributes[attributeKey] = String(value)
+            const { descriptor, value } = attribute
+            info.attributes[descriptor] = String(value)
         }
         return info
     }
@@ -392,18 +390,15 @@ class GameConversionService {
             status_effects: [],
         }
         for (const attribute of characterModel.attributes) {
-            const { dlc, descriptor, value } = attribute
-            const attributeKey = `${dlc}:${descriptor}`
-            preset.attributes[attributeKey] = (preset.attributes[attributeKey] || 0) + value
+            const { descriptor, value } = attribute
+            preset.attributes[descriptor] = (preset.attributes[descriptor] || 0) + value
         }
-        const { knownSpells, maxActiveSpells, activeSpells } = characterModel.spellBook
+        const { knownSpells, maxActiveSpells } = characterModel.spellBook
         preset.spell_book.max_active_spells = typeof maxActiveSpells !== 'undefined' ? maxActiveSpells : null
         for (const spell of knownSpells) {
             const spell_preset: CharacterPreset['spell_book']['spells'][number] = {
                 descriptor: spell.descriptor,
-            }
-            if (activeSpells.includes(spell._id.toString())) {
-                spell_preset._is_active = true
+                _is_active: spell.isActive,
             }
             preset.spell_book.spells.push(spell_preset)
         }

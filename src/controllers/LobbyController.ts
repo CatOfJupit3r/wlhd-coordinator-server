@@ -134,8 +134,24 @@ class LobbyController {
         for (const attribute of attributes) {
             InputValidator.validateObject(attribute, { dlc: 'string', descriptor: 'string', value: 'number' })
         }
-        await LobbyService.createNewCharacter(lobby_id, controlledBy, descriptor, decorations, attributes)
+        await LobbyService.createNewCharacter(
+            lobby_id,
+            controlledBy,
+            descriptor,
+            decorations,
+            attributes.map((attribute: { dlc: string; descriptor: string; value: number }) => ({
+                descriptor: `${attribute.dlc}:${attribute.descriptor}`,
+                value: attribute.value,
+            }))
+        )
         res.status(200).json({ result: 'ok', descriptor })
+    }
+
+    public async deleteCharacter(req: Request, res: Response): Promise<void> {
+        const { lobby_id, descriptor } = req.params
+        InputValidator.validateParams({ lobby_id, descriptor }, { lobby_id: 'objectId', descriptor: 'string' })
+        await LobbyService.deleteCharacter(lobby_id, descriptor)
+        res.status(200).json({ message: 'ok', descriptor })
     }
 
     public async getWeaponryOfCharacter(req: Request, res: Response): Promise<void> {

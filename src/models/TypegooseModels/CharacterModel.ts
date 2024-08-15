@@ -1,14 +1,17 @@
 import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose'
 import { Types } from 'mongoose'
+import { DESCRIPTOR_REGEX } from '../../configs'
 
 const requiredProp = (options: { [key: string]: unknown } = {}) => prop({ required: true, ...options })
 
 @modelOptions({ schemaOptions: { _id: false } })
 export class AttributeClass {
-    @prop({ required: true, default: 'builtins' })
-    dlc: string
-
-    @prop({ required: true })
+    @prop({
+        required: true,
+        validate: (value: string) => {
+            return DESCRIPTOR_REGEX().test(value)
+        },
+    })
     descriptor: string
 
     @prop({ default: 0 })
@@ -48,13 +51,13 @@ class ItemClass {
     quantity: number
 }
 
-@modelOptions({ schemaOptions: { _id: true } })
+@modelOptions({ schemaOptions: { _id: false } })
 class SpellClass {
     @requiredProp()
     descriptor: string
 
-    @prop()
-    _id: Types.ObjectId
+    @prop({ default: false })
+    isActive: boolean
 }
 
 @modelOptions({ schemaOptions: { _id: false } })
@@ -64,15 +67,6 @@ class StatusEffectClass {
 
     @requiredProp({ type: () => Number })
     duration: number | null
-}
-
-@modelOptions({ schemaOptions: { _id: false } })
-class SpellLayoutClass {
-    @requiredProp()
-    max: number
-
-    @prop({ type: () => [String], default: [] })
-    layout: Array<string>
 }
 
 @modelOptions({ schemaOptions: { _id: false } })
@@ -94,9 +88,6 @@ class CharacterSpellBook {
 
     @requiredProp({ default: 0 })
     maxActiveSpells: number
-
-    @requiredProp({ type: () => [String], default: [] })
-    activeSpells: Array<string>
 }
 
 @modelOptions({ schemaOptions: { collection: 'characters' } })
@@ -112,9 +103,6 @@ export class CharacterClass {
 
     @prop({ default: { current: 0, max: 0 }, _id: false, type: () => LevelClass })
     level: LevelClass
-
-    @prop({ default: 0 })
-    gold: number
 
     @prop({ type: () => [String], default: [] })
     alignments: Array<string>

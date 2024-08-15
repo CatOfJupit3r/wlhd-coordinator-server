@@ -169,6 +169,18 @@ class LobbyService {
         return entity_id
     }
 
+    async deleteCharacter(lobby_id: string, descriptor: string): Promise<void> {
+        const character = await DatabaseService.getCharacterByDescriptor(descriptor)
+        if (!character) throw new NotFound('Character not found')
+        const lobby = await DatabaseService.getLobby(lobby_id)
+        if (!lobby) throw new NotFound('Lobby not found')
+        if (!lobby.characterBank) throw new InternalServerError('Character bank not found')
+        if (!lobby.characterBank.find((c) => c.characterId.toString() === character._id.toString())) {
+            throw new NotFound('Character not found in this lobby')
+        }
+        await DatabaseService.deleteCharacter(character._id)
+    }
+
     public createNewCombatPreset = async (field: CombatClass['field']): Promise<Types.ObjectId> => {
         const occupiedSquares: Array<string> = []
         for (const pawn of field) {
@@ -364,7 +376,8 @@ class LobbyService {
         characterDescriptor: string,
         spells: Array<string>
     ): Promise<void> => {
-        return await DatabaseService.changeSpellLayoutOfCharacter(lobby_id, characterDescriptor, spells)
+        return
+        // return await DatabaseService.changeSpellLayoutOfCharacter(lobby_id, characterDescriptor, spells)
     }
 }
 
