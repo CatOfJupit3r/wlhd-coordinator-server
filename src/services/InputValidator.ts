@@ -46,7 +46,7 @@ class InputValidator {
     ): FailedValidation | SuccessfulValidation {
         try {
             for (const [key, type] of Object.entries(expected)) {
-                if (!input[key]) {
+                if (input[key] === undefined) {
                     if (throwRequestError)
                         throw new BadRequest(
                             this.VALIDATION_FAILED(),
@@ -102,7 +102,7 @@ class InputValidator {
     ): FailedValidation | SuccessfulValidation {
         try {
             const { key, value } = input
-            if (!value) {
+            if (value === undefined) {
                 if (throwRequestError)
                     throw new BadRequest(
                         this.VALIDATION_FAILED(),
