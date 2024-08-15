@@ -292,6 +292,7 @@ class GameConversionService {
                     this.cachedConversions['status_effects'][descriptor] = converted
                     return {
                         ...converted,
+                        descriptor,
                         duration: duration === null ? duration : `${duration}`,
                     }
                 }

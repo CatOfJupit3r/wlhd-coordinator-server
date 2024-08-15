@@ -25,7 +25,7 @@ export interface EntityInfoTooltip {
     health: { current: string; max: string }
     action_points: { current: string; max: string }
     armor: { current: string; base: string }
-    statusEffects: Array<StatusEffectInfo>
+    statusEffects: Array<Omit<StatusEffectInfo, 'descriptor'>>
 }
 
 export interface EntityInfoTurn {

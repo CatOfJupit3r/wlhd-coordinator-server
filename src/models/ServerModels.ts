@@ -114,6 +114,7 @@ export interface SpellInfo {
 }
 
 export interface StatusEffectInfo {
+    descriptor: string
     decorations: GameComponentDecoration
     duration: string | null
 }
