@@ -173,6 +173,7 @@ class GameConversionService {
                     current: 0,
                     max: cooldown,
                 },
+                isActive: false,
             } as SpellInfo
         } catch (error) {
             console.error('Error converting spell', spell, error)
@@ -193,7 +194,7 @@ class GameConversionService {
                     current: 0,
                     max: 0,
                 },
-                is_active: false,
+                isActive: false,
             } as SpellInfo
         }
     }
@@ -271,7 +272,7 @@ class GameConversionService {
                     } else {
                         const converted = this.convertSpell(spell)
                         this.cachedConversions['spells'][descriptor] = converted
-                        return { ...converted, descriptor, is_active: isActive }
+                        return { ...converted, descriptor, isActive: isActive }
                     }
                 })
                 .filter(this.filterUndefined) as Array<SpellInfo>,

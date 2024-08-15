@@ -109,7 +109,7 @@ export interface SpellInfo {
         current: number
         max: number | null
     }
-    is_active: boolean
+    isActive: boolean
     cooldown: { current: number; max: number | null }
 }
 
