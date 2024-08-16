@@ -1,4 +1,4 @@
-import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose'
+import { getModelForClass, modelOptions, prop, Severity } from '@typegoose/typegoose'
 import { Types } from 'mongoose'
 import { DESCRIPTOR_REGEX } from '../../configs'
 
@@ -80,13 +80,13 @@ class CharacterDecorationsClass {
     sprite: string
 }
 
-@modelOptions({ schemaOptions: { _id: false } })
+@modelOptions({ schemaOptions: { _id: false }, options: { allowMixed: Severity.ALLOW } })
 class CharacterSpellBook {
     @requiredProp({ type: () => [SpellClass], default: [] })
     knownSpells: Array<SpellClass>
 
-    @requiredProp({ default: 0 })
-    maxActiveSpells: number
+    @requiredProp({ default: null })
+    maxActiveSpells: number | null
 }
 
 @modelOptions({ schemaOptions: { collection: 'characters' } })

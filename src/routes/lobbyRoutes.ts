@@ -44,11 +44,14 @@ router.post(
 // PATCH
 
 router.patch('/:lobby_id/add_player', LobbyController.addPlayerToLobby.bind(LobbyController))
-router.patch('/:lobby_id/character/:descriptor', LobbyController.updateCharacter.bind(LobbyController))
 router.patch(
     '/:lobby_id/character/:descriptor/assign_player',
     LobbyController.assignCharacterToPlayer.bind(LobbyController)
 )
+
+// PUT
+
+router.put('/:lobby_id/character/:descriptor', LobbyController.updateCharacter.bind(LobbyController))
 
 // DELETE
 

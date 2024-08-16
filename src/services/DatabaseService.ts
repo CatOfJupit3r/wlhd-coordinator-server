@@ -1,7 +1,8 @@
 import { DocumentType } from '@typegoose/typegoose'
 import mongoose, { Types } from 'mongoose'
-import { DESCRIPTOR_NO_DLC_REGEX } from '../configs'
+import { DESCRIPTOR_NO_DLC_REGEX, DESCRIPTOR_REGEX } from '../configs'
 import { BadRequest, InternalServerError, NotFound } from '../models/ErrorModels'
+import { EntityInfoFullToCharacterClass } from '../models/GameEditorModels'
 import {
     AttributeClass,
     CharacterClass,
@@ -383,6 +384,103 @@ class DatabaseService {
             characters.push(character)
         }
         return characters
+    }
+
+    public updateCharacter = async (
+        lobby_id: string,
+        characterDescriptor: string,
+        newCharacter: EntityInfoFullToCharacterClass
+    ): Promise<void> => {
+        const lobby = await this.getLobby(lobby_id)
+        if (!lobby) throw new NotFound('Lobby not found')
+        const character = await this.getCharacterByDescriptor(characterDescriptor)
+        if (!character) throw new NotFound('Character not found')
+
+        if (newCharacter.decorations) {
+            if (newCharacter.decorations.name.length > 32) throw new BadRequest('Name too long')
+            if (newCharacter.decorations.description.length > 256) throw new BadRequest('Description too long')
+
+            character.decorations = newCharacter.decorations
+        }
+
+        if (newCharacter.attributes) {
+            for (const attribute of newCharacter.attributes) {
+                if (!DESCRIPTOR_REGEX().test(attribute.descriptor)) throw new BadRequest('Invalid attribute descriptor')
+                if (attribute.value < -99999) throw new BadRequest('Attribute value too low')
+                if (attribute.value > 99999) throw new BadRequest('Attribute value too high')
+            }
+
+            if (newCharacter.attributes.length > 128) throw new BadRequest('Too many attributes')
+
+            character.attributes = newCharacter.attributes
+        }
+        if (newCharacter.spellBook) {
+            if (newCharacter.spellBook.maxActiveSpells !== null && newCharacter.spellBook.maxActiveSpells < 0) {
+                throw new BadRequest('Max active spells cannot be negative')
+            }
+            character.spellBook.maxActiveSpells = newCharacter.spellBook.maxActiveSpells
+
+            let maxSpellCount = 0
+            for (const spell of newCharacter.spellBook.knownSpells) {
+                if (!DESCRIPTOR_REGEX().test(spell.descriptor)) throw new BadRequest('Invalid spell descriptor')
+                if (spell.isActive) {
+                    maxSpellCount++
+                }
+            }
+
+            if (
+                !(newCharacter.spellBook.maxActiveSpells === null) &&
+                maxSpellCount > newCharacter.spellBook.maxActiveSpells
+            )
+                throw new BadRequest('Too many active spells')
+            if (newCharacter.spellBook.knownSpells.length > 32) throw new BadRequest('Exceeded max spell count')
+            character.spellBook.knownSpells = newCharacter.spellBook.knownSpells.map((s) => ({
+                descriptor: s.descriptor,
+                isActive: s.isActive,
+            }))
+        }
+        if (newCharacter.inventory) {
+            for (const item of newCharacter.inventory) {
+                if (!DESCRIPTOR_REGEX().test(item.descriptor)) throw new BadRequest('Invalid item descriptor')
+                if (item.quantity < 0) throw new BadRequest('Item quantity cannot be negative')
+                if (item.quantity > 256) throw new BadRequest('Too many items')
+            }
+            if (newCharacter.inventory.length > 32) throw new BadRequest('Too many items')
+
+            character.inventory = newCharacter.inventory.map((i) => ({
+                descriptor: i.descriptor,
+                quantity: i.quantity,
+            }))
+        }
+        if (newCharacter.statusEffects) {
+            for (const effect of newCharacter.statusEffects) {
+                if (!DESCRIPTOR_REGEX().test(effect.descriptor))
+                    throw new BadRequest('Invalid status effect descriptor')
+                if (effect.duration !== null) {
+                    if (effect.duration < 0) throw new BadRequest('Status effect duration cannot be negative')
+                    else if (effect.duration > 256) throw new BadRequest('Status effect duration too long')
+                }
+            }
+
+            if (newCharacter.statusEffects.length > 32) throw new BadRequest('Too many status effects')
+            character.statusEffects = newCharacter.statusEffects.map((s) => ({
+                descriptor: s.descriptor,
+                duration: s.duration,
+            }))
+        }
+        if (newCharacter.weaponry) {
+            for (const weapon of newCharacter.weaponry) {
+                if (!DESCRIPTOR_REGEX().test(weapon.descriptor)) throw new BadRequest('Invalid weapon descriptor')
+                if (weapon.quantity < 0) throw new BadRequest('Weapon quantity cannot be negative')
+                if (weapon.quantity > 256) throw new BadRequest('Too many weapons')
+            }
+
+            if (newCharacter.weaponry.length > 32) throw new BadRequest('Too many weapons')
+            character.weaponry = newCharacter.weaponry.map((w) => ({ descriptor: w.descriptor, quantity: w.quantity }))
+        }
+        await mongoose.connection
+            .collection('characters')
+            .updateOne({ descriptor: characterDescriptor }, { $set: character })
     }
 }
 

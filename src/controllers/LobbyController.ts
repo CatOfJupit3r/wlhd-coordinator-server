@@ -1,9 +1,12 @@
 import { Request, Response } from 'express'
+import { isNull } from 'lodash'
 import { Socket } from 'socket.io'
 import { DESCRIPTOR_REGEX } from '../configs'
-import { BadRequest, Forbidden, InternalServerError, MethodNotAllowed, NotFound } from '../models/ErrorModels'
+import { BadRequest, Forbidden, InternalServerError, NotFound } from '../models/ErrorModels'
+import { EntityInfoFullToCharacterClass } from '../models/GameEditorModels'
 import { AttributeInfo, ItemInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
 import { CombatClass } from '../models/TypegooseModels'
+import { Schema } from '../models/Validation'
 import AuthService from '../services/AuthService'
 import DatabaseService from '../services/DatabaseService'
 import InputValidator from '../services/InputValidator'
@@ -322,7 +325,87 @@ class LobbyController {
     }
 
     public async updateCharacter(req: Request, res: Response): Promise<void> {
-        throw new MethodNotAllowed('Not implemented')
+        const { lobby_id, descriptor } = req.params
+        InputValidator.validateParams({ lobby_id, descriptor }, { lobby_id: 'objectId', descriptor: 'string' })
+        const lobby = await DatabaseService.getLobby(lobby_id)
+        const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
+        if (!lobby) throw new NotFound('Lobby not found')
+        if (lobby.gm_id !== user._id) throw new Forbidden('You are not the GM of this lobby')
+
+        const attributeSchema = {
+            descriptor: 'string',
+            value: 'number',
+        } as Schema
+        const decorationSchema = {
+            name: 'string',
+            description: 'string',
+            sprite: 'string',
+        } as Schema
+        const knownSpellsSchema = {
+            descriptor: 'string',
+        } as Schema
+        const inventorySchema = {
+            descriptor: 'string',
+            quantity: 'number',
+        } as Schema
+        const statusEffectsSchema = {
+            descriptor: 'string',
+            duration: 'number',
+        } as Schema
+        const weaponrySchema = {
+            descriptor: 'string',
+            quantity: 'number',
+        } as Schema
+
+        const { decorations, attributes, spellBook, inventory, statusEffects, weaponry } = req.body
+        InputValidator.validateObject(
+            { decorations, attributes, spellBook, inventory, statusEffects, weaponry },
+            {
+                decorations: 'object',
+                attributes: 'array',
+                spellBook: 'object',
+                inventory: 'array',
+                statusEffects: 'array',
+                weaponry: 'array',
+            }
+        )
+        InputValidator.validateObject(decorations, decorationSchema)
+        for (const attribute of attributes) {
+            InputValidator.validateObject(attribute, attributeSchema)
+        }
+        if (typeof spellBook.maxActiveSpells === 'number') {
+            if (spellBook.maxActiveSpells < 0) {
+                throw new BadRequest('maxActiveSpells must be a positive number')
+            }
+        } else if (!isNull(spellBook.maxActiveSpells)) {
+            throw new BadRequest('maxActiveSpells must be a positive number or null')
+        }
+        InputValidator.validateField({ key: 'knownSpells', value: spellBook.knownSpells }, 'array')
+        for (const spell of spellBook.knownSpells) {
+            InputValidator.validateObject(spell, knownSpellsSchema)
+        }
+        for (const item of inventory) {
+            InputValidator.validateObject(item, inventorySchema)
+        }
+        for (const effect of statusEffects) {
+            InputValidator.validateObject(effect, statusEffectsSchema)
+        }
+        for (const weapon of weaponry) {
+            InputValidator.validateObject(weapon, weaponrySchema)
+        }
+        const NewCharacterClass = {
+            decorations,
+            attributes,
+            spellBook: {
+                maxActiveSpells: spellBook.maxActiveSpells,
+                knownSpells: spellBook.knownSpells,
+            },
+            inventory,
+            statusEffects,
+            weaponry,
+        } as EntityInfoFullToCharacterClass
+        await DatabaseService.updateCharacter(lobby_id, descriptor, NewCharacterClass)
+        res.status(200).json({ message: 'ok', descriptor })
     }
 
     public onConnection(socket: Socket): void {
