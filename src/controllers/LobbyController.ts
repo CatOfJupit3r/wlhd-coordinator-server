@@ -5,7 +5,6 @@ import { DESCRIPTOR_REGEX } from '../configs'
 import { BadRequest, Forbidden, InternalServerError, NotFound } from '../models/ErrorModels'
 import { EntityInfoFullToCharacterClass } from '../models/GameEditorModels'
 import { AttributeInfo, ItemInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
-import { CombatClass } from '../models/TypegooseModels'
 import { Schema } from '../models/Validation'
 import AuthService from '../services/AuthService'
 import DatabaseService from '../services/DatabaseService'
@@ -66,7 +65,7 @@ class LobbyController {
             combatPreset,
         }: {
             combatNickname: string
-            combatPreset: CombatClass['field']
+            combatPreset: any
         } = req.body
         InputValidator.validateObject(
             { combatNickname, combatPreset },
@@ -357,18 +356,19 @@ class LobbyController {
             quantity: 'number',
         } as Schema
 
-        const { decorations, attributes, spellBook, inventory, statusEffects, weaponry } = req.body
-        InputValidator.validateObject(
-            { decorations, attributes, spellBook, inventory, statusEffects, weaponry },
+        const { value } = InputValidator.validateObject(
+            req.body,
             {
                 decorations: 'object',
-                attributes: 'array',
                 spellBook: 'object',
+                attributes: 'array',
                 inventory: 'array',
                 statusEffects: 'array',
                 weaponry: 'array',
-            }
+            },
+            true
         )
+        const { decorations, attributes, spellBook, inventory, statusEffects, weaponry } = value
         InputValidator.validateObject(decorations, decorationSchema)
         for (const attribute of attributes) {
             InputValidator.validateObject(attribute, attributeSchema)
@@ -380,8 +380,12 @@ class LobbyController {
         } else if (!isNull(spellBook.maxActiveSpells)) {
             throw new BadRequest('maxActiveSpells must be a positive number or null')
         }
-        InputValidator.validateField({ key: 'knownSpells', value: spellBook.knownSpells }, 'array')
-        for (const spell of spellBook.knownSpells) {
+        const { value: knownSpells } = InputValidator.validateField(
+            { key: 'knownSpells', value: spellBook.knownSpells },
+            'array',
+            true
+        )
+        for (const spell of knownSpells) {
             InputValidator.validateObject(spell, knownSpellsSchema)
         }
         for (const item of inventory) {
@@ -409,20 +413,28 @@ class LobbyController {
     }
 
     public onConnection(socket: Socket): void {
-        const { combatId, userToken } = socket.handshake.query
+        const query = socket.handshake.query
+        const combatId = typeof query.combatId === 'string' ? query.combatId : undefined
+        const userToken = typeof query.userToken === 'string' ? query.userToken : undefined
+
         if (
-            !InputValidator.validateObject(
-                { combatId, userToken },
-                {
-                    combatId: 'string',
-                    userToken: 'string',
-                },
-                false
-            ).success
+            !(
+                combatId &&
+                userToken &&
+                InputValidator.validateParams(
+                    { combatId, userToken },
+                    {
+                        combatId: 'string',
+                        userToken: 'string',
+                    },
+                    false
+                ).success
+            )
         ) {
             socket.disconnect()
             return
         }
+
         console.log('Trying to establish connection: ', combatId, userToken)
         LobbyService.manageSocket(socket, combatId as string, userToken as string)
     }

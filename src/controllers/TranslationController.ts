@@ -22,7 +22,12 @@ export class TranslationController {
     }
 
     public getTranslation(req: Request, res: Response): void {
-        const { language, dlc, strict } = req.query
+        const query = req.query
+
+        const language = typeof query.language === 'string' ? query.language : ''
+        const dlc = typeof query.dlc === 'string' ? query.dlc : ''
+        const strict = typeof query.strict === 'string' ? query.strict : 'false'
+
         InputValidator.validateObject({ language, dlc }, { language: 'string', dlc: 'string' }, true)
         if (!language || !dlc) throw new BadRequest('Missing: language or dlc') // for eslint
         const languages = language.toString().split(',')
@@ -32,7 +37,13 @@ export class TranslationController {
     }
 
     public getTranslationSnippet(req: Request, res: Response): void {
-        const { language, dlc, keys, strict } = req.query
+        const query = req.query
+
+        const language = typeof query.language === 'string' ? query.language : ''
+        const dlc = typeof query.dlc === 'string' ? query.dlc : ''
+        const keys = typeof query.keys === 'string' ? query.keys : ''
+        const strict = typeof query.strict === 'string' ? query.strict : 'false'
+
         InputValidator.validateObject(
             { language, dlc, keys },
             { language: 'string', dlc: 'string', keys: 'string' },

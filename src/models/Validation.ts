@@ -1,15 +1,28 @@
+import { Types } from 'mongoose'
+
 export type SupportedTypes = 'string' | 'number' | 'boolean' | 'object' | 'array' | 'any' | 'objectId'
 
-export interface Schema {
-    [key: string]: SupportedTypes
+export type TypeMapping = {
+    string: string
+    number: number
+    boolean: boolean
+    object: Record<string, unknown>
+    array: any[]
+    any: any
+    objectId: Types.ObjectId | string
 }
 
-export interface Input {
-    [key: string]: unknown
+export type Schema = {
+    [key: string]: keyof TypeMapping
 }
 
-export interface SuccessfulValidation {
+export type Input<T extends Schema> = {
+    [K in keyof T]: TypeMapping[T[K]]
+}
+
+export interface SuccessfulValidation<T = any> {
     success: true
+    value: T
 }
 
 export interface SchemaValue {
@@ -34,6 +47,6 @@ export interface FailDetails {
     misses: Misses
 }
 
-export const VALID_INPUT = (): SuccessfulValidation => ({ success: true })
-
+// export const VALID_INPUT = (): SuccessfulValidation => ({ success: true })
+export const VALID_INPUT = <T>(value: T): SuccessfulValidation<T> => ({ success: true, value })
 export const INVALID_INPUT = (misses?: Misses): FailedValidation => ({ success: false, misses: misses || [] })

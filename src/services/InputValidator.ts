@@ -9,6 +9,7 @@ import {
     Schema,
     SuccessfulValidation,
     SupportedTypes,
+    TypeMapping,
     VALID_INPUT,
 } from '../models/Validation'
 
@@ -17,7 +18,11 @@ class InputValidator {
         return 'Validation failed!'
     }
 
-    private WRONG_TYPE_DETAILS(provided: Input, schema: Schema, misses?: Misses): { details: FailDetails } {
+    private WRONG_TYPE_DETAILS<T extends Schema>(
+        provided: { [K in keyof T]: any },
+        schema: T,
+        misses?: Misses
+    ): { details: FailDetails } {
         return {
             details: {
                 type: 'wrong_type',
@@ -28,7 +33,11 @@ class InputValidator {
         }
     }
 
-    private MISSING_KEYS_DETAILS(provided: Input, schema: Schema, misses?: Misses): { details: FailDetails } {
+    private MISSING_KEYS_DETAILS<T extends Schema>(
+        provided: { [K in keyof T]: any },
+        schema: T,
+        misses?: Misses
+    ): { details: FailDetails } {
         return {
             details: {
                 type: 'missing_keys',
@@ -39,11 +48,23 @@ class InputValidator {
         }
     }
 
-    public validateObject(
-        input: Input,
-        expected: Schema,
+    public validateObject<T extends Schema>(
+        input: Input<T>,
+        expected: T,
+        throwRequestError: true
+    ): SuccessfulValidation<{ [K in keyof T]: TypeMapping[T[K]] }>
+
+    public validateObject<T extends Schema>(
+        input: Input<T>,
+        expected: T,
+        throwRequestError?: false
+    ): FailedValidation | SuccessfulValidation<{ [K in keyof T]: TypeMapping[T[K]] }>
+
+    public validateObject<T extends Schema>(
+        input: Input<T>,
+        expected: T,
         throwRequestError: boolean = true
-    ): FailedValidation | SuccessfulValidation {
+    ): FailedValidation | SuccessfulValidation<{ [K in keyof T]: TypeMapping[T[K]] }> {
         try {
             for (const [key, type] of Object.entries(expected)) {
                 if (input[key] === undefined) {
@@ -81,7 +102,7 @@ class InputValidator {
                     )
                 }
             }
-            return VALID_INPUT()
+            return VALID_INPUT(input as { [K in keyof T]: TypeMapping[T[K]] })
         } catch (error: unknown) {
             if (error instanceof Exception) throw error
             else {
@@ -95,11 +116,23 @@ class InputValidator {
         }
     }
 
-    public validateField(
-        input: { key: string; value: unknown },
-        expectedType: SupportedTypes,
+    public validateField<T extends SupportedTypes>(
+        input: { key: string; value: any },
+        expectedType: T,
+        throwRequestError: true
+    ): SuccessfulValidation<TypeMapping[T]>
+
+    public validateField<T extends SupportedTypes>(
+        input: { key: string; value: any },
+        expectedType: T,
+        throwRequestError?: false
+    ): FailedValidation | SuccessfulValidation<TypeMapping[T]>
+
+    public validateField<T extends SupportedTypes>(
+        input: { key: string; value: any },
+        expectedType: T,
         throwRequestError: boolean = true
-    ): FailedValidation | SuccessfulValidation {
+    ): FailedValidation | SuccessfulValidation<TypeMapping[T]> {
         try {
             const { key, value } = input
             if (value === undefined) {
@@ -114,7 +147,7 @@ class InputValidator {
                         ])
                     )
             }
-            if (expectedType === 'any') return VALID_INPUT()
+            if (expectedType === 'any') return VALID_INPUT(value as any)
             if (expectedType === 'objectId') {
                 if (typeof value !== 'string' || !Types.ObjectId.isValid(value)) {
                     if (throwRequestError)
@@ -123,6 +156,10 @@ class InputValidator {
                             this.WRONG_TYPE_DETAILS({ [key]: value }, { [key]: expectedType }, [
                                 { key, type: 'objectId' },
                             ])
+
+                            // this.WRONG_TYPE_DETAILS({ [key]: value }, { [key]: expectedType }, [
+                            //     { key, type: 'objectId' },
+                            // ]),
                         )
                     return INVALID_INPUT([{ key, type: expectedType }])
                 }
@@ -148,7 +185,7 @@ class InputValidator {
                     )
                 return INVALID_INPUT([{ key, type: expectedType }])
             }
-            return VALID_INPUT()
+            return VALID_INPUT(value as TypeMapping[T])
         } catch (error: unknown) {
             if (error instanceof Exception) throw error
             else {
@@ -162,12 +199,25 @@ class InputValidator {
         }
     }
 
-    public validateParams = (
-        input: Input,
-        expected: Schema,
+    public validateParams<T extends Schema>(
+        input: Input<T>,
+        expected: T,
+        throwRequestError: true
+    ): SuccessfulValidation<{ [K in keyof T]: TypeMapping[T[K]] }>
+
+    public validateParams<T extends Schema>(
+        input: Input<T>,
+        expected: T,
+        throwRequestError?: false
+    ): FailedValidation | SuccessfulValidation<{ [K in keyof T]: TypeMapping[T[K]] }>
+
+    public validateParams<T extends Schema>(
+        input: Input<T>,
+        expected: T,
         throwRequestError: boolean = true
-    ): FailedValidation | SuccessfulValidation => {
+    ): FailedValidation | SuccessfulValidation<{ [K in keyof T]: TypeMapping[T[K]] }> {
         try {
+            if (throwRequestError) return this.validateObject(input, expected, throwRequestError)
             return this.validateObject(input, expected, throwRequestError)
         } catch (error: unknown) {
             if (error instanceof Exception) {
