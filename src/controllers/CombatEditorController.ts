@@ -36,6 +36,13 @@ class CombatEditorController {
         res.status(200).json({ result: 'ok', status_effects })
     }
 
+    async getLoadedCharacters(req: Request, res: Response) {
+        const { dlc } = req.query
+        InputValidator.validateField({ key: 'dlc', value: dlc }, 'string', true)
+        const characters = CombatEditorService.getLoadedCharacters(dlc as string)
+        res.status(200).json({ result: 'ok', characters })
+    }
+
     async createCombatPreset(req: Request, res: Response) {
         console.log('Creating combat preset. Params:', req.body)
         const { field } = req.body

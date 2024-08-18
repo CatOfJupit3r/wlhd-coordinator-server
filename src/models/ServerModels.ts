@@ -184,17 +184,21 @@ export interface CharacterPreset {
 interface ItemPartialPreset {
     descriptor: string
     quantity?: number
+    turns_until_usage?: number
+    current_consecutive_uses?: number
 }
 
 interface WeaponPartialPreset {
     descriptor: string
     quantity?: number
     is_active?: boolean
+    turns_until_usage?: number
+    current_consecutive_uses?: number
 }
 
 interface SpellPartialPreset {
     descriptor: string
-    duration?: number
+    turns_until_usage?: number
     current_consecutive_uses?: number
     _is_active?: boolean
 }

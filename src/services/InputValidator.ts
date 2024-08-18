@@ -19,7 +19,7 @@ class InputValidator {
     }
 
     private WRONG_TYPE_DETAILS<T extends Schema>(
-        provided: { [K in keyof T]: any },
+        provided: Input<T>,
         schema: T,
         misses?: Misses
     ): { details: FailDetails } {
@@ -34,7 +34,7 @@ class InputValidator {
     }
 
     private MISSING_KEYS_DETAILS<T extends Schema>(
-        provided: { [K in keyof T]: any },
+        provided: Input<T>,
         schema: T,
         misses?: Misses
     ): { details: FailDetails } {

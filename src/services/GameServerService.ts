@@ -3,6 +3,7 @@ import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs'
 import AssetController from '../controllers/AssetController'
 import TranslationController from '../controllers/TranslationController'
 import { GameServerStatus, Manifest } from '../models/GameDLCData'
+import { CharacterInfo } from '../models/InfoModels'
 import { ItemInfo, SpellInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
 import { CombatClass } from '../models/TypegooseModels'
 import GameConversionService from './GameConversionService'
@@ -106,6 +107,15 @@ class GameServerService {
                     GameConversionService.convertStatusEffect(statusEffectPreset),
                 ]
             )
+        )
+    }
+
+    public getLoadedCharacters(dlc: string): { [descriptor: string]: CharacterInfo } {
+        return Object.fromEntries(
+            Object.entries(PackageManagerService.getCachedCharacters(dlc)).map(([descriptor, characterPreset]) => [
+                descriptor,
+                GameConversionService.convertCharacterPresetToInfo(characterPreset),
+            ])
         )
     }
 

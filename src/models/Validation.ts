@@ -47,6 +47,5 @@ export interface FailDetails {
     misses: Misses
 }
 
-// export const VALID_INPUT = (): SuccessfulValidation => ({ success: true })
 export const VALID_INPUT = <T>(value: T): SuccessfulValidation<T> => ({ success: true, value })
 export const INVALID_INPUT = (misses?: Misses): FailedValidation => ({ success: false, misses: misses || [] })

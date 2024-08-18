@@ -9,6 +9,7 @@ router.get('/items/', CombatEditorController.getLoadedItems.bind(CombatEditorCon
 router.get('/weapons/', CombatEditorController.getLoadedWeapons.bind(CombatEditorController))
 router.get('/spells/', CombatEditorController.getLoadedSpells.bind(CombatEditorController))
 router.get('/status_effects/', CombatEditorController.getLoadedStatusEffects.bind(CombatEditorController))
+router.get('/characters/', CombatEditorController.getLoadedCharacters.bind(CombatEditorController))
 
 // POST
 

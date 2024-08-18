@@ -4,6 +4,7 @@ import { simpleGit, SimpleGit } from 'simple-git'
 
 import { GITHUB_LINK_REGEX, GITHUB_TOKEN, PATH_TO_INSTALLED_PACKAGES } from '../configs'
 import { DLCPreset, ItemPreset, Manifest, SpellPreset, StatusEffectPreset, WeaponPreset } from '../models/GameDLCData'
+import { CharacterPreset } from '../models/ServerModels'
 
 type presetTypes = 'weapons' | 'spells' | 'items' | 'status_effects' | 'entities'
 
@@ -26,6 +27,7 @@ class PackageManagerService {
             spells: {},
             items: {},
             status_effects: {},
+            entities: {},
         },
     }
 
@@ -286,6 +288,13 @@ class PackageManagerService {
             (acc, item) => this.presetReducer(item, acc),
             {}
         )
+    }
+
+    public getCachedCharacters(dlc: string): { [descriptor: string]: CharacterPreset } {
+        if (!this.cachedPresets[dlc]) {
+            return {}
+        }
+        return Object.entries(this.cachedPresets[dlc].entities).reduce((acc, item) => this.presetReducer(item, acc), {})
     }
 
     public checkIfPresetExists(type: presetTypes, full_descriptor: string): boolean {

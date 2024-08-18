@@ -1,4 +1,3 @@
-import { EntityInfoFull } from '../models/ClientModels'
 import { ItemPreset, SpellPreset, StatusEffectPreset, WeaponPreset } from '../models/GameDLCData'
 import { CharacterInfo } from '../models/InfoModels'
 import {
@@ -241,6 +240,7 @@ class GameConversionService {
             })
             .filter(this.filterUndefined) as Array<WeaponInfo>
     }
+
     public convertInventory = (inventory: CharacterClass['inventory']): Array<ItemInfo> => {
         return inventory
             .map(({ descriptor, quantity }) => {
@@ -354,21 +354,148 @@ class GameConversionService {
         return info
     }
 
-    public convertCharacterPresetToInfoFull = (characterModel: CharacterPreset): EntityInfoFull => {
-        const info: EntityInfoFull = {
-            decorations: characterModel.decorations,
-            square: { line: '0', column: '0' },
-            attributes: {},
-            inventory: [],
-            weaponry: [],
-            spellBook: {
-                spells: [],
-                maxActiveSpells: null,
+    public convertCharacterPresetToInfo = (characterPreset: CharacterPreset): CharacterInfo => {
+        return {
+            descriptor: characterPreset.descriptor,
+            decorations: characterPreset.decorations,
+            attributes: {
+                ...DEFAULT_CHARACTER_ATTRIBUTES_STRINGS(),
+                ...Object.fromEntries(
+                    Object.entries(characterPreset.attributes).map(([key, value]) => [key, String(value)])
+                ),
             },
-            statusEffects: [],
-        }
-
-        return info
+            inventory: characterPreset.inventory
+                .map(({ descriptor, quantity, turns_until_usage, current_consecutive_uses }) => {
+                    const cached = this.getCachedItem(descriptor)
+                    if (cached) {
+                        return { ...cached, quantity: quantity || 1, descriptor }
+                    }
+                    const item = PackageManagerService.getDLCItem(descriptor)
+                    if (!item) {
+                        return
+                    } else {
+                        return {
+                            ...this.convertItem(item),
+                            quantity: quantity || 1,
+                            descriptor,
+                            uses: {
+                                current: current_consecutive_uses || 0,
+                                max: item.max_consecutive_uses,
+                            },
+                            cooldown: {
+                                current: turns_until_usage || 0,
+                                max: item.cooldown,
+                            },
+                        }
+                    }
+                })
+                .filter(this.filterUndefined) as Array<ItemInfo>,
+            weaponry: characterPreset.weaponry
+                .map(({ descriptor, quantity, is_active, turns_until_usage, current_consecutive_uses }) => {
+                    const cached = this.getCachedWeapon(descriptor)
+                    if (cached) {
+                        return {
+                            ...cached,
+                            quantity: quantity || 1,
+                            descriptor,
+                            isActive: is_active || false,
+                            uses: {
+                                current: current_consecutive_uses || 0,
+                                max: cached.uses.max,
+                            },
+                            cooldown: {
+                                current: turns_until_usage || 0,
+                                max: cached.cooldown.max,
+                            },
+                        }
+                    }
+                    const weapon = PackageManagerService.getDLCWeapon(descriptor)
+                    if (!weapon) {
+                        return
+                    } else {
+                        const converted = this.convertWeapon(weapon)
+                        this.cachedConversions['weapons'][descriptor] = converted
+                        return {
+                            ...converted,
+                            quantity: quantity || 1,
+                            descriptor,
+                            isActive: is_active || false,
+                            uses: {
+                                current: current_consecutive_uses || 0,
+                                max: weapon.max_consecutive_uses,
+                            },
+                            cooldown: {
+                                current: turns_until_usage || 0,
+                                max: weapon.cooldown,
+                            },
+                        }
+                    }
+                })
+                .filter(this.filterUndefined) as Array<WeaponInfo>,
+            spellBook: {
+                spells: characterPreset.spell_book.spells
+                    .map(({ descriptor, _is_active, turns_until_usage, current_consecutive_uses }) => {
+                        const cached = this.getCachedSpell(descriptor)
+                        if (cached) {
+                            return {
+                                ...cached,
+                                descriptor,
+                                isActive: _is_active || false,
+                                uses: {
+                                    current: current_consecutive_uses || 0,
+                                    max: cached.uses.max,
+                                },
+                                cooldown: {
+                                    current: turns_until_usage || 0,
+                                    max: cached.cooldown.max,
+                                },
+                            }
+                        }
+                        const spell = PackageManagerService.getDLCSpell(descriptor)
+                        if (!spell) {
+                            return
+                        } else {
+                            const converted = this.convertSpell(spell)
+                            this.cachedConversions['spells'][descriptor] = converted
+                            return {
+                                ...converted,
+                                descriptor,
+                                isActive: _is_active || false,
+                                uses: {
+                                    current: current_consecutive_uses || 0,
+                                    max: spell.max_consecutive_uses,
+                                },
+                                cooldown: {
+                                    current: turns_until_usage || 0,
+                                    max: spell.cooldown,
+                                },
+                            }
+                        }
+                    })
+                    .filter(this.filterUndefined) as Array<SpellInfo>,
+                maxActiveSpells: characterPreset.spell_book.max_active_spells,
+            },
+            statusEffects: characterPreset.status_effects
+                .map(({ descriptor, duration }) => {
+                    const cached = this.getCachedStatusEffect(descriptor)
+                    if (cached) {
+                        return { ...cached, duration: duration === null ? duration : `${duration}` }
+                    }
+                    const effect = PackageManagerService.getDLCStatusEffect(descriptor)
+                    if (!effect) {
+                        return
+                    } else {
+                        const converted = this.convertStatusEffect(effect)
+                        this.cachedConversions['status_effects'][descriptor] = converted
+                        return {
+                            ...converted,
+                            descriptor,
+                            duration: duration === null ? duration : `${duration}`,
+                        }
+                    }
+                })
+                .filter(this.filterUndefined) as Array<StatusEffectInfo>,
+        } as CharacterInfo
     }
 
     public convertCharacterModelToPreset = (characterModel: CharacterClass): CharacterPreset => {
@@ -453,6 +580,12 @@ const DEFAULT_CHARACTER_ATTRIBUTES: { [attribute: string]: number } = {
         },
         {} as { [attribute: string]: number }
     ),
+}
+
+const DEFAULT_CHARACTER_ATTRIBUTES_STRINGS = (): { [attribute: string]: string } => {
+    return {
+        ...Object.fromEntries(Object.entries(DEFAULT_CHARACTER_ATTRIBUTES).map(([key, value]) => [key, String(value)])),
+    }
 }
 
 export default new GameConversionService()
