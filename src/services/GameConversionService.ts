@@ -351,6 +351,16 @@ class GameConversionService {
             const { descriptor, value } = attribute
             info.attributes[descriptor] = String(value)
         }
+
+        const restoreAttributes = (restorable: string, max: string) => {
+            if (info.attributes[restorable] === '0') {
+                info.attributes[restorable] = info.attributes[max]
+            }
+        }
+        restoreAttributes('builtins:current_health', 'builtins:max_health')
+        restoreAttributes('builtins:current_action_points', 'builtins:max_action_points')
+        restoreAttributes('builtins:current_armor', 'builtins:base_armor')
+
         return info
     }
 
