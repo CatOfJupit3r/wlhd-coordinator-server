@@ -142,34 +142,42 @@ class DatabaseService {
             .updateOne({ _id: new Types.ObjectId(lobbyId) }, { $set: { characterBank: newCharacterBank } })
     }
 
-    public assignCharacterToPlayer = async (lobbyId: string, userId: string, descriptor: string): Promise<void> => {
+    public assignCharacterToPlayer = async (
+        lobbyId: string,
+        userId: Types.ObjectId,
+        descriptor: string
+    ): Promise<void> => {
         const lobby = await this.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
-        const player = lobby.players.find((p) => p.userId === userId)
+        const player = lobby.players.find((p) => p.userId === userId.toString())
         if (!player) throw new NotFound('Player not found')
         const character = await this.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Entity you were looking for was removed from Database.')
         const characterInLobbyBank = lobby.characterBank.find((c) => c.characterId === character._id.toString())
         if (!characterInLobbyBank) throw new NotFound('Character not found')
         if (!characterInLobbyBank.controlledBy) characterInLobbyBank.controlledBy = []
-        if (!characterInLobbyBank.controlledBy.includes(userId)) {
-            characterInLobbyBank.controlledBy.push(userId)
+        if (!characterInLobbyBank.controlledBy.includes(userId.toString())) {
+            characterInLobbyBank.controlledBy.push(userId.toString())
         }
         await this.updateCharacterBank(lobbyId, lobby.characterBank)
     }
 
-    public removeCharacterFromPlayer = async (lobbyId: string, userId: string, descriptor: string): Promise<void> => {
+    public removeCharacterFromPlayer = async (
+        lobbyId: string,
+        userId: Types.ObjectId,
+        descriptor: string
+    ): Promise<void> => {
         const lobby = await this.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
-        const player = lobby.players.find((p) => p.userId === userId)
+        const player = lobby.players.find((p) => p.userId === userId.toString())
         if (!player) throw new NotFound('Player not found')
         const character = await this.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         const characterInLobbyBank = lobby.characterBank.find((c) => c.characterId === character._id.toString())
         if (!characterInLobbyBank) throw new NotFound('Character not found')
         if (!characterInLobbyBank.controlledBy) characterInLobbyBank.controlledBy = []
-        if (characterInLobbyBank.controlledBy.includes(userId)) {
-            characterInLobbyBank.controlledBy = characterInLobbyBank.controlledBy.filter((c) => c !== userId)
+        if (characterInLobbyBank.controlledBy.includes(userId.toString())) {
+            characterInLobbyBank.controlledBy = characterInLobbyBank.controlledBy.filter((c) => c !== userId.toString())
         }
         await this.updateCharacterBank(lobbyId, lobby.characterBank)
     }

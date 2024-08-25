@@ -241,22 +241,6 @@ class LobbyService {
         return res
     }
 
-    public assignCharacterToPlayer = async (
-        lobbyId: string,
-        userId: string,
-        characterDescriptor: string
-    ): Promise<void> => {
-        return await DatabaseService.assignCharacterToPlayer(lobbyId, userId, characterDescriptor)
-    }
-
-    public removeCharacterFromPlayer = async (
-        lobbyId: string,
-        userId: string,
-        characterDescriptor: string
-    ): Promise<void> => {
-        return await DatabaseService.removeCharacterFromPlayer(lobbyId, userId, characterDescriptor)
-    }
-
     public async getWeaponryOfCharacter(lobbyId: string, descriptor: string): Promise<Array<WeaponInfo>> {
         const lobby = await DatabaseService.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')

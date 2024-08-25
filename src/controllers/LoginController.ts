@@ -1,12 +1,31 @@
 import { Request, Response } from 'express'
+import { ExtendedSchema } from 'just-enough-schemas'
 import { BadRequest, Exception, Forbidden, InternalServerError } from '../models/ErrorModels'
-import InputValidator from '../services/InputValidator'
 import UserService from '../services/UserService'
+
+const userSchema = new ExtendedSchema<{
+    handle: string
+    password: string
+}>({ excess: 'forbid' })
+userSchema.addStringField('handle')
+userSchema.addStringField('password', {
+    callback: (value: string) => {
+        return value.length >= 8
+    },
+})
 
 class LoginController {
     async login(req: Request, res: Response) {
-        const { handle, password } = req.body
-        InputValidator.validateObject({ handle, password }, { handle: 'string', password: 'string' }, true)
+        const validation = userSchema.check(req.body)
+        if (!validation.success) {
+            throw new BadRequest(validation.type, {
+                reason:
+                    validation.type === 'CALLBACK_FAILED'
+                        ? 'Password must be at least 8 characters long'
+                        : validation.message,
+            })
+        }
+        const { handle, password } = validation.value
 
         try {
             const { accessToken, refreshToken } = await UserService.loginWithPassword({ handle, password })
@@ -24,9 +43,16 @@ class LoginController {
     }
 
     async register(req: Request, res: Response) {
-        const { handle, password } = req.body
-        InputValidator.validateObject({ handle, password }, { handle: 'string', password: 'string' }, true)
-        if (password.length < 8) throw new BadRequest('Password must be at least 8 characters long')
+        const validation = userSchema.check(req.body)
+        if (!validation.success) {
+            throw new BadRequest(validation.type, {
+                reason:
+                    validation.type === 'CALLBACK_FAILED'
+                        ? 'Password must be at least 8 characters long'
+                        : validation.message,
+            })
+        }
+        const { handle, password } = validation.value
 
         try {
             await UserService.createAccount({ handle, password })
@@ -40,8 +66,7 @@ class LoginController {
 
     async token(req: Request, res: Response) {
         const { token: refreshToken } = req.body
-        InputValidator.validateField({ key: 'refreshToken', value: refreshToken }, 'string', true)
-        if (!refreshToken) throw new Forbidden()
+        if (!refreshToken || typeof refreshToken !== 'string') throw new Forbidden()
 
         try {
             const { accessToken } = UserService.loginWithRefreshToken(refreshToken)

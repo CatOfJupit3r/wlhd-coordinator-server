@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
+import { BadRequest } from '../models/ErrorModels'
 import AssetService from '../services/AssetService'
-import InputValidator from '../services/InputValidator'
 
 class AssetController {
     public index(req: Request, res: Response) {
@@ -9,13 +9,19 @@ class AssetController {
 
     public getAvailableAssetsOnDLC(req: Request, res: Response) {
         const { dlc } = req.params
-        InputValidator.validateObject({ dlc }, { dlc: 'string' }, true)
+        if (!dlc) {
+            throw new BadRequest('DLC name is required')
+        }
         res.status(200).send({ assets: AssetService.getDLCAssetNames(dlc) })
     } // returns all assets NAMES in individual dlc
 
     public getAsset(req: Request, res: Response) {
         const { dlc, asset } = req.params
-        InputValidator.validateObject({ dlc, asset }, { dlc: 'string', asset: 'string' }, true)
+        if (!dlc) {
+            throw new BadRequest('DLC name is required')
+        } else if (!asset) {
+            throw new BadRequest('Asset name is required')
+        }
 
         const found_asset = AssetService.getAsset(dlc, asset)
         if (!asset) {
