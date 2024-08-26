@@ -13,6 +13,6 @@ router.get('/characters/', CombatEditorController.getLoadedCharacters.bind(Comba
 
 // POST
 
-router.post('/create_preset', CombatEditorController.createCombatPreset.bind(CombatEditorController))
+router.post('/preset', CombatEditorController.createCombatPreset.bind(CombatEditorController))
 
 export default router

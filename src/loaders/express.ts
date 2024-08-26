@@ -17,9 +17,9 @@ const ExpressLoader = async (app: Express) => {
 
     app.use('/', indexRoutes)
     app.use('/translations', translationRoutes)
-    app.use('/user', userRoutes)
-    app.use('/lobby', lobbyRoutes)
-    app.use('/game', gameRoutes)
+    app.use('/user', userRoutes) // routes for THE user, not users in general
+    app.use('/lobbies', lobbyRoutes)
+    app.use('/game', gameRoutes) // routes related to game server data, not game lobbies
     app.use('/assets', assetRoutes)
 
     app.use(errorHandlerMiddleware)
