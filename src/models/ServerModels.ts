@@ -71,7 +71,11 @@ export interface AttributeInfo {
     [attribute: string]: number
 }
 
-export interface WeaponInfo {
+interface InfoWithMethodVariables {
+    methodVariables?: { [variable: string]: string | number | Record<string, unknown> | unknown }
+}
+
+export interface WeaponInfo extends InfoWithMethodVariables {
     descriptor: string
     decorations: GameComponentDecoration
     cost: number
@@ -86,7 +90,7 @@ export interface WeaponInfo {
     isActive: boolean
 }
 
-export interface ItemInfo {
+export interface ItemInfo extends InfoWithMethodVariables {
     descriptor: string
     decorations: GameComponentDecoration
     cost: number
@@ -100,7 +104,7 @@ export interface ItemInfo {
     consumable: boolean // if item is consumable
 }
 
-export interface SpellInfo {
+export interface SpellInfo extends InfoWithMethodVariables {
     descriptor: string
     decorations: GameComponentDecoration
     cost: number
@@ -113,13 +117,11 @@ export interface SpellInfo {
     cooldown: { current: number; max: number | null }
 }
 
-export interface StatusEffectInfo {
+export interface StatusEffectInfo extends InfoWithMethodVariables {
     descriptor: string
     decorations: GameComponentDecoration
     duration: string | null
 }
-
-export type FeaturesInfo = SpellInfo | ItemInfo | WeaponInfo | StatusEffectInfo
 
 export interface TranslationInfoAction {
     descriptor: string
