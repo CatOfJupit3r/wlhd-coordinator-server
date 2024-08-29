@@ -10,13 +10,13 @@ import {
     IndividualTurnOrder,
     TurnOrder,
 } from '../models/ClientModels'
+import { MinifiedCombatPreset } from '../models/GameEditorModels'
 import {
     Battlefield,
     ControlInfo,
     EntityAction,
     EntityInfo,
     GameHandshake as GameHandshakeGameServer,
-    GamePreset,
     GameStateContainer,
 } from '../models/ServerModels'
 import { TranslatableString } from '../models/Translation'
@@ -91,7 +91,7 @@ type GameSocket = Socket<DefaultEventsMap, DefaultEventsMap>
 
 export class CombatConnection {
     public combatNickname: string
-    private readonly combatPresets: GamePreset
+    private readonly combatPresets: MinifiedCombatPreset
     private readonly players: Array<Player>
     private readonly gameSocket: GameSocket
     private gameId: string
@@ -114,7 +114,7 @@ export class CombatConnection {
 
     constructor(
         combatNickname: string,
-        combatPreset: GamePreset,
+        combatPreset: MinifiedCombatPreset,
         removeSelf: () => void,
         gmId: string,
         players: Array<string>
@@ -490,7 +490,7 @@ export class CombatConnection {
                   }
                 | {
                       type: 'entity_tooltip'
-                      payload: { square: { line: string; column: string } }
+                      payload: { square: { line: number; column: number } }
                   }
                 | {
                       type: 'controlled_entities'

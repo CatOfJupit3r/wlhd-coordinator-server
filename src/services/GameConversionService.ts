@@ -305,17 +305,15 @@ class GameConversionService {
 
     public convertAttributesFromModel = (character: CharacterClass) => {
         const attributes: AttributeInfo = {
-            ...Object.fromEntries(
-                Object.entries(DEFAULT_CHARACTER_ATTRIBUTES).map(([key, value]) => [key, String(value)])
-            ),
-            'builtins:will': String(character.abilitiesPoints.will || 0),
-            'builtins:reflexes': String(character.abilitiesPoints.reflexes || 0),
-            'builtins:strength': String(character.abilitiesPoints.strength || 0),
+            ...DEFAULT_CHARACTER_ATTRIBUTES,
+            'builtins:will': character.abilitiesPoints.will ?? 0,
+            'builtins:reflexes': character.abilitiesPoints.reflexes ?? 0,
+            'builtins:strength': character.abilitiesPoints.strength ?? 0,
         }
 
         for (const attribute of character.attributes) {
             const { descriptor, value } = attribute
-            attributes[descriptor] = String(value)
+            attributes[descriptor] = value
         }
         return attributes
     }
@@ -334,12 +332,10 @@ class GameConversionService {
                   }
                 : characterModel.decorations,
             attributes: {
-                ...Object.fromEntries(
-                    Object.entries(DEFAULT_CHARACTER_ATTRIBUTES).map(([key, value]) => [key, String(value)])
-                ),
-                'builtins:will': String(characterModel.abilitiesPoints.will || 0),
-                'builtins:reflexes': String(characterModel.abilitiesPoints.reflexes || 0),
-                'builtins:strength': String(characterModel.abilitiesPoints.strength || 0),
+                ...DEFAULT_CHARACTER_ATTRIBUTES,
+                'builtins:will': characterModel.abilitiesPoints.will ?? 0,
+                'builtins:reflexes': characterModel.abilitiesPoints.reflexes ?? 0,
+                'builtins:strength': characterModel.abilitiesPoints.strength ?? 0,
             },
 
             spellBook: this.convertSpellbook(characterModel.spellBook),
@@ -349,11 +345,11 @@ class GameConversionService {
         }
         for (const attribute of characterModel.attributes) {
             const { descriptor, value } = attribute
-            info.attributes[descriptor] = String(value)
+            info.attributes[descriptor] = value
         }
 
         const restoreAttributes = (restorable: string, max: string) => {
-            if (info.attributes[restorable] === '0') {
+            if (info.attributes[restorable] === 0) {
                 info.attributes[restorable] = info.attributes[max]
             }
         }
@@ -369,10 +365,8 @@ class GameConversionService {
             descriptor: characterPreset.descriptor,
             decorations: characterPreset.decorations,
             attributes: {
-                ...DEFAULT_CHARACTER_ATTRIBUTES_STRINGS(),
-                ...Object.fromEntries(
-                    Object.entries(characterPreset.attributes).map(([key, value]) => [key, String(value)])
-                ),
+                ...DEFAULT_CHARACTER_ATTRIBUTES,
+                ...characterPreset.attributes,
             },
             inventory: characterPreset.inventory
                 .map(({ descriptor, quantity, turns_until_usage, current_consecutive_uses }) => {
@@ -444,13 +438,13 @@ class GameConversionService {
                 .filter(this.filterUndefined) as Array<WeaponInfo>,
             spellBook: {
                 spells: characterPreset.spell_book.spells
-                    .map(({ descriptor, _is_active, turns_until_usage, current_consecutive_uses }) => {
+                    .map(({ descriptor, is_active, turns_until_usage, current_consecutive_uses }) => {
                         const cached = this.getCachedSpell(descriptor)
                         if (cached) {
                             return {
                                 ...cached,
                                 descriptor,
-                                isActive: _is_active || false,
+                                isActive: is_active || false,
                                 uses: {
                                     current: current_consecutive_uses || 0,
                                     max: cached.uses.max,
@@ -470,7 +464,7 @@ class GameConversionService {
                             return {
                                 ...converted,
                                 descriptor,
-                                isActive: _is_active || false,
+                                isActive: is_active || false,
                                 uses: {
                                     current: current_consecutive_uses || 0,
                                     max: spell.max_consecutive_uses,
@@ -539,7 +533,7 @@ class GameConversionService {
         for (const spell of knownSpells) {
             const spell_preset: CharacterPreset['spell_book']['spells'][number] = {
                 descriptor: spell.descriptor,
-                _is_active: spell.isActive,
+                is_active: spell.isActive,
             }
             preset.spell_book.spells.push(spell_preset)
         }
@@ -590,12 +584,6 @@ const DEFAULT_CHARACTER_ATTRIBUTES: { [attribute: string]: number } = {
         },
         {} as { [attribute: string]: number }
     ),
-}
-
-const DEFAULT_CHARACTER_ATTRIBUTES_STRINGS = (): { [attribute: string]: string } => {
-    return {
-        ...Object.fromEntries(Object.entries(DEFAULT_CHARACTER_ATTRIBUTES).map(([key, value]) => [key, String(value)])),
-    }
 }
 
 export default new GameConversionService()

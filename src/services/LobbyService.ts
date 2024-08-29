@@ -1,6 +1,7 @@
 import { Types } from 'mongoose'
 import { Socket } from 'socket.io'
 import { BadRequest, Forbidden, InternalServerError, NotFound } from '../models/ErrorModels'
+import { MinifiedCombatPreset } from '../models/GameEditorModels'
 import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
 import { AttributeInfo, ItemInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
 import { TranslationSnippet } from '../models/Translation'
@@ -19,15 +20,14 @@ class LobbyService {
 
     public createCombat(
         lobby_id: string,
-        combatNickname: string,
-        preset: any,
+        preset: MinifiedCombatPreset,
         gm_id: string,
         players: string[]
     ): string | null {
         this.managingCombats.set(lobby_id, this.managingCombats.get(lobby_id) || [])
         const combats = this.managingCombats.get(lobby_id)
         if (combats) {
-            const combatId = CombatManager.createCombat(combatNickname, preset, gm_id, players, () => {
+            const combatId = CombatManager.createCombat(preset, gm_id, players, () => {
                 const index = combats.indexOf(combatId)
                 if (index !== -1) {
                     combats.splice(index, 1)

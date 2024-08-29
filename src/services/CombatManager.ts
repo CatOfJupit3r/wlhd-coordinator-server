@@ -1,3 +1,4 @@
+import { MinifiedCombatPreset } from '../models/GameEditorModels'
 import { CombatConnection } from './CombatConnection'
 
 class CombatManager {
@@ -8,19 +9,13 @@ class CombatManager {
         return this.combats.get(combat_id)
     }
 
-    public createCombat(
-        combatNickname: string,
-        preset: any,
-        gm_id: string,
-        players: string[],
-        onDeleted: () => void
-    ): string {
+    public createCombat(preset: MinifiedCombatPreset, gm_id: string, players: string[], onDeleted: () => void): string {
         const combat_id = (this.managedSoFar++).toString()
         const removeSelf = () => {
             this.combats.delete(combat_id)
             onDeleted()
         }
-        this.combats.set(combat_id, new CombatConnection(combatNickname, preset, removeSelf, gm_id, players))
+        this.combats.set(combat_id, new CombatConnection(preset.nickName, preset, removeSelf, gm_id, players))
         console.log('Combat created', combat_id)
         return combat_id
     }

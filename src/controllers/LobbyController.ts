@@ -6,11 +6,11 @@ import { DESCRIPTOR_NO_DLC_REGEX, DESCRIPTOR_REGEX } from '../configs'
 import { BadRequest, Forbidden, InternalServerError, NotFound } from '../models/ErrorModels'
 import { EntityInfoFullToCharacterClass } from '../models/GameEditorModels'
 import { AttributeInfo, ItemInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
+import { CombatEditorSchema } from '../schemas/CombatEditorSchemas'
 import { CharacterSchema, LobbySchema, LobbyWithDescriptorSchema } from '../schemas/LobbyControllerSchemas'
 import AuthService from '../services/AuthService'
 import DatabaseService from '../services/DatabaseService'
 import LobbyService from '../services/LobbyService'
-import { getEmittableCombatPreset } from '../utils/getEmittableCombatPreset'
 import { checkSchemaWithThrow } from '../utils/inputValidation'
 
 const stringIsObjectId = (value: unknown): value is Types.ObjectId => {
@@ -94,27 +94,17 @@ class LobbyController {
             CALLBACK_FAILED: 'Invalid lobby_id',
         }).value
 
-        const {
-            combatNickname,
-            combatPreset,
-        }: {
-            combatNickname: string
-            combatPreset: any
-        } = req.body
+        const validation = CombatEditorSchema.safeParse(req.body)
 
-        // TODO: Update this to use CombatEditor changes from FrontEnd.
-        // InputValidator.validateObject(
-        //     { combatNickname, combatPreset },
-        //     { combatNickname: 'string', combatPreset: 'object' }
-        // )
+        if (!validation.success) {
+            throw new BadRequest(validation.error.errors[0].message)
+        }
+        const preset = validation.data
 
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const preset = await getEmittableCombatPreset(combatPreset)
-        if (!preset) throw new NotFound('Preset not found')
         const combat_id = LobbyService.createCombat(
             lobby_id,
-            combatNickname,
             preset,
             lobby.gm_id,
             lobby.players.map((player) => player.userId)
@@ -365,9 +355,7 @@ class LobbyController {
     }
 
     public async updateCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-        }).value
+        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params).value
         const lobby = await DatabaseService.getLobby(lobby_id)
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         if (!lobby) throw new NotFound('Lobby not found')

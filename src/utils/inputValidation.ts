@@ -1,11 +1,10 @@
 import { ExtendedSchema, SuccessfulValidation } from 'just-enough-schemas'
-import { SchemaFieldDefinition } from 'just-enough-schemas/lib/models/ExtendedSchemaTypes'
 import { BadRequest } from '../models/ErrorModels'
 
 export const checkSchemaWithThrow = <T>(
     schema: ExtendedSchema<T>,
     input: unknown,
-    altMessage: {
+    altMessage?: {
         CALLBACK_FAILED?: string
         WRONG_TYPE?: string
         MISSING_KEYS?: string
@@ -15,25 +14,9 @@ export const checkSchemaWithThrow = <T>(
 ): SuccessfulValidation<T> => {
     const validation = schema.check(input as Record<string, unknown>)
     if (!validation.success) {
-        const reason = altMessage[validation.type] || validation.message
+        const reason = altMessage?.[validation.type] || validation.message
         throw new BadRequest(validation.type, {
             reason,
-        })
-    }
-    return validation
-}
-
-export const checkOneFieldWithThrow = <T>(
-    key: string,
-    value: unknown,
-    definition: SchemaFieldDefinition
-): SuccessfulValidation<T> => {
-    const schema = new ExtendedSchema<T>({ excess: 'forbid' })
-    schema.addField(key, definition)
-    const validation = schema.check({ [key]: value })
-    if (!validation.success) {
-        throw new BadRequest(validation.type, {
-            reason: validation.message,
         })
     }
     return validation

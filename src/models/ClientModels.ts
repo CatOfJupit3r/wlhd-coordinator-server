@@ -21,23 +21,17 @@ export interface GameHandshake {
 
 export interface EntityInfoTooltip {
     decorations: GameComponentDecoration
-    square: { line: string; column: string }
-    health: { current: string; max: string }
-    action_points: { current: string; max: string }
-    armor: { current: string; base: string }
+    square: { line: number; column: number }
+    health: { current: number; max: number }
+    action_points: { current: number; max: number }
+    armor: { current: number; base: number }
     statusEffects: Array<Omit<StatusEffectInfo, 'descriptor'>>
-}
-
-export interface EntityInfoTurn {
-    decorations: GameComponentDecoration
-    square: { line: string; column: string }
-    action_points: { current: string; max: string }
 }
 
 export interface EntityInfoFull {
     decorations: GameComponentDecoration
-    square: { line: string; column: string }
-    attributes: { [attribute: string]: string }
+    square: { line: number; column: number }
+    attributes: { [attribute: string]: number }
 
     inventory: Array<ItemInfo>
     weaponry: Array<WeaponInfo>
@@ -67,8 +61,8 @@ export interface CharacterInTurnOrder {
         sprite: string
     }
     square: {
-        line: string
-        column: string
+        line: number
+        column: number
     }
 }
 

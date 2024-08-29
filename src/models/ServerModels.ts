@@ -54,7 +54,7 @@ export interface EntityInfo {
     descriptor: string
     decorations: GameComponentDecoration
     id: string
-    square: { line: string; column: string }
+    square: { line: number; column: number }
     attributes: AttributeInfo
     controlled_by: ControlInfo
 
@@ -68,7 +68,7 @@ export interface EntityInfo {
 }
 
 export interface AttributeInfo {
-    [attribute: string]: string
+    [attribute: string]: number
 }
 
 export interface WeaponInfo {
@@ -200,7 +200,7 @@ interface SpellPartialPreset {
     descriptor: string
     turns_until_usage?: number
     current_consecutive_uses?: number
-    _is_active?: boolean
+    is_active?: boolean
 }
 
 interface StatusEffectPartialPreset {

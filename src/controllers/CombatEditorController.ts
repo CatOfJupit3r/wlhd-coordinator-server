@@ -1,5 +1,6 @@
 import { Request, Response } from 'express'
-import { NotFound } from '../models/ErrorModels'
+import { BadRequest, NotFound } from '../models/ErrorModels'
+import { CombatEditorSchema } from '../schemas/CombatEditorSchemas'
 import CombatEditorService from '../services/GameServerService'
 import PackageManagerService from '../services/PackageManagerService'
 
@@ -53,10 +54,14 @@ class CombatEditorController {
     }
 
     async createCombatPreset(req: Request, res: Response) {
-        console.log('Creating combat preset. Params:', req.body)
-        const { field } = req.body
-        const preset_id = await CombatEditorService.createCombatPreset(field)
-        res.status(200).json({ result: 'ok', preset_id })
+        const validation = CombatEditorSchema.safeParse(req.body)
+        if (!validation.success) {
+            throw new BadRequest(validation.error.message, {
+                ...validation.error,
+            })
+        }
+        const { nickName, battlefield } = validation.data
+        res.status(200).json({ result: 'ok', preset_id: '111' })
     }
 }
 

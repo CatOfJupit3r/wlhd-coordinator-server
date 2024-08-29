@@ -17,10 +17,17 @@ const LobbyWithDescriptorBuilder = () => {
     const lobbyWithDescriptorSchema = new ExtendedSchema<{ lobby_id: string; descriptor: string }>({ excess: 'clean' })
     lobbyWithDescriptorSchema.addStringField('lobby_id', {
         callback: (value: string) => {
-            return Types.ObjectId.isValid(value)
+            if (!Types.ObjectId.isValid(value)) return [false, 'lobby_id is not a valid ObjectId']
+            return true
         },
     })
-    lobbyWithDescriptorSchema.addRegexField('descriptor', DESCRIPTOR_NO_DLC_REGEX())
+    lobbyWithDescriptorSchema.addStringField('descriptor', {
+        callback: (value: string) => {
+            if (!DESCRIPTOR_NO_DLC_REGEX().test(value))
+                return [false, 'Descriptor has to be in format: `dlc:descriptor`']
+            return true
+        },
+    })
 
     return lobbyWithDescriptorSchema
 }
@@ -46,7 +53,7 @@ const CharacterSchemaBuilder = () => {
     characterSchema.addArrayOfElementsField('attributes', attributeSchema)
 
     const spellBookSchema = new ExtendedSchema<EntityInfoFullToCharacterClass['spellBook']>({ excess: 'forbid' })
-    spellBookSchema.addNumberField('maxActiveSpells')
+    spellBookSchema.addNullableField('maxActiveSpells', ['number'])
     const knownSpellsSchema = new ExtendedSchema<EntityInfoFullToCharacterClass['spellBook']['knownSpells'][number]>({
         excess: 'forbid',
     })
@@ -68,7 +75,7 @@ const CharacterSchemaBuilder = () => {
         excess: 'forbid',
     })
     statusEffectsSchema.addStringField('descriptor')
-    statusEffectsSchema.addNumberField('duration')
+    statusEffectsSchema.addNullableField('duration', ['number'])
 
     characterSchema.addArrayOfElementsField('statusEffects', statusEffectsSchema)
 
