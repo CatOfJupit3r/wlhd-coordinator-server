@@ -24,13 +24,11 @@ export interface GameHandshake {
 }
 
 export interface Battlefield {
-    field: string[][]
-    columns: string[]
-    lines: string[]
-    connectors: string
-    separators: string
     pawns: {
-        [key: string]: string
+        [key: string]: {
+            character_id: string | null
+            area_effects: Array<unknown>
+        }
     }
 }
 

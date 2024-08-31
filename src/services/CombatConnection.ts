@@ -3,6 +3,7 @@ import io, { Socket } from 'socket.io-client'
 import { DefaultEventsMap } from 'socket.io/dist/typed-events'
 import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs'
 import {
+    BattlefieldPlayers,
     CharacterInTurnOrderPlayer,
     EntityInfoFull,
     EntityInfoTooltip,
@@ -359,7 +360,7 @@ export class CombatConnection {
                 console.log('Battlefield updated')
                 this.updateBattlefield(data.battlefield)
                 this.broadcast(PLAYER_RESPONSES.BATTLEFIELD_UPDATED, {
-                    battlefield: this.gameState.currentBattlefield,
+                    battlefield: this.generateBattlefieldPlayers(),
                 })
             },
             [GAME_SERVER_EVENTS.ENTITIES_UPDATED]: (data: {
@@ -374,7 +375,7 @@ export class CombatConnection {
                     if (player.socket) {
                         player.socket.emit(PLAYER_RESPONSES.ENTITIES_UPDATED, {
                             newControlledEntities: this.generateEntityFullInfoForPlayer(player.id_),
-                            newTooltips: this.generateEntityToolTipForPlayer(),
+                            // tooltips are sent in battlefield, duh
                         })
                     }
                 }
@@ -569,7 +570,7 @@ export class CombatConnection {
                         player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                             type: 'battlefield',
                             payload: {
-                                battlefield: this.gameState.currentBattlefield,
+                                battlefield: this.generateBattlefieldPlayers(),
                             },
                         })
                         break
@@ -750,16 +751,6 @@ export class CombatConnection {
         return turnOrderInfo
     }
 
-    private generateEntityToolTipForPlayer(): { [square: string]: EntityInfoTooltip | null } {
-        return Object.entries(this.gameState.allEntitiesInfo).reduce((acc, [, entity]) => {
-            if (!entity) return acc
-            return {
-                ...acc,
-                [`${entity.square.line}/${entity.square.column}`]: this.generateEntityToolTip(entity),
-            }
-        }, {})
-    }
-
     private findEntityInfoById(id: string): EntityInfo | null {
         return Object.values(this.gameState.allEntitiesInfo).find((entity) => entity && entity.id === id) || null
     }
@@ -769,11 +760,27 @@ export class CombatConnection {
             roundCount: this.gameState.roundCount,
             messages: this.gameState.messages.slice(-10),
             combatStatus: this.gameState.battleResult,
-            currentBattlefield: this.gameState.currentBattlefield,
+            currentBattlefield: this.generateBattlefieldPlayers(),
             turnOrder: this.generateIndividualTurnOrder(playerId),
-            entityTooltips: this.generateEntityToolTipForPlayer(),
             controlledEntities: this.generateEntityFullInfoForPlayer(playerId),
         }
+    }
+
+    private generateBattlefieldPlayers(): BattlefieldPlayers {
+        const { pawns } = this.gameState.currentBattlefield
+        const res: BattlefieldPlayers = {
+            pawns: {},
+        }
+        for (const [square, pawn] of Object.entries(pawns)) {
+            if (pawn.character_id) {
+                const entityOnSquare = this.findEntityInfoById(pawn.character_id)
+                res.pawns[square] = {
+                    character: entityOnSquare === null ? entityOnSquare : this.generateEntityToolTip(entityOnSquare),
+                    areaEffects: pawn.area_effects,
+                }
+            }
+        }
+        return res
     }
 
     private emitTakeActionToPlayer() {

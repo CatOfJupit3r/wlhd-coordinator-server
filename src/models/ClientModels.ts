@@ -1,5 +1,4 @@
 import {
-    Battlefield,
     ControlInfo,
     GameComponentDecoration,
     GameStateContainer,
@@ -9,12 +8,20 @@ import {
     WeaponInfo,
 } from './ServerModels'
 
+export interface BattlefieldPlayers {
+    pawns: {
+        [key: string]: {
+            character: EntityInfoTooltip | null
+            areaEffects: Array<unknown>
+        }
+    }
+}
+
 export interface GameHandshake {
     roundCount: number
     messages: GameStateContainer // but only last 10 instead of all
     combatStatus: 'ongoing' | 'pending'
-    currentBattlefield: Battlefield
-    entityTooltips: { [square: string]: EntityInfoTooltip | null }
+    currentBattlefield: BattlefieldPlayers
     controlledEntities: Array<EntityInfoFull> | null
     turnOrder: IndividualTurnOrder
 }
