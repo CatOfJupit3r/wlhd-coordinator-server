@@ -1,13 +1,13 @@
-import { CharacterPreset, ItemPreset, SpellPreset, StatusEffectPreset, WeaponPreset } from '../models/GameDLCData'
+import { CharacterPreset, ItemPreset, SpellPreset, StatusEffectPreset, WeaponPreset } from '@models/GameDLCData'
 import {
     CharacterDataEditable,
     ItemEditable,
     SpellEditable,
     StatusEffectEditable,
     WeaponEditable,
-} from '../models/GameEditorModels'
-import { AttributeInfo } from '../models/ServerModels'
-import { CharacterClass } from '../models/TypegooseModels'
+} from '@models/GameEditorModels'
+import { AttributeInfo } from '@models/ServerModels'
+import { CharacterClass } from '@models/TypegooseModels'
 import PackageManagerService from './PackageManagerService'
 
 type ConvertedComponent<T> = Omit<T, 'descriptor'>

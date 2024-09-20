@@ -1,5 +1,5 @@
+import AssetController from '@controllers/AssetController'
 import { Router } from 'express'
-import AssetController from '../controllers/AssetController'
 
 const route = Router()
 

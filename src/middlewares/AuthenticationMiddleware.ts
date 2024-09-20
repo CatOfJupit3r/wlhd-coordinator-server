@@ -1,7 +1,7 @@
+import { Exception, Unauthorized } from '@models/ErrorModels'
+import AuthService from '@services/AuthService'
 import { NextFunction, Request, Response } from 'express'
 import { JsonWebTokenError, TokenExpiredError } from 'jsonwebtoken'
-import { Exception, Unauthorized } from '../models/ErrorModels'
-import AuthService from '../services/AuthService'
 
 export const authenticationMiddleware = (req: Request, res: Response, next: NextFunction) => {
     try {

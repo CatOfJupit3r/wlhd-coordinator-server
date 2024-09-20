@@ -1,8 +1,8 @@
+import { BadRequest, NotFound } from '@models/ErrorModels'
+import { CombatEditorSchema } from '@schemas/CombatEditorSchemas'
+import CombatEditorService from '@services/GameServerService'
+import PackageManagerService from '@services/PackageManagerService'
 import { Request, Response } from 'express'
-import { BadRequest, NotFound } from '../models/ErrorModels'
-import { CombatEditorSchema } from '../schemas/CombatEditorSchemas'
-import CombatEditorService from '../services/GameServerService'
-import PackageManagerService from '../services/PackageManagerService'
 
 class CombatEditorController {
     async getLoadedItems(req: Request, res: Response) {

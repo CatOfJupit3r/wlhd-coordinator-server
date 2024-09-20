@@ -1,8 +1,8 @@
+import { Forbidden, NotFound } from '@models/ErrorModels'
+import { UserClass } from '@models/TypegooseModels'
 import bcrypt from 'bcrypt'
 import { omit } from 'lodash'
 import { Types } from 'mongoose'
-import { Forbidden, NotFound } from '../models/ErrorModels'
-import { UserClass } from '../models/TypegooseModels'
 import AuthService from './AuthService'
 import DatabaseService from './DatabaseService'
 

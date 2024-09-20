@@ -1,7 +1,4 @@
-import { Socket as PlayerSocket } from 'socket.io'
-import io, { Socket } from 'socket.io-client'
-import { DefaultEventsMap } from 'socket.io/dist/typed-events'
-import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs'
+import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '@configs'
 import {
     BattlefieldPlayers,
     CharacterInTurnOrder,
@@ -9,17 +6,20 @@ import {
     EntityInfoTooltip,
     GameHandshake as GameHandshakePlayers,
     IndividualTurnOrder,
-} from '../models/ClientModels'
-import { ControlInfo } from '../models/GameSaveModels'
+} from '@models/ClientModels'
+import { ControlInfo } from '@models/GameSaveModels'
 import {
     Battlefield,
     EntityAction,
     EntityInfo,
     GameHandshake as GameHandshakeGameServer,
     GameStateContainer,
-} from '../models/ServerModels'
-import { TranslatableString } from '../models/Translation'
-import { CombatSaveType } from '../schemas/CombatSaveSchema'
+} from '@models/ServerModels'
+import { TranslatableString } from '@models/Translation'
+import { CombatSaveType } from '@schemas/CombatSaveSchema'
+import { Socket as PlayerSocket } from 'socket.io'
+import io, { Socket } from 'socket.io-client'
+import { DefaultEventsMap } from 'socket.io/dist/typed-events'
 
 const GAME_SERVER_EVENTS = {
     GAME_HANDSHAKE: 'game_handshake',

@@ -1,8 +1,6 @@
-import { DocumentType } from '@typegoose/typegoose'
-import mongoose, { Types } from 'mongoose'
-import { DESCRIPTOR_NO_DLC_REGEX, DESCRIPTOR_REGEX } from '../configs'
-import { BadRequest, InternalServerError, NotFound } from '../models/ErrorModels'
-import { EntityInfoFullToCharacterClass } from '../models/GameEditorModels'
+import { DESCRIPTOR_NO_DLC_REGEX, DESCRIPTOR_REGEX } from '@configs'
+import { BadRequest, InternalServerError, NotFound } from '@models/ErrorModels'
+import { EntityInfoFullToCharacterClass } from '@models/GameEditorModels'
 import {
     AttributeClass,
     CharacterClass,
@@ -13,7 +11,9 @@ import {
     LobbyModel,
     UserClass,
     UserModel,
-} from '../models/TypegooseModels'
+} from '@models/TypegooseModels'
+import { DocumentType } from '@typegoose/typegoose'
+import mongoose, { Types } from 'mongoose'
 import PackageManagerService from './PackageManagerService'
 
 type SupportedDocumentTypes =

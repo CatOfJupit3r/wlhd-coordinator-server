@@ -1,4 +1,4 @@
-import { CombatSaveType } from '../schemas/CombatSaveSchema'
+import { CombatSaveType } from '@schemas/CombatSaveSchema'
 import { CombatConnection } from './CombatConnection'
 
 class CombatManager {

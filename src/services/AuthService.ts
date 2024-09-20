@@ -1,7 +1,7 @@
+import { JWT_ACCESS_SECRET, JWT_REFRESH_SECRET } from '@configs'
+import { BadRequest } from '@models/ErrorModels'
 import jwt from 'jsonwebtoken'
 import { Types } from 'mongoose'
-import { JWT_ACCESS_SECRET, JWT_REFRESH_SECRET } from '../configs'
-import { BadRequest } from '../models/ErrorModels'
 
 class AuthService {
     refreshTokens: Array<string> = []

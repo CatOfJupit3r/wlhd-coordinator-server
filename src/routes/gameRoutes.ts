@@ -1,5 +1,5 @@
+import CombatEditorController from '@controllers/CombatEditorController'
 import { Router } from 'express'
-import CombatEditorController from '../controllers/CombatEditorController'
 
 const router = Router()
 

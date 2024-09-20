@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { simpleGit, SimpleGit } from 'simple-git'
 
-import { GITHUB_LINK_REGEX, GITHUB_TOKEN, PATH_TO_INSTALLED_PACKAGES } from '../configs'
+import { GITHUB_LINK_REGEX, GITHUB_TOKEN, PATH_TO_INSTALLED_PACKAGES } from '@configs'
 import {
     CharacterPreset,
     DLCPreset,
@@ -11,7 +11,7 @@ import {
     SpellPreset,
     StatusEffectPreset,
     WeaponPreset,
-} from '../models/GameDLCData'
+} from '@models/GameDLCData'
 
 type presetTypes = 'weapons' | 'spells' | 'items' | 'status_effects' | 'entities'
 

@@ -1,4 +1,4 @@
-import { TranslationSnippet } from '../models/Translation'
+import { TranslationSnippet } from '@models/Translation'
 
 type CachedTranslation = [TranslationSnippet, string, string]
 

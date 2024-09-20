@@ -1,21 +1,21 @@
-import { Request, Response } from 'express'
-import { ExtendedSchema, Schema } from 'just-enough-schemas'
-import { Types } from 'mongoose'
-import { Socket } from 'socket.io'
-import { z } from 'zod'
-import { DESCRIPTOR_NO_DLC_REGEX, DESCRIPTOR_REGEX } from '../configs'
-import { BadRequest, Forbidden, InternalServerError, NotFound } from '../models/ErrorModels'
-import { EntityInfoFullToCharacterClass } from '../models/GameEditorModels'
-import { AttributeInfo } from '../models/ServerModels'
+import { DESCRIPTOR_NO_DLC_REGEX, DESCRIPTOR_REGEX } from '@configs'
+import { BadRequest, Forbidden, InternalServerError, NotFound } from '@models/ErrorModels'
+import { EntityInfoFullToCharacterClass } from '@models/GameEditorModels'
+import { AttributeInfo } from '@models/ServerModels'
 import {
     CharacterSchema,
     CreateGameLobbySchema,
     LobbySchema,
     LobbyWithDescriptorSchema,
-} from '../schemas/LobbyControllerSchemas'
-import AuthService from '../services/AuthService'
-import DatabaseService from '../services/DatabaseService'
-import LobbyService from '../services/LobbyService'
+} from '@schemas/LobbyControllerSchemas'
+import AuthService from '@services/AuthService'
+import DatabaseService from '@services/DatabaseService'
+import LobbyService from '@services/LobbyService'
+import { Request, Response } from 'express'
+import { ExtendedSchema, Schema } from 'just-enough-schemas'
+import { Types } from 'mongoose'
+import { Socket } from 'socket.io'
+import { z } from 'zod'
 
 const stringIsObjectId = (value: unknown): value is Types.ObjectId => {
     return typeof value === 'string' && !!value && Types.ObjectId.isValid(value)

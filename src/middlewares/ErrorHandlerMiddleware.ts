@@ -1,6 +1,6 @@
+import { CriticalError, Exception } from '@models/ErrorModels'
 import { NextFunction, Request, Response } from 'express'
 import { ZodError } from 'zod'
-import { CriticalError, Exception } from '../models/ErrorModels'
 
 export const errorHandlerMiddleware = (err: Error, req: Request, res: Response, next: NextFunction) => {
     if (err instanceof Exception) {

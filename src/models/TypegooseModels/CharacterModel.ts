@@ -1,6 +1,6 @@
+import { DESCRIPTOR_REGEX } from '@configs'
 import { getModelForClass, modelOptions, prop, Severity } from '@typegoose/typegoose'
 import { Types } from 'mongoose'
-import { DESCRIPTOR_REGEX } from '../../configs'
 
 const requiredProp = (options: { [key: string]: unknown } = {}) => prop({ required: true, ...options })
 const validateDescriptor = (value: string) => DESCRIPTOR_REGEX().test(value)

@@ -1,7 +1,7 @@
+import { BadRequest } from '@models/ErrorModels'
+import TranslationService from '@services/TranslationService'
+import { TranslationCache } from '@utils'
 import { Request, Response } from 'express'
-import { BadRequest } from '../models/ErrorModels'
-import TranslationService from '../services/TranslationService'
-import { TranslationCache } from '../utils/TranslationCache'
 
 export class TranslationController {
     private cache: TranslationCache

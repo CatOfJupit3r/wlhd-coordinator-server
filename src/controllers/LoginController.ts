@@ -1,7 +1,7 @@
+import { BadRequest, Exception, Forbidden, InternalServerError } from '@models/ErrorModels'
+import UserService from '@services/UserService'
 import { Request, Response } from 'express'
 import { ExtendedSchema } from 'just-enough-schemas'
-import { BadRequest, Exception, Forbidden, InternalServerError } from '../models/ErrorModels'
-import UserService from '../services/UserService'
 
 const userSchema = new ExtendedSchema<{
     handle: string

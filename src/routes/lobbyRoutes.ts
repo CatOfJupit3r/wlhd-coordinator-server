@@ -1,6 +1,6 @@
+import LobbyController from '@controllers/LobbyController'
+import { authenticationMiddleware } from '@middlewares/AuthenticationMiddleware'
 import { Router } from 'express'
-import LobbyController from '../controllers/LobbyController'
-import { authenticationMiddleware } from '../middleware/AuthenticationMiddleware'
 
 const router = Router()
 

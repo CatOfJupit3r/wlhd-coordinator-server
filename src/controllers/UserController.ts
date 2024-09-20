@@ -1,6 +1,6 @@
+import AuthService from '@services/AuthService'
+import UserService from '@services/UserService'
 import { Request, Response } from 'express'
-import AuthService from '../services/AuthService'
-import UserService from '../services/UserService'
 
 class UserController {
     async getProfile(req: Request, res: Response) {

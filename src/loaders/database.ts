@@ -1,4 +1,4 @@
-import DatabaseService from '../services/DatabaseService'
+import DatabaseService from '@services/DatabaseService'
 
 const DatabaseLoader = async () => {
     await DatabaseService.connect()

@@ -1,5 +1,5 @@
+import { BadRequest } from '@models/ErrorModels'
 import { ExtendedSchema, SuccessfulValidation } from 'just-enough-schemas'
-import { BadRequest } from '../models/ErrorModels'
 
 export const checkSchemaWithThrow = <T>(
     schema: ExtendedSchema<T>,

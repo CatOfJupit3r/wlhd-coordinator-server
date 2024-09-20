@@ -1,6 +1,5 @@
-import { TranslationJSON, TranslationLoaded, TranslationSnippet } from '../models/Translation'
-import { getTranslationData } from '../utils/getTranslationData'
-import { TranslationCache } from '../utils/TranslationCache'
+import { TranslationJSON, TranslationLoaded, TranslationSnippet } from '@models/Translation'
+import { getTranslationData, TranslationCache } from '@utils'
 
 class TranslationService {
     private translations: TranslationLoaded = {}

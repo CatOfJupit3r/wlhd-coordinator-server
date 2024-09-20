@@ -1,5 +1,5 @@
+import { DESCRIPTOR_REGEX } from '@configs'
 import { z } from 'zod'
-import { DESCRIPTOR_REGEX } from '../configs'
 
 // COMBAT PRESET SCHEMA
 

@@ -1,6 +1,6 @@
+import { BadRequest } from '@models/ErrorModels'
+import AssetService from '@services/AssetService'
 import { Request, Response } from 'express'
-import { BadRequest } from '../models/ErrorModels'
-import AssetService from '../services/AssetService'
 
 class AssetController {
     public index(req: Request, res: Response) {

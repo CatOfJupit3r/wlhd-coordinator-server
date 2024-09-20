@@ -1,8 +1,8 @@
+import { DESCRIPTOR_NO_DLC_REGEX } from '@configs'
+import { EntityInfoFullToCharacterClass } from '@models/GameEditorModels'
 import { ExtendedSchema } from 'just-enough-schemas'
 import { Types } from 'mongoose'
 import { z } from 'zod'
-import { DESCRIPTOR_NO_DLC_REGEX } from '../configs'
-import { EntityInfoFullToCharacterClass } from '../models/GameEditorModels'
 import CombatSaveZod from './CombatSaveSchema'
 
 // CHARACTER SCHEMA

@@ -1,5 +1,5 @@
+import GameServerService from '@services/GameServerService'
 import { AxiosError } from 'axios'
-import GameServerService from '../services/GameServerService'
 
 const GameLoader = async () => {
     try {

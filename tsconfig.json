@@ -1,8 +1,43 @@
 {
     "extends": "@tsconfig/recommended/tsconfig.json",
+    "ts-node" : {
+        "require" : [
+            "tsconfig-paths/register"
+        ]
+    },
     "compilerOptions": {
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
-        "strictPropertyInitialization": false
+        "strictPropertyInitialization": false,
+        "baseUrl" : "./src/",
+        "paths" : {
+            "@controllers/*" : [
+                "./controllers/*"
+            ],
+            "@models/*" : [
+                "./models/*"
+            ],
+            "@services/*" : [
+                "./services/*"
+            ],
+            "@utils" : [
+                "./utils"
+            ],
+            "@middlewares/*" : [
+                "./middlewares/*"
+            ],
+            "@config/*" : [
+                "./configs/*"
+            ],
+            "@routes/*" : [
+                "./routes/*"
+            ],
+            "@schemas/*" : [
+                "./schemas/*"
+            ],
+            "@configs": [
+                "./configs"
+            ]
+        }
     }
 }
