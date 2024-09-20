@@ -1,36 +1,9 @@
 import { ExtendedSchema } from 'just-enough-schemas'
 import { Types } from 'mongoose'
+import { z } from 'zod'
 import { DESCRIPTOR_NO_DLC_REGEX } from '../configs'
 import { EntityInfoFullToCharacterClass } from '../models/GameEditorModels'
-
-const LobbySchemaBuilder = () => {
-    const lobbySchema = new ExtendedSchema<{ lobby_id: string }>({ excess: 'clean' })
-    lobbySchema.addStringField('lobby_id', {
-        callback: (value: string) => {
-            return Types.ObjectId.isValid(value)
-        },
-    })
-    return lobbySchema
-}
-
-const LobbyWithDescriptorBuilder = () => {
-    const lobbyWithDescriptorSchema = new ExtendedSchema<{ lobby_id: string; descriptor: string }>({ excess: 'clean' })
-    lobbyWithDescriptorSchema.addStringField('lobby_id', {
-        callback: (value: string) => {
-            if (!Types.ObjectId.isValid(value)) return [false, 'lobby_id is not a valid ObjectId']
-            return true
-        },
-    })
-    lobbyWithDescriptorSchema.addStringField('descriptor', {
-        callback: (value: string) => {
-            if (!DESCRIPTOR_NO_DLC_REGEX().test(value))
-                return [false, 'Descriptor has to be in format: `dlc:descriptor`']
-            return true
-        },
-    })
-
-    return lobbyWithDescriptorSchema
-}
+import CombatSaveZod from './CombatSaveSchema'
 
 // CHARACTER SCHEMA
 
@@ -91,7 +64,27 @@ const CharacterSchemaBuilder = () => {
 }
 
 const CharacterSchema = CharacterSchemaBuilder()
-const LobbySchema = LobbySchemaBuilder()
-const LobbyWithDescriptorSchema = LobbyWithDescriptorBuilder()
 
-export { CharacterSchema, LobbySchema, LobbyWithDescriptorSchema }
+const LobbySchema = z
+    .object({
+        lobby_id: z.string().refine((value) => Types.ObjectId.isValid(value), {
+            message: 'lobby_id is not a valid ObjectId',
+        }),
+    })
+    .strip()
+
+const LobbyWithDescriptorSchema = z
+    .object({
+        descriptor: z.string().regex(DESCRIPTOR_NO_DLC_REGEX()),
+    })
+    .merge(LobbySchema)
+    .strip()
+
+const CreateGameLobbySchema = z
+    .object({
+        nickname: z.string().min(1).max(20).optional(), // if none provided, will be generated
+        preset: CombatSaveZod,
+    })
+    .strict()
+
+export { CharacterSchema, CreateGameLobbySchema, LobbySchema, LobbyWithDescriptorSchema }

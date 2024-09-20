@@ -2,16 +2,20 @@ import { Request, Response } from 'express'
 import { ExtendedSchema, Schema } from 'just-enough-schemas'
 import { Types } from 'mongoose'
 import { Socket } from 'socket.io'
+import { z } from 'zod'
 import { DESCRIPTOR_NO_DLC_REGEX, DESCRIPTOR_REGEX } from '../configs'
 import { BadRequest, Forbidden, InternalServerError, NotFound } from '../models/ErrorModels'
 import { EntityInfoFullToCharacterClass } from '../models/GameEditorModels'
-import { AttributeInfo, ItemInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
-import { CombatEditorSchema } from '../schemas/CombatEditorSchemas'
-import { CharacterSchema, LobbySchema, LobbyWithDescriptorSchema } from '../schemas/LobbyControllerSchemas'
+import { AttributeInfo } from '../models/ServerModels'
+import {
+    CharacterSchema,
+    CreateGameLobbySchema,
+    LobbySchema,
+    LobbyWithDescriptorSchema,
+} from '../schemas/LobbyControllerSchemas'
 import AuthService from '../services/AuthService'
 import DatabaseService from '../services/DatabaseService'
 import LobbyService from '../services/LobbyService'
-import { checkSchemaWithThrow } from '../utils/inputValidation'
 
 const stringIsObjectId = (value: unknown): value is Types.ObjectId => {
     return typeof value === 'string' && !!value && Types.ObjectId.isValid(value)
@@ -19,9 +23,7 @@ const stringIsObjectId = (value: unknown): value is Types.ObjectId => {
 
 class LobbyController {
     public async getCustomTranslations(req: Request, res: Response): Promise<void> {
-        const { lobby_id } = checkSchemaWithThrow(LobbySchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id',
-        }).value
+        const { lobby_id } = LobbySchema.parse(req.params)
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const translations = await LobbyService.getCustomTranslations(lobby_id, user._id)
         res.status(200).json(translations)
@@ -50,9 +52,7 @@ class LobbyController {
     }
 
     public async addPlayerToLobby(req: Request, res: Response): Promise<void> {
-        const { lobby_id } = checkSchemaWithThrow(LobbySchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id',
-        }).value
+        const { lobby_id } = LobbySchema.parse(req.params)
         const PlayerSchema = new ExtendedSchema<{ player_id: string; nickname: string }>({ excess: 'forbid' })
         PlayerSchema.addStringField('player_id', {
             callback: (value: string) => {
@@ -72,9 +72,7 @@ class LobbyController {
     }
 
     public async getLobbyInfo(req: Request, res: Response): Promise<void> {
-        const { lobby_id } = checkSchemaWithThrow(LobbySchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id',
-        }).value
+        const { lobby_id } = LobbySchema.parse(req.params)
         const lobby = await DatabaseService.getLobby(lobby_id)
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         if (!lobby) throw new BadRequest('Lobby not found!')
@@ -90,21 +88,15 @@ class LobbyController {
     }
 
     public async createCombatForLobby(req: Request, res: Response): Promise<void> {
-        const { lobby_id } = checkSchemaWithThrow(LobbySchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id',
-        }).value
+        const { lobby_id } = LobbySchema.parse(req.params)
 
-        const validation = CombatEditorSchema.safeParse(req.body)
-
-        if (!validation.success) {
-            throw new BadRequest(validation.error.errors[0].message)
-        }
-        const preset = validation.data
+        const { nickname, preset } = CreateGameLobbySchema.parse(req.body)
 
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
         const combat_id = LobbyService.createCombat(
             lobby_id,
+            nickname ?? 'RandomCombatName',
             preset,
             lobby.gm_id,
             lobby.players.map((player) => player.userId)
@@ -115,10 +107,14 @@ class LobbyController {
     }
 
     public async assignCharacterToPlayer(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-        }).value
-        const { player_id } = req.body
+        const { lobby_id, descriptor } = LobbyWithDescriptorSchema.parse(req.params)
+        const { player_id } = z
+            .object({
+                player_id: z
+                    .string()
+                    .refine((value) => Types.ObjectId.isValid(value), { message: 'player_id is not a valid ObjectId' }),
+            })
+            .parse(req.body)
         if (!stringIsObjectId(player_id)) {
             throw new BadRequest('Invalid player_id')
         }
@@ -127,9 +123,7 @@ class LobbyController {
     }
 
     public async removeCharacterFromPlayer(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-        }).value
+        const { lobby_id, descriptor } = LobbyWithDescriptorSchema.parse(req.params)
         const { player_id } = req.body
         if (!stringIsObjectId(player_id)) {
             throw new BadRequest('Invalid player_id')
@@ -139,9 +133,7 @@ class LobbyController {
     }
 
     public async getMyCharacterInfo(req: Request, res: Response): Promise<void> {
-        const { lobby_id } = checkSchemaWithThrow(LobbySchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id',
-        }).value
+        const { lobby_id } = LobbySchema.parse(req.params)
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const characters = await LobbyService.getMyCharactersInfo(lobby_id, user._id)
         res.status(200).json({
@@ -150,46 +142,34 @@ class LobbyController {
     }
 
     public async getCharacterInfo(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-        }).value
+        const { lobby_id, descriptor } = LobbyWithDescriptorSchema.parse(req.params)
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         const characterInfo = await LobbyService.getCharacterInfo(lobby_id, user._id, descriptor)
         res.status(200).json(characterInfo)
     }
 
     public async createCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id } = checkSchemaWithThrow(LobbySchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id',
-        }).value
+        const { lobby_id } = LobbySchema.parse(req.params)
         const { descriptor, decorations, attributes, controlledBy } = req.body
         if (!descriptor || !DESCRIPTOR_NO_DLC_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
-        const decorationsSchema = new Schema({
-            name: 'string',
-            description: 'string',
-            sprite: 'string',
-        })
-        for (const decoration of decorations) {
-            const validation = decorationsSchema.check(decoration)
-            if (!validation.success) {
-                throw new BadRequest(validation.type, {
-                    reason: validation.message,
-                })
-            }
-        }
-        const attributeSchema = new Schema({
-            dlc: 'string',
-            descriptor: 'string',
-            value: 'number',
-        })
-        for (const attribute of attributes) {
-            const validation = attributeSchema.check(attribute)
-            if (!validation.success) {
-                throw new BadRequest(validation.type, {
-                    reason: validation.message,
-                })
-            }
-        }
+        const decorationsSchema = z
+            .object({
+                name: z.string(),
+                description: z.string(),
+                sprite: z.string(),
+            })
+            .strict()
+        decorationsSchema.parse(decorations)
+        const attributeSchema = z
+            .object({
+                dlc: z.string(),
+                descriptor: z.string(),
+                value: z.number(),
+            })
+            .strict()
+        const attributesSchema = z.array(attributeSchema)
+        attributesSchema.parse(attributes)
+
         await LobbyService.createNewCharacter(
             lobby_id,
             controlledBy,
@@ -204,83 +184,60 @@ class LobbyController {
     }
 
     public async deleteCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-        }).value
+        const { lobby_id, descriptor } = LobbyWithDescriptorSchema.parse(req.params)
         await LobbyService.deleteCharacter(lobby_id, descriptor)
         res.status(200).json({ message: 'ok', descriptor })
     }
 
     public async getWeaponryOfCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-        }).value
+        const { lobby_id, descriptor } = LobbyWithDescriptorSchema.parse(req.params)
         res.status(200).json({
             weaponry: await LobbyService.getWeaponryOfCharacter(lobby_id, descriptor),
-        } as { weaponry: Array<WeaponInfo> })
+        })
     }
 
     public async getInventoryOfCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-        }).value
+        const { lobby_id, descriptor } = LobbyWithDescriptorSchema.parse(req.params)
         res.status(200).json({
             inventory: await LobbyService.getInventoryOfCharacter(lobby_id, descriptor),
-        } as { inventory: Array<ItemInfo> })
+        })
     }
 
     public async getSpellbookOfCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-        }).value
+        const { lobby_id, descriptor } = LobbyWithDescriptorSchema.parse(req.params)
         res.status(200).json({
             spells: await LobbyService.getSpellbookOfCharacter(lobby_id, descriptor),
         })
     }
 
     public async getStatusEffectsOfCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-        }).value
+        const { lobby_id, descriptor } = LobbyWithDescriptorSchema.parse(req.params)
         res.status(200).json({
             status_effects: await LobbyService.getStatusEffectsOfCharacter(lobby_id, descriptor),
-        } as { status_effects: Array<StatusEffectInfo> })
+        })
     }
 
     public async getAttributesOfCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params, {
-            CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-        }).value
+        const { lobby_id, descriptor } = LobbyWithDescriptorSchema.parse(req.params)
         res.status(200).json({
             attributes: await LobbyService.getAttributesOfCharacter(lobby_id, descriptor),
         } as { attributes: AttributeInfo })
     }
 
     public async addWeaponToCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor: characterDescriptor } = checkSchemaWithThrow(
-            LobbyWithDescriptorSchema,
-            req.params,
-            {
-                CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-            }
-        ).value
+        const { lobby_id, descriptor: characterDescriptor } = LobbyWithDescriptorSchema.parse(req.params)
         const { descriptor: weaponDescriptor } = req.body
 
         if (!weaponDescriptor || !DESCRIPTOR_REGEX().test(weaponDescriptor)) throw new BadRequest('Invalid descriptor')
-        const quantity = req.body.quantity || '1'
-        if (!isNaN(parseInt(quantity))) throw new BadRequest('Invalid quantity')
+        const quantity = req.body.quantity || 1
+        if (!isNaN(parseInt(quantity)) && typeof quantity !== 'number') throw new BadRequest('Invalid quantity')
         await LobbyService.addWeaponToCharacter(lobby_id, characterDescriptor, weaponDescriptor, quantity)
         res.status(200).json({ message: 'ok', characterDescriptor, weaponDescriptor, quantity })
     }
 
     public async addSpellToCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor: characterDescriptor } = checkSchemaWithThrow(
-            LobbyWithDescriptorSchema,
-            req.params,
-            {
-                CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-            }
-        ).value
+        const { lobby_id, descriptor: characterDescriptor } = LobbyWithDescriptorSchema.parse(req.params)
+
         const { descriptor: spellDescriptor } = req.body
         if (!spellDescriptor || !DESCRIPTOR_REGEX().test(spellDescriptor)) throw new BadRequest('Invalid descriptor')
         await LobbyService.addSpellToCharacter(lobby_id, characterDescriptor, spellDescriptor)
@@ -288,38 +245,19 @@ class LobbyController {
     }
 
     public async addStatusEffectToCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor: characterDescriptor } = checkSchemaWithThrow(
-            LobbyWithDescriptorSchema,
-            req.params,
-            {
-                CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-            }
-        ).value
-        const schema = new Schema({
-            descriptor: 'string',
-            duration: 'number',
-        })
-        const validation = schema.check(req.body)
-        if (!validation.success) {
-            throw new BadRequest(validation.type, {
-                reason:
-                    validation.type === 'CALLBACK_FAILED' ? 'Invalid effectDescriptor or duration' : validation.message,
+        const { lobby_id, descriptor: characterDescriptor } = LobbyWithDescriptorSchema.parse(req.params)
+        const { descriptor: effectDescriptor, duration } = z
+            .object({
+                descriptor: z.string().refine((value) => DESCRIPTOR_REGEX().test(value), 'Invalid descriptor'),
+                duration: z.number().min(1),
             })
-        }
-        const { descriptor: effectDescriptor, duration } = validation.value
-        if (!effectDescriptor || !DESCRIPTOR_REGEX().test(effectDescriptor)) throw new BadRequest('Invalid descriptor')
+            .parse(req.body)
         await LobbyService.addStatusEffectToCharacter(lobby_id, characterDescriptor, effectDescriptor, duration)
         res.status(200).json({ message: 'ok', characterDescriptor, effectDescriptor, duration })
     }
 
     public async addItemToCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor: characterDescriptor } = checkSchemaWithThrow(
-            LobbyWithDescriptorSchema,
-            req.params,
-            {
-                CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-            }
-        ).value
+        const { lobby_id, descriptor: characterDescriptor } = LobbyWithDescriptorSchema.parse(req.params)
         const { descriptor: itemDescriptor } = req.body
         if (!itemDescriptor) throw new BadRequest('Invalid item descriptor')
         if (!DESCRIPTOR_REGEX().test(itemDescriptor)) throw new BadRequest('Invalid descriptor')
@@ -330,13 +268,7 @@ class LobbyController {
     }
 
     public async addAttributeToCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor: characterDescriptor } = checkSchemaWithThrow(
-            LobbyWithDescriptorSchema,
-            req.params,
-            {
-                CALLBACK_FAILED: 'Invalid lobby_id or descriptor',
-            }
-        ).value
+        const { lobby_id, descriptor: characterDescriptor } = LobbyWithDescriptorSchema.parse(req.params)
         const attributeSchema = new Schema({
             dlc: 'string',
             descriptor: 'string',
@@ -355,7 +287,7 @@ class LobbyController {
     }
 
     public async updateCharacter(req: Request, res: Response): Promise<void> {
-        const { lobby_id, descriptor } = checkSchemaWithThrow(LobbyWithDescriptorSchema, req.params).value
+        const { lobby_id, descriptor } = LobbyWithDescriptorSchema.parse(req.params)
         const lobby = await DatabaseService.getLobby(lobby_id)
         const user = AuthService.verifyAuthorizationHeader(req.headers.authorization)
         if (!lobby) throw new NotFound('Lobby not found')

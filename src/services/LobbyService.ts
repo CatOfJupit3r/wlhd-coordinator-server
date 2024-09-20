@@ -1,11 +1,12 @@
 import { Types } from 'mongoose'
 import { Socket } from 'socket.io'
 import { BadRequest, Forbidden, InternalServerError, NotFound } from '../models/ErrorModels'
-import { MinifiedCombatPreset } from '../models/GameEditorModels'
-import { CharacterInfo, LobbyInfo } from '../models/InfoModels'
-import { AttributeInfo, ItemInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
+import { CharacterDataEditable } from '../models/GameEditorModels'
+import { LobbyInfo } from '../models/InfoModels'
+import { AttributeInfo } from '../models/ServerModels'
 import { TranslationSnippet } from '../models/Translation'
 import { AttributeClass, CombatClass } from '../models/TypegooseModels'
+import { CombatSaveType } from '../schemas/CombatSaveSchema'
 import AuthService from './AuthService'
 import CombatManager from './CombatManager'
 import DatabaseService from './DatabaseService'
@@ -20,14 +21,15 @@ class LobbyService {
 
     public createCombat(
         lobby_id: string,
-        preset: MinifiedCombatPreset,
+        nickname: string,
+        preset: CombatSaveType,
         gm_id: string,
         players: string[]
     ): string | null {
         this.managingCombats.set(lobby_id, this.managingCombats.get(lobby_id) || [])
         const combats = this.managingCombats.get(lobby_id)
         if (combats) {
-            const combatId = CombatManager.createCombat(preset, gm_id, players, () => {
+            const combatId = CombatManager.createCombat(nickname, preset, gm_id, players, () => {
                 const index = combats.indexOf(combatId)
                 if (index !== -1) {
                     combats.splice(index, 1)
@@ -59,7 +61,7 @@ class LobbyService {
                         }
                     })
                     combatInfo.push({
-                        nickname: combat?.combatNickname || '',
+                        nickname: combat?.nickname || '',
                         isActive: combat?.isActive() || false,
                         roundCount: combat?.isActive() ? combat?.getRoundCount() : 0,
                         _id: combat_id || '',
@@ -134,14 +136,16 @@ class LobbyService {
         socket.disconnect()
     }
 
-    public async getMyCharactersInfo(lobby_id: string, player_id: string): Promise<Array<CharacterInfo>> {
+    public async getMyCharactersInfo(lobby_id: string, player_id: string): Promise<Array<CharacterDataEditable>> {
         const controlledCharacters = await DatabaseService.getCharactersOfPlayer(lobby_id, player_id)
-        return controlledCharacters.map((character) =>
-            GameConversionService.convertCharacterModelToInfo(character, false)
-        )
+        return controlledCharacters.map((character) => GameConversionService.convertCharacterModelToEditable(character))
     }
 
-    public async getCharacterInfo(lobby_id: string, user_id: string, descriptor: string): Promise<CharacterInfo> {
+    public async getCharacterInfo(
+        lobby_id: string,
+        user_id: string,
+        descriptor: string
+    ): Promise<CharacterDataEditable> {
         const lobby = await DatabaseService.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
         if (!lobby.characterBank) throw new InternalServerError('Character bank not found')
@@ -150,7 +154,7 @@ class LobbyService {
         }
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
-        return GameConversionService.convertCharacterModelToInfo(character, false)
+        return GameConversionService.convertCharacterModelToEditable(character)
     }
 
     async createNewCharacter(
@@ -241,7 +245,10 @@ class LobbyService {
         return res
     }
 
-    public async getWeaponryOfCharacter(lobbyId: string, descriptor: string): Promise<Array<WeaponInfo>> {
+    public async getWeaponryOfCharacter(
+        lobbyId: string,
+        descriptor: string
+    ): Promise<CharacterDataEditable['weaponry']> {
         const lobby = await DatabaseService.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
@@ -250,7 +257,10 @@ class LobbyService {
         return GameConversionService.convertWeaponry(databaseWeaponry)
     }
 
-    public async getInventoryOfCharacter(lobbyId: string, descriptor: string): Promise<Array<ItemInfo>> {
+    public async getInventoryOfCharacter(
+        lobbyId: string,
+        descriptor: string
+    ): Promise<CharacterDataEditable['inventory']> {
         const lobby = await DatabaseService.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
@@ -259,7 +269,10 @@ class LobbyService {
         return GameConversionService.convertInventory(databaseInventory)
     }
 
-    public async getStatusEffectsOfCharacter(lobbyId: string, descriptor: string): Promise<Array<StatusEffectInfo>> {
+    public async getStatusEffectsOfCharacter(
+        lobbyId: string,
+        descriptor: string
+    ): Promise<CharacterDataEditable['statusEffects']> {
         const lobby = await DatabaseService.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
@@ -271,16 +284,12 @@ class LobbyService {
     public async getSpellbookOfCharacter(
         lobbyId: string,
         descriptor: string
-    ): Promise<{
-        spellBook: CharacterInfo['spellBook']
-    }> {
+    ): Promise<CharacterDataEditable['spellBook']> {
         const lobby = await DatabaseService.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
         const character = await DatabaseService.getCharacterByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
-        return {
-            spellBook: GameConversionService.convertSpellbook(character.spellBook),
-        }
+        return GameConversionService.convertSpellbook(character.spellBook)
     }
 
     public async getAttributesOfCharacter(lobbyId: string, descriptor: string): Promise<AttributeInfo> {

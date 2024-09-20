@@ -1,8 +1,6 @@
 import { EntityInfoFull } from './ClientModels'
 
-export type CharacterInfo = Omit<EntityInfoFull, 'square'> & {
-    descriptor: string
-}
+export type CharacterInfo = Omit<EntityInfoFull, 'square'>
 
 export interface LobbyInfo {
     lobbyId: string

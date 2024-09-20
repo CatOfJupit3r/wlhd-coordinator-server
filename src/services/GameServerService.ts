@@ -3,8 +3,6 @@ import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs'
 import AssetController from '../controllers/AssetController'
 import TranslationController from '../controllers/TranslationController'
 import { GameServerStatus, Manifest } from '../models/GameDLCData'
-import { CharacterInfo } from '../models/InfoModels'
-import { ItemInfo, SpellInfo, StatusEffectInfo, WeaponInfo } from '../models/ServerModels'
 import { CombatClass } from '../models/TypegooseModels'
 import GameConversionService from './GameConversionService'
 import LobbyService from './LobbyService'
@@ -72,7 +70,9 @@ class GameServerService {
         })
     }
 
-    public getLoadedItems(dlc: string): { [descriptor: string]: ItemInfo } {
+    public getLoadedItems(dlc: string): {
+        [descriptor: string]: ReturnType<(typeof GameConversionService)['convertItem']>
+    } {
         return Object.fromEntries(
             Object.entries(PackageManagerService.getCachedItems(dlc)).map(([descriptor, itemPreset]) => [
                 descriptor,
@@ -81,7 +81,9 @@ class GameServerService {
         )
     }
 
-    public getLoadedWeapons(dlc: string): { [descriptor: string]: WeaponInfo } {
+    public getLoadedWeapons(dlc: string): {
+        [descriptor: string]: ReturnType<(typeof GameConversionService)['convertWeapon']>
+    } {
         return Object.fromEntries(
             Object.entries(PackageManagerService.getCachedWeapons(dlc)).map(([descriptor, weaponPreset]) => [
                 descriptor,
@@ -90,7 +92,9 @@ class GameServerService {
         )
     }
 
-    public getLoadedSpells(dlc: string): { [descriptor: string]: SpellInfo } {
+    public getLoadedSpells(dlc: string): {
+        [descriptor: string]: ReturnType<(typeof GameConversionService)['convertSpell']>
+    } {
         return Object.fromEntries(
             Object.entries(PackageManagerService.getCachedSpells(dlc)).map(([descriptor, spellPreset]) => [
                 descriptor,
@@ -99,7 +103,9 @@ class GameServerService {
         )
     }
 
-    public getLoadedStatusEffects(dlc: string): { [descriptor: string]: StatusEffectInfo } {
+    public getLoadedStatusEffects(dlc: string): {
+        [descriptor: string]: ReturnType<(typeof GameConversionService)['convertStatusEffect']>
+    } {
         return Object.fromEntries(
             Object.entries(PackageManagerService.getCachedStatusEffects(dlc)).map(
                 ([descriptor, statusEffectPreset]) => [
@@ -110,11 +116,13 @@ class GameServerService {
         )
     }
 
-    public getLoadedCharacters(dlc: string): { [descriptor: string]: CharacterInfo } {
+    public getLoadedCharacters(dlc: string): {
+        [descriptor: string]: ReturnType<(typeof GameConversionService)['convertCharacterPresetToEditable']>
+    } {
         return Object.fromEntries(
             Object.entries(PackageManagerService.getCachedCharacters(dlc)).map(([descriptor, characterPreset]) => [
                 descriptor,
-                GameConversionService.convertCharacterPresetToInfo(characterPreset),
+                GameConversionService.convertCharacterPresetToEditable(characterPreset),
             ])
         )
     }

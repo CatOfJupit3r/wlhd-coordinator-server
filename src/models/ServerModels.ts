@@ -1,25 +1,21 @@
+import { GameComponentDecoration, GameComponentMemory } from './GameDLCData'
+import { ControlInfo, TurnOrder } from './GameSaveModels'
 import { TranslatableString } from './Translation'
-
-export interface GameComponentDecoration {
-    name: string
-    sprite: string
-    description: string
-}
 
 export interface GameHandshake {
     gameId: string
     roundCount: number
     messages: Array<Array<TranslatableString>>
-    turnOrder: {
-        currentEntity: string
-        turnQueue: Array<string>
-        entityActions: EntityAction | null
-        currentPlayer: string | null
+    turnInfo: {
+        order: TurnOrder
+
+        actions: EntityAction | null
+        playerId: string | null
     }
     combatStatus: 'ongoing' | 'pending'
-    currentBattlefield: Battlefield
+    battlefield: Battlefield
     allEntitiesInfo: {
-        [key: string]: EntityInfo
+        [characterID: string]: EntityInfo
     }
 }
 
@@ -32,93 +28,76 @@ export interface Battlefield {
     }
 }
 
-interface ControlledByPlayer {
-    type: 'player'
-    id: string | null
-}
-
-interface ControlledByAI {
-    type: 'ai'
-    id: string
-}
-
-interface ControlledByGameLogic {
-    type: 'game_logic'
-}
-
-export type ControlInfo = ControlledByPlayer | ControlledByAI | ControlledByGameLogic
-
-export interface EntityInfo {
-    descriptor: string
+interface CommonGameComponentInfoFields {
     decorations: GameComponentDecoration
-    id: string
-    square: { line: number; column: number }
+    memory: GameComponentMemory
+    tags: Array<string>
+}
+
+export interface EntityInfo extends CommonGameComponentInfoFields {
+    descriptor: string
     attributes: AttributeInfo
-    controlled_by: ControlInfo
+    controlledBy: ControlInfo
 
     inventory: Array<ItemInfo>
     weaponry: Array<WeaponInfo>
-    spell_book: {
-        spells: Array<SpellInfo>
-        max_active_spells: number | null
+    spellBook: {
+        knownSpells: Array<SpellInfo>
+        maxActiveSpells: number | null
     }
-    status_effects: Array<StatusEffectInfo>
+    statusEffects: Array<StatusEffectInfo>
+
+    square: { line: number; column: number }
+    id_: string // is it really there though?
 }
 
 export interface AttributeInfo {
     [attribute: string]: number
 }
 
-interface InfoWithMethodVariables {
-    methodVariables?: { [variable: string]: string | number | Record<string, unknown> | unknown }
-}
-
-export interface WeaponInfo extends InfoWithMethodVariables {
+export interface WeaponInfo extends CommonGameComponentInfoFields {
     descriptor: string
-    decorations: GameComponentDecoration
-    cost: number
+    cost: number | null
     uses: {
         current: number
         max: number | null
     }
     consumable: boolean
     quantity: number
-    user_needs_range: Array<number>
-    cooldown: { current: number; max: number }
+    userNeedsRange: Array<number>
+    cooldown: { current: number; max: number | null }
     isActive: boolean
+    costToSwitch: number
 }
 
-export interface ItemInfo extends InfoWithMethodVariables {
+export interface ItemInfo extends CommonGameComponentInfoFields {
     descriptor: string
-    decorations: GameComponentDecoration
-    cost: number
+    cost: number | null
     uses: {
         current: number
         max: number | null
     }
-    user_needs_range: Array<number>
-    cooldown: { current: number; max: number }
+    userNeedsRange: Array<number>
+    cooldown: { current: number; max: number | null }
     quantity: number // how many of given item entity has
     consumable: boolean // if item is consumable
 }
 
-export interface SpellInfo extends InfoWithMethodVariables {
+export interface SpellInfo extends CommonGameComponentInfoFields {
     descriptor: string
-    decorations: GameComponentDecoration
-    cost: number
-    user_needs_range: Array<number>
+    cost: number | null
+    userNeedsRange: Array<number>
     uses: {
         current: number
         max: number | null
     }
-    isActive: boolean
     cooldown: { current: number; max: number | null }
+    isActive: boolean
 }
 
-export interface StatusEffectInfo extends InfoWithMethodVariables {
+export interface StatusEffectInfo extends CommonGameComponentInfoFields {
     descriptor: string
-    decorations: GameComponentDecoration
-    duration: string | null
+    duration: number | null
 }
 
 export interface TranslationInfoAction {
@@ -145,65 +124,5 @@ export interface EntityAction {
     }
 }
 
-export interface GamePreset {
-    round_counter: number
-    turn_info: {
-        current_entity: string
-        turn_queue: Array<string>
-    }
-    field_pawns: {
-        [square: string]: {
-            entity_preset: { source: 'dlc' | 'embedded'; name: string }
-            owner: ControlInfo
-        }
-    }
-    // we can send presets of entities that are not installed by dlc.
-    // For this, define field_pawn with source: 'embedded' and 'name' of a key in this object
-    custom_entities: {
-        [key: string]: CharacterPreset
-    }
-}
-
 export type GameMessage = Array<TranslatableString>
 export type GameStateContainer = Array<GameMessage>
-
-// object that is understandable by the game servers
-export interface CharacterPreset {
-    descriptor: string
-    decorations: GameComponentDecoration
-    attributes: {
-        [attribute: string]: number
-    }
-
-    inventory: Array<ItemPartialPreset>
-    weaponry: Array<WeaponPartialPreset>
-    spell_book: { spells: Array<SpellPartialPreset>; max_active_spells: number | null }
-    status_effects: Array<StatusEffectPartialPreset>
-}
-
-interface ItemPartialPreset {
-    descriptor: string
-    quantity?: number
-    turns_until_usage?: number
-    current_consecutive_uses?: number
-}
-
-interface WeaponPartialPreset {
-    descriptor: string
-    quantity?: number
-    is_active?: boolean
-    turns_until_usage?: number
-    current_consecutive_uses?: number
-}
-
-interface SpellPartialPreset {
-    descriptor: string
-    turns_until_usage?: number
-    current_consecutive_uses?: number
-    is_active?: boolean
-}
-
-interface StatusEffectPartialPreset {
-    descriptor: string
-    duration?: number | null
-}

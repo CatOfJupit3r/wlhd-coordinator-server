@@ -11,98 +11,128 @@ export interface GameServerStatus {
     installed: Array<Manifest>
 }
 
-interface CommonPresetField {
-    decorations: {
-        // descriptors rather than values
-        name: string
-        sprite: string
-        description: string
+interface MemoryType {
+    type: string
+    value: unknown
+    display_name: string
+    internal: boolean
+}
+
+interface DiceMemory extends MemoryType {
+    type: 'dice'
+    value: {
+        sides: number
+        times: number
     }
-    method_variables: { [variable: string]: unknown }
-    usage_cost: number | null
-    cooldown: number | null
-    effect_hook: string
-    max_consecutive_uses: number | null
-    caster_must_be_in_range: Array<number>
-    consecutive_use_reset_on_cooldown_update: boolean
 }
 
-export interface SpellPreset extends CommonPresetField {
-    [other: string]: unknown
+interface StringMemory extends MemoryType {
+    type: 'string'
+    value: string
 }
 
-export interface ItemPreset extends CommonPresetField {
+interface ComponentIDMemory extends MemoryType {
+    type: 'component_id'
+    value: string
+}
+
+interface NumberMemory extends MemoryType {
+    type: 'number'
+    value: number
+}
+
+interface BooleanMemory extends MemoryType {
+    type: 'boolean'
+    value: boolean
+}
+
+type PossibleMemory = DiceMemory | StringMemory | NumberMemory | BooleanMemory | ComponentIDMemory | MemoryType
+
+export interface GameComponentMemory {
+    [variable: string]: PossibleMemory
+}
+
+export interface GameComponentDecoration {
+    name: string
+    sprite: string
+    description: string
+}
+
+interface CommonPresetField {
+    decorations: GameComponentDecoration
+    memory: GameComponentMemory
+    tags: Array<string>
+}
+
+interface UsableComponentPresetFields extends CommonPresetField {
+    usageCost: number | null
+    turnsUntilUsage: number
+    cooldownValue: number | null
+    currentConsecutiveUses: number
+    maxConsecutiveUses: number | null
+    consecutiveUseResetOnCooldownUpdate: boolean
+    casterMustBeInRange: Array<number>
+
+    requirements: unknown // for now unknown
+}
+
+export interface SpellPreset extends UsableComponentPresetFields {}
+
+export interface ItemPreset extends UsableComponentPresetFields {
     applies: Array<string>
     quantity: number
-    is_consumable: boolean
-    [other: string]: unknown
+    isConsumable: boolean
 }
 
 export interface WeaponPreset extends ItemPreset {
-    cost_to_switch: number
-    [other: string]: unknown
+    costToSwitch: number
 }
 
-export interface StatusEffectPreset {
-    decorations: {
-        // descriptors rather than values
-        name: string
-        sprite: string
-        description: string
-    }
+export interface StatusEffectPreset extends CommonPresetField {
     duration: number | null
     static: boolean
-    visibility: boolean
-    activate_on_use: boolean
-    update_type: string
-    activation_type: string
-    method_variables: { [variable: string]: unknown }
-    method_hooks: {
-        apply: string | null
-        update: string | null
-        dispel: string | null
-        activate: string | null
-    }
-    [other: string]: unknown
+
+    autoMessages: boolean
+    isVisible: boolean
+    activatesOnApply: boolean
+
+    owner: null | unknown // entity, but unknown for now
+    updateType: string
+    activationType: string
 }
 
-export interface EntityPreset {
-    decorations: {
-        name: string
-        sprite: string
-        description: string
-    }
-    race_of_creature: string
+interface CommonSaveField {
+    descriptor: string
+    id_?: string
+}
+
+type SpellSaveSource = Partial<SpellPreset> & CommonSaveField & { isActive: boolean; effectHook?: string }
+
+type ItemSaveSource = Partial<ItemPreset> & CommonSaveField & { effectHook?: string }
+
+type WeaponSaveSource = Partial<WeaponPreset> & CommonSaveField & { isActive: boolean; effectHook?: string }
+
+type StatusEffectSaveSource = Partial<StatusEffectPreset> & CommonSaveField
+
+// Character Preset are uncannily similar to Character Save Source. The only difference is absence of id_ in Character Preset
+// Although id_ is not required in Character Save Source, if inner presets refer to id_ '0', it should be assumed to be the character itself
+export interface CharacterPreset extends CommonPresetField {
     attributes: {
         [attribute: string]: number
     }
-    spell_book: Array<{
-        descriptor: string
-        current_cooldown: number
-        current_consecutive_uses: number
-    }>
-    status_effects: Array<{
-        descriptor: string
-        duration: string
-    }>
-    inventory: Array<{
-        descriptor: string
-        quantity: number
-        is_active?: boolean
-    }>
-    weaponry: Array<{
-        descriptor: string
-        quantity: number
-        is_active?: boolean
-    }>
+    spellBook: {
+        knownSpells: Array<SpellSaveSource>
+        maxActiveSpells: number | null
+    }
+    statusEffects: Array<StatusEffectSaveSource>
+    inventory: Array<ItemSaveSource>
+    weaponry: Array<WeaponSaveSource>
     states: {
         [state: string]: number
     }
-    cost_dictionaries: {
-        [action: string]: number
+    addedCosts: {
+        [cost: string]: number
     }
-
-    [other: string]: unknown
 }
 
-export type DLCPreset = SpellPreset | WeaponPreset | ItemPreset | StatusEffectPreset | EntityPreset
+export type DLCPreset = SpellPreset | WeaponPreset | ItemPreset | StatusEffectPreset | CharacterPreset

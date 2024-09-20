@@ -3,8 +3,15 @@ import path from 'path'
 import { simpleGit, SimpleGit } from 'simple-git'
 
 import { GITHUB_LINK_REGEX, GITHUB_TOKEN, PATH_TO_INSTALLED_PACKAGES } from '../configs'
-import { DLCPreset, ItemPreset, Manifest, SpellPreset, StatusEffectPreset, WeaponPreset } from '../models/GameDLCData'
-import { CharacterPreset } from '../models/ServerModels'
+import {
+    CharacterPreset,
+    DLCPreset,
+    ItemPreset,
+    Manifest,
+    SpellPreset,
+    StatusEffectPreset,
+    WeaponPreset,
+} from '../models/GameDLCData'
 
 type presetTypes = 'weapons' | 'spells' | 'items' | 'status_effects' | 'entities'
 
@@ -58,6 +65,7 @@ class PackageManagerService {
                 console.error(`Invalid Github link for package ${title}`)
                 continue
             }
+            encounteredPackages.push(descriptor)
             await this.installPackage(source, descriptor)
         }
         await this.installMandatoryPackages(encounteredPackages)

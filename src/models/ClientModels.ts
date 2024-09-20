@@ -1,12 +1,6 @@
-import {
-    ControlInfo,
-    GameComponentDecoration,
-    GameStateContainer,
-    ItemInfo,
-    SpellInfo,
-    StatusEffectInfo,
-    WeaponInfo,
-} from './ServerModels'
+import { GameComponentDecoration, GameComponentMemory } from './GameDLCData'
+import { ControlInfo } from './GameSaveModels'
+import { GameStateContainer, ItemInfo, SpellInfo, StatusEffectInfo, WeaponInfo } from './ServerModels'
 
 export interface BattlefieldPlayers {
     pawns: {
@@ -23,7 +17,7 @@ export interface GameHandshake {
     combatStatus: 'ongoing' | 'pending'
     currentBattlefield: BattlefieldPlayers
     controlledEntities: Array<EntityInfoFull> | null
-    turnOrder: IndividualTurnOrder
+    turnOrder: IndividualTurnOrder | null
 }
 
 export interface EntityInfoTooltip {
@@ -32,7 +26,10 @@ export interface EntityInfoTooltip {
     health: { current: number; max: number }
     action_points: { current: number; max: number }
     armor: { current: number; base: number }
-    statusEffects: Array<Omit<StatusEffectInfo, 'descriptor'>>
+    statusEffects: Array<{
+        decorations: GameComponentDecoration
+        duration: number | null
+    }>
 }
 
 export interface EntityInfoFull {
@@ -43,21 +40,15 @@ export interface EntityInfoFull {
     inventory: Array<ItemInfo>
     weaponry: Array<WeaponInfo>
     spellBook: {
-        spells: Array<SpellInfo>
+        knownSpells: Array<SpellInfo>
         maxActiveSpells: number | null
     }
     statusEffects: Array<StatusEffectInfo>
+    tags: Array<string>
+    memory: GameComponentMemory
 }
 
-export interface TurnOrder {
-    order: Array<CharacterInTurnOrder>
-    current: number | null
-}
-
-export interface IndividualTurnOrder {
-    order: Array<CharacterInTurnOrderPlayer>
-    current: number | null
-}
+export type IndividualTurnOrder = Array<CharacterInTurnOrderPlayer | null>
 
 export interface CharacterInTurnOrder {
     controlledBy: ControlInfo

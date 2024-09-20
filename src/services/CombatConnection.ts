@@ -4,23 +4,22 @@ import { DefaultEventsMap } from 'socket.io/dist/typed-events'
 import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '../configs'
 import {
     BattlefieldPlayers,
-    CharacterInTurnOrderPlayer,
+    CharacterInTurnOrder,
     EntityInfoFull,
     EntityInfoTooltip,
     GameHandshake as GameHandshakePlayers,
     IndividualTurnOrder,
-    TurnOrder,
 } from '../models/ClientModels'
-import { MinifiedCombatPreset } from '../models/GameEditorModels'
+import { ControlInfo } from '../models/GameSaveModels'
 import {
     Battlefield,
-    ControlInfo,
     EntityAction,
     EntityInfo,
     GameHandshake as GameHandshakeGameServer,
     GameStateContainer,
 } from '../models/ServerModels'
 import { TranslatableString } from '../models/Translation'
+import { CombatSaveType } from '../schemas/CombatSaveSchema'
 
 const GAME_SERVER_EVENTS = {
     GAME_HANDSHAKE: 'game_handshake',
@@ -91,8 +90,8 @@ interface Player {
 type GameSocket = Socket<DefaultEventsMap, DefaultEventsMap>
 
 export class CombatConnection {
-    public combatNickname: string
-    private readonly combatPresets: MinifiedCombatPreset
+    public nickname: string
+    private readonly initialSave: CombatSaveType
     private readonly players: Array<Player>
     private readonly gameSocket: GameSocket
     private gameId: string
@@ -101,27 +100,15 @@ export class CombatConnection {
         messages: GameStateContainer
         battleResult: 'pending' | 'ongoing'
         currentBattlefield: Battlefield
-        allEntitiesInfo: { [square: string]: EntityInfo | null } // info about all entities.
-        turnOrder: {
-            order: Array<string> // order of entity ids
-            currentCharacter: string | null // id of current entity in order
-
-            actions: EntityAction | null // keeps json of possible entity action in order to not fetch them each event
-            player: string | null // handle of current player. Supplied by game servers
-        }
+        allEntitiesInfo: { [characterId: string]: EntityInfo } // info about all entities.
+        turnInfo: GameHandshakeGameServer['turnInfo']
     }
     private readonly gmId: string
     private readonly removeSelf: () => void
 
-    constructor(
-        combatNickname: string,
-        combatPreset: MinifiedCombatPreset,
-        removeSelf: () => void,
-        gmId: string,
-        players: Array<string>
-    ) {
-        this.combatNickname = combatNickname
-        this.combatPresets = combatPreset
+    constructor(nickname: string, save: CombatSaveType, removeSelf: () => void, gmId: string, players: Array<string>) {
+        this.nickname = nickname
+        this.initialSave = save
         this.gmId = gmId
         this.players = []
         players.forEach((player) => {
@@ -234,14 +221,14 @@ export class CombatConnection {
     }
 
     private updateEntityActions(actions: EntityAction) {
-        if (!this.gameState.turnOrder.currentCharacter) {
+        if (this.gameState.turnInfo.order[0] === null) {
             return
         }
-        this.gameState.turnOrder.actions = actions
+        this.gameState.turnInfo.actions = actions
     }
 
     private sendActionsToServer(actions: { [key: string]: string }, player: Player) {
-        if (this.gameState && (player.isGm || this.gameState.turnOrder.player === player.id_)) {
+        if (this.gameState && (player.isGm || this.gameState.turnInfo.playerId === player.id_)) {
             if (!('action' in actions)) {
                 player.socket && player.socket.emit('error', 'No action specified!')
                 return
@@ -309,8 +296,8 @@ export class CombatConnection {
                     this.createHandshake(player.id_)
                 )
                 this.gameState.battleResult === 'ongoing' &&
-                    this.gameState.turnOrder.player === player.id_ &&
-                    this.gameState.turnOrder.currentCharacter &&
+                    this.gameState.turnInfo.playerId === player.id_ &&
+                    this.gameState.turnInfo.order !== null &&
                     this.emitTakeActionToPlayer()
             })()
     }
@@ -319,22 +306,16 @@ export class CombatConnection {
         const LISTENERS = {
             [GAME_SERVER_EVENTS.GAME_HANDSHAKE]: (data: GameHandshakeGameServer) => {
                 console.log('Handshake', data)
-                const { gameId, roundCount, currentBattlefield, turnOrder, messages, combatStatus, allEntitiesInfo } =
-                    data
+                const { gameId, roundCount, battlefield, turnInfo, messages, combatStatus, allEntitiesInfo } = data
                 this.setGameId(gameId)
 
                 this.gameState = {
                     roundCount: roundCount,
                     messages: messages,
                     battleResult: combatStatus,
-                    currentBattlefield: currentBattlefield,
+                    currentBattlefield: battlefield,
                     allEntitiesInfo: allEntitiesInfo,
-                    turnOrder: {
-                        order: turnOrder.turnQueue,
-                        currentCharacter: turnOrder.currentEntity,
-                        actions: turnOrder.entityActions,
-                        player: turnOrder.currentPlayer,
-                    },
+                    turnInfo: turnInfo,
                 }
                 this.players.forEach((player) => {
                     if (player.socket) {
@@ -395,9 +376,9 @@ export class CombatConnection {
                 actions: EntityAction
             }) => {
                 try {
-                    this.gameState.turnOrder.player = user_token
-                    if (this.gameState.turnOrder.currentCharacter !== entity_id) {
-                        this.gameState.turnOrder.currentCharacter = entity_id
+                    this.gameState.turnInfo.playerId = user_token
+                    if (this.gameState.turnInfo.order[0] !== entity_id) {
+                        this.gameState.turnInfo.order[0] = entity_id
                         this.sendOutTurnOrderToPlayers()
                     }
 
@@ -420,19 +401,19 @@ export class CombatConnection {
                 message: 'builtins:action_performed' | 'builtins:invalid_input' | string
             }) => {
                 console.log('Action result', data)
-                this.gameState.turnOrder.player = null
-                this.gameState.turnOrder.currentCharacter = null
-                this.broadcast(PLAYER_RESPONSES.NO_CURRENT_ENTITY)
+                this.gameState.turnInfo.playerId = null
+
+                // this.broadcast(PLAYER_RESPONSES.NO_CURRENT_ENTITY)
+                // ^ above code is from old code, which had a different approach to handling current entity
 
                 this.sendToPlayer(data.user_token, PLAYER_RESPONSES.ACTION_RESULT, {
                     code: data.code,
                     message: data.message,
                 })
             },
-            [GAME_SERVER_EVENTS.TURN_ORDER_UPDATED]: (data: { turn_queue: Array<string>; current_entity: string }) => {
+            [GAME_SERVER_EVENTS.TURN_ORDER_UPDATED]: (data: { turn_queue: Array<string> }) => {
                 console.log('Turn order updated', data)
-                this.gameState.turnOrder['order'] = data.turn_queue
-                this.gameState.turnOrder['currentCharacter'] = data.current_entity
+                this.gameState.turnInfo['order'] = data.turn_queue
 
                 this.sendOutTurnOrderToPlayers()
             },
@@ -454,7 +435,7 @@ export class CombatConnection {
             connect: () => {
                 console.log('Connected to game server. Preparing handshake')
                 this.sendToServer('game_handshake', {
-                    game_preset: this.combatPresets,
+                    game_save: this.initialSave,
                 })
             },
             error: (err: Error) => {
@@ -514,14 +495,12 @@ export class CombatConnection {
                         })
                         break
                     case 'current_entity_info':
-                        if (this.gameState.turnOrder.currentCharacter) {
+                        if (this.gameState.turnInfo.order[0] !== null) {
                             player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                                 type: 'current_entity_info',
                                 payload: {
                                     entity: (() => {
-                                        const entityInfo = this.findEntityInfoById(
-                                            this.gameState.turnOrder.currentCharacter
-                                        )
+                                        const entityInfo = this.findEntityInfoById(this.gameState.turnInfo.order[0])
                                         return entityInfo ? this.generateEntityFullInfo(entityInfo) : null
                                     })(),
                                 },
@@ -656,10 +635,10 @@ export class CombatConnection {
                 current: entity.attributes['builtins:current_armor'],
                 base: entity.attributes['builtins:base_armor'],
             },
-            statusEffects: entity.status_effects.map((effect) => {
+            statusEffects: entity.statusEffects.map((effect) => {
                 return {
                     decorations: effect.decorations,
-                    duration: effect.duration ? effect.duration.toString() : null,
+                    duration: effect.duration,
                 }
             }),
         }
@@ -668,27 +647,20 @@ export class CombatConnection {
     private generateEntityFullInfo(entity: EntityInfo): EntityInfoFull {
         const {
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            controlled_by,
+            controlledBy,
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            id,
-            spell_book,
-            status_effects,
+            id_,
             ...entityInfo
         } = entity
         return {
             ...entityInfo,
-            statusEffects: status_effects,
-            spellBook: {
-                spells: spell_book.spells,
-                maxActiveSpells: spell_book.max_active_spells,
-            },
         }
     }
 
     private generateEntityFullInfoForPlayer(playerId: string): Array<EntityInfoFull> {
         const res: Array<EntityInfoFull> = []
         Object.values(this.gameState.allEntitiesInfo).forEach((entity) => {
-            if (entity && entity.controlled_by.type === 'player' && entity.controlled_by.id === playerId) {
+            if (entity && entity.controlledBy.type === 'player' && entity.controlledBy.id === playerId) {
                 res.push(this.generateEntityFullInfo(entity))
             }
         })
@@ -706,33 +678,35 @@ export class CombatConnection {
         }
     }
 
-    private generateIndividualTurnOrder(playerId: string, turnOrder?: TurnOrder): IndividualTurnOrder {
+    private generateIndividualTurnOrder(
+        playerId: string,
+        turnOrder?: Array<CharacterInTurnOrder | null>
+    ): IndividualTurnOrder {
         if (!turnOrder) {
             turnOrder = this.generateGeneralTurnOrderInfo()
         }
-        return {
-            ...turnOrder,
-            order: turnOrder.order.map((entity) => {
-                const { controlledBy, ...rest } = entity
-                return {
-                    ...rest,
-                    controlledByYou:
-                        controlledBy.type === 'player' && playerId !== null && controlledBy.id === playerId,
-                } as CharacterInTurnOrderPlayer
-            }),
-        } as IndividualTurnOrder
+        return turnOrder.map((entity) => {
+            if (entity === null) {
+                return null
+            }
+            return {
+                ...entity,
+                controlledByYou: entity.controlledBy.type === 'player' && entity.controlledBy.id === playerId,
+            }
+        })
     }
 
-    private generateGeneralTurnOrderInfo(): TurnOrder {
-        const turnOrderInfo: TurnOrder = {
-            order: [],
-            current: null,
-        }
-        for (const entityId of this.gameState.turnOrder.order) {
+    private generateGeneralTurnOrderInfo(): Array<CharacterInTurnOrder | null> {
+        const turnOrderInfo: Array<CharacterInTurnOrder | null> = []
+        for (const entityId of this.gameState.turnInfo.order) {
+            if (entityId === null) {
+                turnOrderInfo.push(null)
+                continue
+            }
             const entity = this.findEntityInfoById(entityId)
             if (entity) {
-                turnOrderInfo.order.push({
-                    controlledBy: entity.controlled_by,
+                turnOrderInfo.push({
+                    controlledBy: entity.controlledBy,
                     descriptor: entity.descriptor,
                     decorations: entity.decorations,
                     square: {
@@ -740,19 +714,13 @@ export class CombatConnection {
                         column: entity.square.column,
                     },
                 })
-                if (
-                    this.gameState.turnOrder.currentCharacter &&
-                    entity.id === this.gameState.turnOrder.currentCharacter
-                ) {
-                    turnOrderInfo.current = turnOrderInfo.order.length - 1
-                }
             }
         }
         return turnOrderInfo
     }
 
     private findEntityInfoById(id: string): EntityInfo | null {
-        return Object.values(this.gameState.allEntitiesInfo).find((entity) => entity && entity.id === id) || null
+        return this.gameState.allEntitiesInfo[id] ?? null
     }
 
     private createHandshake(playerId: string): GameHandshakePlayers {
@@ -788,29 +756,30 @@ export class CombatConnection {
             if (!user_token) {
                 return this.sendToGm(GM_RESPONSES.TAKE_UNALLOCATED_ACTION, {
                     entityId: entity_id,
-                    actions: this.gameState.turnOrder.actions,
+                    actions: this.gameState.turnInfo.actions,
                 })
             }
             if (user_token && this.players.find((player) => player.id_ === user_token)) {
                 this.sendToPlayer(user_token, PLAYER_RESPONSES.TAKE_ACTION, {
                     entityId: entity_id,
-                    actions: this.gameState.turnOrder.actions,
+                    actions: this.gameState.turnInfo.actions,
                 })
                 return true
             } else {
                 return this.sendToGm(GM_RESPONSES.TAKE_OFFLINE_PLAYER_ACTION, {
                     entityId: entity_id,
-                    actions: this.gameState.turnOrder.actions,
+                    actions: this.gameState.turnInfo.actions,
                 })
             }
         }
-        const { player, currentCharacter } = this.gameState.turnOrder
-        if (currentCharacter && !trySending(player, currentCharacter)) {
+        const { playerId, order } = this.gameState.turnInfo
+        const current = order[0]
+        if (current && !trySending(playerId, current)) {
             setTimeout(() => {
-                if (!trySending(player, currentCharacter)) {
+                if (!trySending(playerId, current)) {
                     this.sendToServer(GAME_SERVER_RESPONSES.PLAYER_CHOICE, {
                         game_id: this.gameId,
-                        user_token: player,
+                        user_token: playerId,
                         choices: {
                             action: 'builtins:skip',
                         },
