@@ -17,8 +17,8 @@ export interface TranslationSnippet {
 }
 
 export interface TranslatableString {
-    main_string: string
-    format_args?: {
+    key: string
+    args?: {
         [key: string]: string | TranslatableString
     }
 }

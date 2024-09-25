@@ -128,8 +128,8 @@ const SquareOnBattlefieldZod = z.object({
 
 const TStringZod = z
     .object({
-        main_string: DescriptorZod,
-        format_args: z.record(z.string()).optional(),
+        key: DescriptorZod,
+        args: z.record(z.string()).optional(),
     })
     .strict()
 
