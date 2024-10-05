@@ -1,18 +1,14 @@
 import CombatEditorController from '@controllers/CombatEditorController'
-import { Router } from 'express'
+import { createConfig, createRouter } from '@controllers/RouteInController'
 
-const router = Router()
+export default createRouter([
+    // GET
+    createConfig('get', '/items/', CombatEditorController.getLoadedItems),
+    createConfig('get', '/weapons/', CombatEditorController.getLoadedWeapons),
+    createConfig('get', '/spells/', CombatEditorController.getLoadedSpells),
+    createConfig('get', '/status_effects/', CombatEditorController.getLoadedStatusEffects),
+    createConfig('get', '/characters/', CombatEditorController.getLoadedCharacters),
 
-// GET
-
-router.get('/items/', CombatEditorController.getLoadedItems.bind(CombatEditorController))
-router.get('/weapons/', CombatEditorController.getLoadedWeapons.bind(CombatEditorController))
-router.get('/spells/', CombatEditorController.getLoadedSpells.bind(CombatEditorController))
-router.get('/status_effects/', CombatEditorController.getLoadedStatusEffects.bind(CombatEditorController))
-router.get('/characters/', CombatEditorController.getLoadedCharacters.bind(CombatEditorController))
-
-// POST
-
-router.post('/preset', CombatEditorController.createCombatPreset.bind(CombatEditorController))
-
-export default router
+    // POST
+    createConfig('post', '/preset', CombatEditorController.createCombatPreset),
+])

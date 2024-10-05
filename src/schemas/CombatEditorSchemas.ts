@@ -3,6 +3,8 @@ import { z } from 'zod'
 
 // COMBAT PRESET SCHEMA
 
+export const DescriptorZodString = z.string().regex(DESCRIPTOR_REGEX())
+
 const CombatEditorSchema = z.object({
     nickName: z.string(),
     battlefield: z.record(

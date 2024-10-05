@@ -1,90 +1,52 @@
-import { DESCRIPTOR_NO_DLC_REGEX } from '@configs'
-import { EntityInfoFullToCharacterClass } from '@models/GameEditorModels'
-import { ExtendedSchema } from 'just-enough-schemas'
-import { Types } from 'mongoose'
 import { z } from 'zod'
-import CombatSaveZod from './CombatSaveSchema'
+import { ComponentMemoryZod } from './CombatSaveSchema' // CHARACTER SCHEMA
 
 // CHARACTER SCHEMA
 
-const CharacterSchemaBuilder = () => {
-    const characterSchema = new ExtendedSchema<EntityInfoFullToCharacterClass>({ excess: 'forbid' })
+const CharacterSchema = z.object({
+    decorations: z.object({
+        name: z.string(),
+        description: z.string(),
+        sprite: z.string(),
+    }),
 
-    const decorationSchema = new ExtendedSchema<EntityInfoFullToCharacterClass['decorations']>({ excess: 'forbid' })
-    decorationSchema.addStringField('name')
-    decorationSchema.addStringField('description')
-    decorationSchema.addStringField('sprite')
+    attributes: z.record(z.string(), z.number()),
+    states: z.record(z.string(), z.number()),
 
-    characterSchema.addExtendedSchemaField('decorations', decorationSchema)
+    statusEffects: z.array(
+        z.object({
+            descriptor: z.string(),
+            duration: z.number().nullable(),
+        })
+    ),
 
-    const attributeSchema = new ExtendedSchema<EntityInfoFullToCharacterClass['attributes'][number]>({
-        excess: 'forbid',
-    })
-    attributeSchema.addStringField('descriptor')
-    attributeSchema.addNumberField('value')
+    inventory: z.array(
+        z.object({
+            descriptor: z.string(),
+            quantity: z.number(),
+        })
+    ),
 
-    characterSchema.addArrayOfElementsField('attributes', attributeSchema)
+    weaponry: z.array(
+        z.object({
+            descriptor: z.string(),
+            quantity: z.number(),
+        })
+    ),
 
-    const spellBookSchema = new ExtendedSchema<EntityInfoFullToCharacterClass['spellBook']>({ excess: 'forbid' })
-    spellBookSchema.addNullableField('maxActiveSpells', ['number'])
-    const knownSpellsSchema = new ExtendedSchema<EntityInfoFullToCharacterClass['spellBook']['knownSpells'][number]>({
-        excess: 'forbid',
-    })
-    knownSpellsSchema.addStringField('descriptor')
-    knownSpellsSchema.addBooleanField('isActive')
-    spellBookSchema.addArrayOfElementsField('knownSpells', knownSpellsSchema)
+    spellBook: z.object({
+        knownSpells: z.array(
+            z.object({
+                descriptor: z.string(),
+                isActive: z.boolean(),
+            })
+        ),
+        maxActiveSpells: z.number().nullable(),
+    }),
 
-    characterSchema.addExtendedSchemaField('spellBook', spellBookSchema)
+    memory: ComponentMemoryZod.optional(),
 
-    const inventorySchema = new ExtendedSchema<EntityInfoFullToCharacterClass['inventory'][number]>({
-        excess: 'forbid',
-    })
-    inventorySchema.addStringField('descriptor')
-    inventorySchema.addNumberField('quantity')
+    tags: z.array(z.string()),
+})
 
-    characterSchema.addArrayOfElementsField('inventory', inventorySchema)
-
-    const statusEffectsSchema = new ExtendedSchema<EntityInfoFullToCharacterClass['statusEffects'][number]>({
-        excess: 'forbid',
-    })
-    statusEffectsSchema.addStringField('descriptor')
-    statusEffectsSchema.addNullableField('duration', ['number'])
-
-    characterSchema.addArrayOfElementsField('statusEffects', statusEffectsSchema)
-
-    const weaponrySchema = new ExtendedSchema<EntityInfoFullToCharacterClass['weaponry'][number]>({
-        excess: 'forbid',
-    })
-    weaponrySchema.addStringField('descriptor')
-    weaponrySchema.addNumberField('quantity')
-
-    characterSchema.addArrayOfElementsField('weaponry', weaponrySchema)
-
-    return characterSchema
-}
-
-const CharacterSchema = CharacterSchemaBuilder()
-
-const LobbySchema = z
-    .object({
-        lobby_id: z.string().refine((value) => Types.ObjectId.isValid(value), {
-            message: 'lobby_id is not a valid ObjectId',
-        }),
-    })
-    .strip()
-
-const LobbyWithDescriptorSchema = z
-    .object({
-        descriptor: z.string().regex(DESCRIPTOR_NO_DLC_REGEX()),
-    })
-    .merge(LobbySchema)
-    .strip()
-
-const CreateGameLobbySchema = z
-    .object({
-        nickname: z.string().min(1).max(20).optional(), // if none provided, will be generated
-        preset: CombatSaveZod,
-    })
-    .strict()
-
-export { CharacterSchema, CreateGameLobbySchema, LobbySchema, LobbyWithDescriptorSchema }
+export { CharacterSchema }

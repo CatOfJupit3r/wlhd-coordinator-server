@@ -1,8 +1,8 @@
 import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '@configs'
-import AssetController from '@controllers/AssetController'
 import TranslationController from '@controllers/TranslationController'
 import { GameServerStatus, Manifest } from '@models/GameDLCData'
 import { CombatClass } from '@models/TypegooseModels'
+import AssetService from '@services/AssetService'
 import axios, { isAxiosError } from 'axios'
 import GameConversionService from './GameConversionService'
 import LobbyService from './LobbyService'
@@ -41,7 +41,7 @@ class GameServerService {
             }
         }
         TranslationController.reloadTranslations()
-        AssetController.reloadAssets()
+        AssetService.reloadAssets()
         PackageManagerService.resetCache()
         PackageManagerService.cacheAllDLCs()
         GameConversionService.resetCache()
@@ -59,7 +59,7 @@ class GameServerService {
     async installDLCs(manifests: Manifest[]) {
         await PackageManagerService.installPackages(manifests)
         TranslationController.reloadTranslations()
-        AssetController.reloadAssets()
+        AssetService.reloadAssets()
     }
 
     private async fetch(url: string) {

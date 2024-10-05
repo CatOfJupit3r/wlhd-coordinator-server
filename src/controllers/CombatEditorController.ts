@@ -1,68 +1,66 @@
-import { BadRequest, NotFound } from '@models/ErrorModels'
-import { CombatEditorSchema } from '@schemas/CombatEditorSchemas'
+import { createRouteInController } from '@controllers/RouteInController'
 import CombatEditorService from '@services/GameServerService'
 import PackageManagerService from '@services/PackageManagerService'
 import { Request, Response } from 'express'
+import { z } from 'zod'
+
+const CombatEditorQuery = z.object({
+    dlc: z.string().refine((dlc) => PackageManagerService.isDLCInstalled(dlc), {
+        message: `Provided DLC is not installed on coordinator server. Check if you typed it correctly!`,
+    }),
+})
 
 class CombatEditorController {
-    async getLoadedItems(req: Request, res: Response) {
-        const { dlc } = req.query
-        if (!dlc) {
-            throw new NotFound('DLC name is required')
-        }
-        if (!PackageManagerService.isDLCInstalled(dlc as string)) {
-            throw new NotFound('DLC not found')
-        }
-        const items = CombatEditorService.getLoadedItems(dlc as string)
-        res.status(200).json({ result: 'ok', items })
-    }
+    getLoadedItems = createRouteInController(
+        async (req: Request, res: Response) => {
+            const { dlc } = req.query
+            const items = CombatEditorService.getLoadedItems(dlc as string)
+            res.status(200).json({ result: 'ok', items })
+        },
+        { query: CombatEditorQuery }
+    )
 
-    async getLoadedWeapons(req: Request, res: Response) {
-        const { dlc } = req.query
-        if (!dlc) {
-            throw new NotFound('DLC name is required')
-        }
-        const weapons = CombatEditorService.getLoadedWeapons(dlc as string)
-        res.status(200).json({ result: 'ok', weapons })
-    }
+    getLoadedWeapons = createRouteInController(
+        async (req: Request, res: Response) => {
+            const { dlc } = req.query
+            const weapons = CombatEditorService.getLoadedWeapons(dlc as string)
+            res.status(200).json({ result: 'ok', weapons })
+        },
+        { query: CombatEditorQuery }
+    )
 
-    async getLoadedSpells(req: Request, res: Response) {
-        const { dlc } = req.query
-        if (!dlc) {
-            throw new NotFound('DLC name is required')
-        }
-        const spells = CombatEditorService.getLoadedSpells(dlc as string)
-        res.status(200).json({ result: 'ok', spells })
-    }
+    getLoadedSpells = createRouteInController(
+        async (req: Request, res: Response) => {
+            const { dlc } = req.query
+            const spells = CombatEditorService.getLoadedSpells(dlc as string)
+            res.status(200).json({ result: 'ok', spells })
+        },
+        { query: CombatEditorQuery }
+    )
 
-    async getLoadedStatusEffects(req: Request, res: Response) {
-        const { dlc } = req.query
-        if (!dlc) {
-            throw new NotFound('DLC name is required')
-        }
-        const status_effects = CombatEditorService.getLoadedStatusEffects(dlc as string)
-        res.status(200).json({ result: 'ok', status_effects })
-    }
+    getLoadedStatusEffects = createRouteInController(
+        async (req: Request, res: Response) => {
+            const { dlc } = req.query
+            const status_effects = CombatEditorService.getLoadedStatusEffects(dlc as string)
+            res.status(200).json({ result: 'ok', status_effects })
+        },
+        { query: CombatEditorQuery }
+    )
 
-    async getLoadedCharacters(req: Request, res: Response) {
-        const { dlc } = req.query
-        if (!dlc) {
-            throw new NotFound('DLC name is required')
-        }
-        const characters = CombatEditorService.getLoadedCharacters(dlc as string)
-        res.status(200).json({ result: 'ok', characters })
-    }
+    getLoadedCharacters = createRouteInController(
+        async (req: Request, res: Response) => {
+            const { dlc } = req.query
+            const characters = CombatEditorService.getLoadedCharacters(dlc as string)
+            res.status(200).json({ result: 'ok', characters })
+        },
+        { query: CombatEditorQuery }
+    )
 
-    async createCombatPreset(req: Request, res: Response) {
-        const validation = CombatEditorSchema.safeParse(req.body)
-        if (!validation.success) {
-            throw new BadRequest(validation.error.message, {
-                ...validation.error,
-            })
-        }
-        const { nickName, battlefield } = validation.data
+    createCombatPreset = createRouteInController(async (req: Request, res: Response) => {
+        // stub for saving presets in db. not used anywhere.
+        // if you are searching for creating lobby combat, then look at LobbyController.ts
         res.status(200).json({ result: 'ok', preset_id: '111' })
-    }
+    })
 }
 
 export default new CombatEditorController()

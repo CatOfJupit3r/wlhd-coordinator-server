@@ -10,7 +10,7 @@ const ControlInfoZod = z
         return !((value.type === 'player' || value.type === 'ai') && !value.id)
     })
 
-const GameMemoryZod = z
+export const GameMemoryZod = z
     .object({
         type: z.string(),
         value: z.any(),
@@ -20,7 +20,7 @@ const GameMemoryZod = z
     })
     .strict()
 
-const ComponentMemoryZod = z.record(z.string(), GameMemoryZod)
+export const ComponentMemoryZod = z.record(z.string(), GameMemoryZod)
 
 const DescriptorZod = z.string().regex(DESCRIPTOR_REGEX())
 

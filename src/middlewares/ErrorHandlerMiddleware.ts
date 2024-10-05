@@ -9,7 +9,13 @@ export const errorHandlerMiddleware = (err: Error, req: Request, res: Response, 
     } else if (err instanceof ZodError) {
         // if during validation of request body, zod throws an error, we can catch it and send a proper response
         // this way we can catch all validation errors in one place
-        res.status(400).send({ status: 400, message: 'Request failed validation', details: err.errors })
+        res.status(400).json({
+            message: 'Request failed validation',
+            details:
+                err.errors.map((issue) => ({
+                    message: `${issue.path.join('.')} is ${issue.message}`,
+                })) ?? [],
+        })
         return
     } else {
         // If clients sends bad JSON, express json lib will throw SyntaxError

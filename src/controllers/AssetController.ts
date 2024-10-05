@@ -1,39 +1,39 @@
-import { BadRequest } from '@models/ErrorModels'
+import { DLC_TAG_REGEX } from '@config/regex'
+import { createRouteInController } from '@controllers/RouteInController'
 import AssetService from '@services/AssetService'
 import { Request, Response } from 'express'
+import { z } from 'zod'
 
 class AssetController {
-    public index(req: Request, res: Response) {
+    index = createRouteInController(async (req: Request, res: Response) => {
         res.status(200).send({ dlcs: AssetService.getAllLoadedDLCs() })
-    } // returns all NAMES of dlcs with assets
+    })
 
-    public getAvailableAssetsOnDLC(req: Request, res: Response) {
-        const { dlc } = req.params
-        if (!dlc) {
-            throw new BadRequest('DLC name is required')
+    getAvailableAssetsOnDLC = createRouteInController(
+        async (req: Request, res: Response) => {
+            const { dlc } = req.params
+            res.status(200).send({ assets: AssetService.getDLCAssetNames(dlc) })
+        },
+        {
+            params: z.object({ dlc: z.string().regex(DLC_TAG_REGEX()) }),
         }
-        res.status(200).send({ assets: AssetService.getDLCAssetNames(dlc) })
-    } // returns all assets NAMES in individual dlc
+    )
 
-    public getAsset(req: Request, res: Response) {
-        const { dlc, asset } = req.params
-        if (!dlc) {
-            throw new BadRequest('DLC name is required')
-        } else if (!asset) {
-            throw new BadRequest('Asset name is required')
+    getAsset = createRouteInController(
+        async (req: Request, res: Response) => {
+            const { dlc, asset } = req.params
+
+            const found_asset = AssetService.getAsset(dlc, asset)
+            if (!asset) {
+                res.status(404).send({ message: 'Asset not found' })
+            } else {
+                res.status(200).send(found_asset)
+            }
+        },
+        {
+            params: z.object({ dlc: z.string().regex(DLC_TAG_REGEX()), asset: z.string() }),
         }
-
-        const found_asset = AssetService.getAsset(dlc, asset)
-        if (!asset) {
-            return res.status(404).send({ message: 'Asset not found' })
-        } else {
-            return res.status(200).send(found_asset)
-        }
-    }
-
-    public reloadAssets() {
-        AssetService.reloadAssets()
-    }
+    )
 }
 
 export default new AssetController()
