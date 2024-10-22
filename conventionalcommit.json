@@ -1,0 +1,121 @@
+{
+    "$schema" : "https://github.com/lppedd/idea-conventional-commit/raw/master/src/main/resources/defaults/conventionalcommit.schema.json",
+    "types" : {
+        "refactor" : {
+            "description" : "Changes which neither fix a bug nor add a feature",
+            "scopes" : {
+                "structure" : {
+                    "description" : "Changes related to repository structure"
+                }
+            }
+        },
+        "fix" : {
+            "description" : "Changes which patch a bug"
+        },
+        "feat" : {
+            "description" : "Changes which introduce a new feature"
+        },
+        "build" : {
+            "description" : "Changes which affect the build system or external dependencies.<br>Example scopes: gulp, broccoli, npm",
+            "scopes" : {
+                "deps": {
+                    "description": "Changes related to dependencies"
+                }
+            }
+        },
+        "chore" : {
+            "description" : "Changes which are not user-facing",
+            "scopes" : {
+                "dx" : {
+                    "description" : "Changes related to developer experience"
+                }
+            }
+        },
+        "style" : {
+            "description" : "Changes which do not affect code logic, such as whitespaces, formatting, missing semicolons"
+        },
+        "test" : {
+            "description" : "Changes which add missing tests or fix existing ones"
+        },
+        "docs" : {
+            "description" : "Changes which affect documentation"
+        },
+        "perf" : {
+            "description" : "Changes which improve performance"
+        },
+        "ci" : {
+            "description" : "Changes which affect CI configuration files and scripts.<br>Example scopes: travis, circle, browser-stack, sauce-labs"
+        },
+        "revert" : {
+            "description" : "Changes which revert a previous commit"
+        }
+    },
+    "commonScopes" : {
+        "translations" : {
+            "description" : "Changes related to translations"
+        },
+        "editor" : {
+            "description" : "Changes related to character editor"
+        },
+        "lobby" : {
+            "description" : "Changes related to lobby pages (except for game)"
+        },
+        "auth" : {
+            "description" : "Changes related to authentication"
+        },
+        "game" : {
+            "description" : "Changes related to game"
+        },
+        "sockets" : {
+            "description" : "Changes related to sockets"
+        },
+        "api" : {
+            "description" : "Changes related to how API is handled"
+        },
+        "dlc" : {
+            "description" : "Changes related to DLCs"
+        }
+    },
+    "footerTypes" : [
+        {
+            "name" : "BREAKING-CHANGE",
+            "description" : "The commit introduces breaking API changes"
+        },
+        {
+            "name" : "Closes",
+            "description" : "The commit closes issues or pull requests"
+        },
+        {
+            "name" : "Implements",
+            "description" : "The commit implements features"
+        },
+        {
+            "name" : "Author",
+            "description" : "The commit's author"
+        },
+        {
+            "name" : "Co-authored-by",
+            "description" : "The specified person co-authored the commit's changes"
+        },
+        {
+            "name" : "Signed-off-by",
+            "description" : "A signoff may certify that the committer has the rights to submit the work under the project's license or agrees to some contributor representation, such as a Developer Certificate of Origin"
+        },
+        {
+            "name" : "Acked-by",
+            "description" : "The specified person liked the commit's changes"
+        },
+        {
+            "name" : "Reviewed-by",
+            "description" : "The specified person reviewed and is completely satisfied with the commit's changes"
+        },
+        {
+            "name" : "Tested-by",
+            "description" : "The specified person applied the commit's changes and found them to have the desired effect"
+        },
+        {
+            "name" : "Refs",
+            "description" : "The commit references another commit by its hash ID.<br>For multiple hash IDs, use a comma as separator"
+        }
+    ]
+}
