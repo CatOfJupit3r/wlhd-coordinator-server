@@ -2,7 +2,7 @@ import { CriticalError, Exception } from '@models/ErrorModels'
 import { NextFunction, Request, Response } from 'express'
 import { ZodError } from 'zod'
 
-export const errorHandlerMiddleware = (err: Error, req: Request, res: Response, next: NextFunction) => {
+export const errorHandlerMiddleware = (err: Error, _: Request, res: Response, next: NextFunction) => {
     if (err instanceof Exception) {
         res.status(err.status).json({ message: err.message, ...err.additionalData })
         if (err instanceof CriticalError) process.exit(1)

@@ -1,8 +1,11 @@
 import { Request, Response, Router } from 'express'
 import { z } from 'zod'
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type QueryZod = z.ZodObject<any, any> | z.ZodRecord | z.ZodEffects<any>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type BodyZod = z.ZodObject<any, any> | z.ZodRecord | z.ZodEffects<any>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type ParamsZod = z.ZodObject<any, any> | z.ZodRecord | z.ZodEffects<any>
 type RouteZodType = {
     body?: BodyZod
@@ -10,7 +13,7 @@ type RouteZodType = {
     query?: QueryZod
 }
 
-export interface RouteInControllerOptions extends RouteZodType {}
+export type RouteInControllerOptions = {} & RouteZodType
 
 type RouteExecutorType = (req: Request, res: Response) => Promise<void> | void
 
@@ -18,6 +21,7 @@ export type RouteConfig = {
     type: 'get' | 'post' | 'put' | 'delete' | 'patch'
     path: string
     route: RouteInControllerClass
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     middleware?: any[]
 }
 
@@ -49,6 +53,7 @@ export const createConfig = (
     type: 'get' | 'post' | 'put' | 'delete' | 'patch',
     path: string,
     route: RouteInControllerClass | RouteExecutorType,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     middleware?: any[]
 ) => {
     if (route instanceof RouteInControllerClass) return { type, path, route, middleware }
@@ -70,6 +75,7 @@ const buildRoute = (router: Router, config: RouteConfig) => {
     else router[type](path, func)
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createRouter = (config: RouteConfig[], middleware?: any[]): Router => {
     const router = Router()
 

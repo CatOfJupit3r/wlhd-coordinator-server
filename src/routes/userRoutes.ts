@@ -6,6 +6,7 @@ export default createRouter(
     [
         createConfig('get', '/profile', UserController.getProfile),
         createConfig('get', '/joined', UserController.getJoinedLobbies),
+        createConfig('get', '/:handle/avatar', UserController.getUserAvatar),
     ],
     [authenticationMiddleware]
 )

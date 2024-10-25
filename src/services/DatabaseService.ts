@@ -13,6 +13,7 @@ import {
     UserModel,
 } from '@models/TypegooseModels'
 import { DocumentType } from '@typegoose/typegoose'
+import { RandomUtils } from '@utils'
 import mongoose, { Types } from 'mongoose'
 import PackageManagerService from './PackageManagerService'
 
@@ -68,9 +69,23 @@ class DatabaseService {
     public getCombatPreset = async (combatPresetId: string): Promise<CombatClass | null> => {
         return CombatModel.findOne({ _id: new Types.ObjectId(combatPresetId) })
     }
-
     public createNewUser = async (handle: string, hashedPassword: string): Promise<Types.ObjectId> => {
-        const user = new UserModel({ handle, hashedPassword, createdAt: new Date() })
+        const [mainColor, secondaryColor] = RandomUtils.createTwoRandomColors()
+
+        const user = new UserModel({
+            handle,
+            hashedPassword,
+            createdAt: new Date(),
+            avatar: {
+                preferred: 'generated',
+                url: '',
+                generated: {
+                    pattern: RandomUtils.generateAvatarString(),
+                    mainColor,
+                    secondaryColor,
+                },
+            },
+        })
         await this.saveDocument(user)
         return user._id
     }

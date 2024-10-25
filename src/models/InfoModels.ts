@@ -2,6 +2,16 @@ import { EntityInfoFull } from './ClientModels'
 
 export type CharacterInfo = Omit<EntityInfoFull, 'square'>
 
+export interface iUserAvatar {
+    preferred: 'static' | 'generated'
+    url: string
+    generated: {
+        pattern: string
+        mainColor: string
+        secondaryColor: string
+    }
+}
+
 export interface LobbyInfo {
     lobbyId: string
     name: string
@@ -26,7 +36,7 @@ export interface LobbyInfo {
     players: Array<{
         handle: string
         nickname: string
-        avatar: string
+        avatar: iUserAvatar
         userId: string
         characters: Array<string>
     }>

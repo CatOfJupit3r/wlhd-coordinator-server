@@ -76,10 +76,18 @@ class LobbyService {
             const controlledCharacters = await DatabaseService.getCharacterDescriptorsOfPlayer(lobby_id, p.userId)
             players.push({
                 handle: player?.handle || '',
-                avatar: '',
                 userId: p.userId,
                 nickname: p.nickname,
                 characters: controlledCharacters || [],
+                avatar: player?.avatar || {
+                    preferred: 'static',
+                    url: '',
+                    generated: {
+                        pattern: '',
+                        mainColor: '',
+                        secondaryColor: '',
+                    },
+                },
             })
         }
         const characters = []
