@@ -123,10 +123,7 @@ class LobbyController {
         },
         {
             params: LobbyIdSchema,
-            body: z.object({
-                nickname: z.string().optional(),
-                preset: CreateGameLobbySchema,
-            }),
+            body: CreateGameLobbySchema,
         }
     )
 
