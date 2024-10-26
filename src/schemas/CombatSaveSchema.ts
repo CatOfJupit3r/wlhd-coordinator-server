@@ -34,7 +34,7 @@ const CommonGameComponentZod = z.object({
         })
         .optional(),
     id_: z.string().optional(),
-    memory: ComponentMemoryZod.optional(),
+    memory: ComponentMemoryZod.nullable().optional(),
     tags: z.array(DescriptorZod).optional(),
 })
 
@@ -115,7 +115,7 @@ const CharacterSaveFieldsZod = z.object({
     weaponry: z.array(WeaponSaveFieldsZod).optional(),
     spellBook: SpellBookSaveFieldsZod.optional(),
 
-    memory: ComponentMemoryZod.optional(),
+    memory: ComponentMemoryZod.nullable().optional(),
     tags: z.array(DescriptorZod).optional(),
     id_: z.string().optional(),
 })
