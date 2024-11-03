@@ -9,6 +9,7 @@ import { CharacterSchema } from '@schemas/LobbyControllerSchemas'
 import AuthService from '@services/AuthService'
 import DatabaseService from '@services/DatabaseService'
 import LobbyService from '@services/LobbyService'
+import { RandomUtils } from '@utils'
 import { Request, Response } from 'express'
 import { Types } from 'mongoose'
 import { Socket } from 'socket.io'
@@ -112,7 +113,7 @@ class LobbyController {
             if (!lobby) throw new NotFound('Lobby not found')
             const combat_id = LobbyService.createCombat(
                 lobby_id,
-                nickname ?? 'RandomCombatName',
+                nickname ?? RandomUtils.generateRandomString(8),
                 preset,
                 lobby.gm_id,
                 lobby.players.map((player) => player.userId)

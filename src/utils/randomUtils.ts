@@ -1,14 +1,13 @@
 import { iUserAvatar } from '@models/InfoModels'
 import crypto from 'crypto'
 
-const generateAvatarString = (): string => {
-    // return hashlib.sha256(os.urandom(length)).hexdigest()
-
-    // Generate a random byte array of the given length
-    const randomBytes = crypto.randomBytes(16)
-
-    // Create a SHA-256 hash of the random bytes
+const generateRandomString = (length: number): string => {
+    const randomBytes = crypto.randomBytes(length)
     return crypto.createHash('sha256').update(randomBytes).digest('hex')
+}
+
+const generateAvatarString = (): string => {
+    return generateRandomString(16)
 }
 
 const createTwoRandomColors = (): [string, string] => {
@@ -35,4 +34,5 @@ export default {
     generateAvatarString,
     hashAvatar,
     createTwoRandomColors,
+    generateRandomString,
 }
