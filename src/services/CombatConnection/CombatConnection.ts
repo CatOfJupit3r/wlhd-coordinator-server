@@ -5,6 +5,7 @@ import {
     EntityInfoFull,
     EntityInfoTooltip,
     GameHandshake as GameHandshakePlayers,
+    iGameLobbyState,
     IndividualTurnOrder,
 } from '@models/ClientModels'
 import { ControlInfo } from '@models/GameSaveModels'
@@ -84,14 +85,6 @@ const GM_RESPONSES = {
     TAKE_UNALLOCATED_ACTION: 'take_unallocated_action',
     // if player is not present, but GM is, then GM can take action and is notified about unallocated entity.
     TAKE_OFFLINE_PLAYER_ACTION: 'take_offline_player_action',
-}
-
-interface iGameLobbyState {
-    players: Array<{
-        handle: string
-        isGm: boolean
-        isConnected: boolean
-    }>
 }
 
 type GameSocketType = Socket<DefaultEventsMap, DefaultEventsMap>
@@ -290,6 +283,7 @@ export class CombatConnection {
             }
         }
         this.players[this.players.indexOf(player)].setSocket(playerSocket)
+        this.broadcastGameLobbyStateUpdate()
         if (this.gameSocket.connected) {
             this.players[this.players.indexOf(player)].emit(
                 PLAYER_RESPONSES.GAME_HANDSHAKE,
@@ -452,13 +446,13 @@ export class CombatConnection {
     private setupPlayerListeners(playerSocket: PlayerSocket, player: iPlayer) {
         const LISTENERS = {
             [PLAYER_EVENTS.CONNECT]: () => {
-                this.broadcastGameLobbyStateUpdate().then()
+                this.broadcastGameLobbyStateUpdate()
                 console.log('Player connected', player.id)
             },
             [PLAYER_EVENTS.DISCONNECT]: () => {
                 console.log('Player disconnected', player.id)
                 this.players[this.players.indexOf(player)].resetSocket()
-                this.broadcastGameLobbyStateUpdate().then()
+                this.broadcastGameLobbyStateUpdate()
             },
             [PLAYER_EVENTS.TAKE_ACTION]: (data: { action: string; [action_vars: string]: string }) => {
                 this.sendActionsToServer(data, player)
@@ -744,6 +738,7 @@ export class CombatConnection {
             currentBattlefield: this.generateBattlefieldPlayers(),
             turnOrder: this.generateIndividualTurnOrder(playerId),
             controlledEntities: this.generateEntityFullInfoForPlayer(playerId),
+            gameLobbyState: this.getGameLobbyState(),
         }
     }
 
@@ -806,13 +801,13 @@ export class CombatConnection {
         return this.players.filter((player) => player.isConnected()).map((player) => player.id)
     }
 
-    public async getGameLobbyState(): Promise<iGameLobbyState> {
+    public getGameLobbyState(): iGameLobbyState {
         const state: iGameLobbyState = {
             players: [],
         }
         for (const player of this.players) {
             state.players.push({
-                handle: (await player.getPlayerHandle()) ?? 'dummy',
+                userId: player.id,
                 isGm: player.id === this.gmId,
                 isConnected: player.isConnected() ?? false,
             })
@@ -820,7 +815,7 @@ export class CombatConnection {
         return state
     }
 
-    public async broadcastGameLobbyStateUpdate() {
-        this.broadcast(PLAYER_RESPONSES.GAME_LOBBY_STATE, await this.getGameLobbyState())
+    public broadcastGameLobbyStateUpdate() {
+        this.broadcast(PLAYER_RESPONSES.GAME_LOBBY_STATE, this.getGameLobbyState())
     }
 }

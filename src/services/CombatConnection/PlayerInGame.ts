@@ -1,4 +1,3 @@
-import DatabaseService from '@services/DatabaseService'
 import { Socket as PlayerSocket } from 'socket.io'
 
 export interface iPlayer {
@@ -10,7 +9,6 @@ export interface iPlayer {
     resetSocket: () => void
     disconnect: () => void
     emit: (event: string, payload?: unknown, callback?: () => void) => void
-    getPlayerHandle: () => Promise<string | null>
 }
 
 interface iPlayerHelpers {
@@ -26,11 +24,6 @@ export class Player implements iPlayer {
         this._socket = socket
         this._id_ = id
         this.helpers = helpers
-    }
-
-    public async getPlayerHandle() {
-        const user = await DatabaseService.getUser(this._id_)
-        return user?.handle ?? null
     }
 
     public get id() {

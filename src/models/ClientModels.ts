@@ -18,6 +18,7 @@ export interface GameHandshake {
     currentBattlefield: BattlefieldPlayers
     controlledEntities: Array<EntityInfoFull> | null
     turnOrder: IndividualTurnOrder | null
+    gameLobbyState: iGameLobbyState
 }
 
 export interface EntityInfoTooltip {
@@ -66,4 +67,12 @@ export interface CharacterInTurnOrder {
 
 export type CharacterInTurnOrderPlayer = Omit<CharacterInTurnOrder, 'controlledBy'> & {
     controlledByYou: boolean
+}
+
+export interface iGameLobbyState {
+    players: Array<{
+        userId: string
+        isGm: boolean
+        isConnected: boolean
+    }>
 }
