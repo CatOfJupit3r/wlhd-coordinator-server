@@ -18,7 +18,6 @@ import {
 import { TranslatableString } from '@models/Translation'
 import { CombatSaveType } from '@schemas/CombatSaveSchema'
 import { iPlayer, Player } from '@services/CombatConnection/PlayerInGame'
-import DatabaseService from '@services/DatabaseService'
 import { Socket as PlayerSocket } from 'socket.io'
 import io, { Socket } from 'socket.io-client'
 import { DefaultEventsMap } from 'socket.io/dist/typed-events'
@@ -813,7 +812,7 @@ export class CombatConnection {
         }
         for (const player of this.players) {
             state.players.push({
-                handle: (await DatabaseService.getUser(player.id))?.handle ?? 'dummy',
+                handle: (await player.getPlayerHandle()) ?? 'dummy',
                 isGm: player.id === this.gmId,
                 isConnected: player.isConnected() ?? false,
             })
