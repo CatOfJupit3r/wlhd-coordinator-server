@@ -1,4 +1,4 @@
-import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '@configs'
+import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '@config/index'
 import {
     BattlefieldPlayers,
     CharacterInTurnOrder,
@@ -17,6 +17,8 @@ import {
 } from '@models/ServerModels'
 import { TranslatableString } from '@models/Translation'
 import { CombatSaveType } from '@schemas/CombatSaveSchema'
+import { iPlayer, Player } from '@services/CombatConnection/PlayerInGame'
+import DatabaseService from '@services/DatabaseService'
 import { Socket as PlayerSocket } from 'socket.io'
 import io, { Socket } from 'socket.io-client'
 import { DefaultEventsMap } from 'socket.io/dist/typed-events'
@@ -42,6 +44,8 @@ const PLAYER_EVENTS = {
     SKIP: 'skip',
     GAME_HANDSHAKE: 'game_handshake',
     REQUEST_DATA: 'request_data',
+    CONNECT: 'connect',
+    DISCONNECT: 'disconnect',
 }
 
 const GM_EVENTS = {
@@ -73,6 +77,8 @@ const PLAYER_RESPONSES = {
     BATTLEFIELD_UPDATED: 'battlefield_updated',
     TURN_ORDER_UPDATED: 'turn_order_updated',
     INCOMING_DATA: 'incoming_data',
+    GAME_LOBBY_STATE: 'game_lobby_state',
+    ERROR: 'error',
 }
 
 const GM_RESPONSES = {
@@ -81,19 +87,21 @@ const GM_RESPONSES = {
     TAKE_OFFLINE_PLAYER_ACTION: 'take_offline_player_action',
 }
 
-interface Player {
-    socket: PlayerSocket | null
-    id_: string
-    isGm?: boolean
+interface iGameLobbyState {
+    players: Array<{
+        handle: string
+        isGm: boolean
+        isConnected: boolean
+    }>
 }
 
-type GameSocket = Socket<DefaultEventsMap, DefaultEventsMap>
+type GameSocketType = Socket<DefaultEventsMap, DefaultEventsMap>
 
 export class CombatConnection {
     public nickname: string
     private readonly initialSave: CombatSaveType
-    private readonly players: Array<Player>
-    private readonly gameSocket: GameSocket
+    private readonly players: Array<iPlayer>
+    private readonly gameSocket: GameSocketType
     private gameId: string
     private gameState: {
         roundCount: number
@@ -112,11 +120,7 @@ export class CombatConnection {
         this.gmId = gmId
         this.players = []
         players.forEach((player) => {
-            this.players.push({
-                socket: null,
-                id_: player,
-                isGm: player === this.gmId,
-            })
+            this.players.push(new Player(null, player, { getGmId: () => this.gmId }))
         })
         this.removeSelf = removeSelf
         this.gameSocket = io(GAME_SERVER_URL(), {
@@ -144,9 +148,7 @@ export class CombatConnection {
     }
 
     public isPlayerInCombat(playerName: string): boolean {
-        return this.players.some(
-            (player) => player.id_ === playerName && player.socket !== null && player.socket.connected
-        )
+        return this.players.some((player) => player.id === playerName && player.isConnected())
     }
 
     public connect() {
@@ -162,32 +164,32 @@ export class CombatConnection {
 
     private broadcast(event: string, payload?: object) {
         this.players.forEach((player) => {
-            const { socket } = player
-            if (socket && socket) {
-                payload ? socket.emit(event, payload) : socket.emit(event)
-            }
+            player.emit(event, payload)
         })
     }
 
     private sendToPlayer(userToken: string, event: string, payload?: object) {
-        const player = this.players.find((player) => player.id_ === userToken)
+        const player = this.players.find((player) => player.id === userToken)
         console.log('Sending event', event, 'to player', userToken)
-        if (player && player.socket) {
-            console.log('Player found and socket exists. Sending...')
-            payload ? player.socket.emit(event, payload) : player.socket.emit(event)
-        }
+        player?.emit(event, payload, () => {
+            console.log('Player found and socket exists. Event sent')
+        })
     }
 
     private sendToGm(event: string, payload?: object): boolean {
-        const gm = this.players.find((player) => player.isGm)
-        if (gm && gm.socket) {
-            payload ? gm.socket.emit(event, payload) : gm.socket.emit(event)
+        const gm = this.players.find((player) => player.isGm())
+        if (gm && gm.isConnected()) {
+            gm.emit(event, payload)
             return true
         } else return false
     }
 
+    private isConnectedToGameServer(): boolean {
+        return this.gameSocket.connected
+    }
+
     private sendToServer(event: string, payload?: object) {
-        if (this.gameSocket.connected) {
+        if (this.isConnectedToGameServer()) {
             this.gameSocket.emit(event, payload)
         } else {
             console.log('Game server not connected')
@@ -196,7 +198,7 @@ export class CombatConnection {
 
     private onClose() {
         this.players.forEach((player) => {
-            player.socket?.disconnect()
+            player.disconnect()
         })
         this.removeSelf()
     }
@@ -227,27 +229,27 @@ export class CombatConnection {
         this.gameState.turnInfo.actions = actions
     }
 
-    private sendActionsToServer(actions: { [key: string]: string }, player: Player) {
-        if (this.gameState && (player.isGm || this.gameState.turnInfo.playerId === player.id_)) {
+    private sendActionsToServer(actions: { [key: string]: string }, player: iPlayer) {
+        if (this.gameState && (player.isGm() || this.gameState.turnInfo.playerId === player.id)) {
             if (!('action' in actions)) {
-                player.socket && player.socket.emit('error', 'No action specified!')
+                player.emit(PLAYER_RESPONSES.ERROR, 'No action specified!')
                 return
             }
             this.broadcast(PLAYER_RESPONSES.HALT_ACTION) // we halt all actions in case some other socket decides to send actions
             this.sendToServer(GAME_SERVER_RESPONSES.PLAYER_CHOICE, {
                 game_id: this.gameId,
-                user_token: player.id_,
+                user_token: player.id,
                 choices: {
                     ...actions,
                 },
             })
         } else {
-            player.socket && player.socket.emit('error', 'Not your turn!')
+            player.emit(PLAYER_RESPONSES.ERROR, 'Not your turn!')
         }
     }
 
     public handlePlayer(userToken: string, playerSocket: PlayerSocket) {
-        const player = this.players.find((player) => player.id_ === userToken)
+        const player = this.players.find((player) => player.id === userToken)
         if (!player) {
             console.log('Player not found')
             playerSocket.disconnect()
@@ -261,7 +263,7 @@ export class CombatConnection {
                 console.log('Error from player', packet[1])
                 next()
             } else if (
-                (player.isGm && Object.values(GM_EVENTS).includes(event)) ||
+                (player.isGm() && Object.values(GM_EVENTS).includes(event)) ||
                 Object.values(PLAYER_EVENTS).includes(event)
             ) {
                 if (
@@ -282,24 +284,26 @@ export class CombatConnection {
             console.log(`Received ${event} with args: ${args}`)
         })
         this.setupPlayerListeners(playerSocket, player)
-        if (player.isGm) {
+        if (player.isGm()) {
             this.setupGmListeners(playerSocket, player)
             if (!this.gameSocket.connected) {
                 this.connect()
             }
         }
-        this.players[this.players.indexOf(player)].socket = playerSocket
-        this.gameSocket.connected &&
-            (() => {
-                this.players[this.players.indexOf(player)].socket?.emit(
-                    PLAYER_RESPONSES.GAME_HANDSHAKE,
-                    this.createHandshake(player.id_)
-                )
+        this.players[this.players.indexOf(player)].setSocket(playerSocket)
+        if (this.gameSocket.connected) {
+            this.players[this.players.indexOf(player)].emit(
+                PLAYER_RESPONSES.GAME_HANDSHAKE,
+                this.createHandshake(player.id)
+            )
+            if (
                 this.gameState.battleResult === 'ongoing' &&
-                    this.gameState.turnInfo.playerId === player.id_ &&
-                    this.gameState.turnInfo.order !== null &&
-                    this.emitTakeActionToPlayer()
-            })()
+                this.gameState.turnInfo.playerId === player.id &&
+                this.gameState.turnInfo.order !== null
+            ) {
+                this.emitTakeActionToPlayer()
+            }
+        }
     }
 
     private setupGameListeners() {
@@ -318,9 +322,7 @@ export class CombatConnection {
                     turnInfo: turnInfo,
                 }
                 this.players.forEach((player) => {
-                    if (player.socket) {
-                        player.socket.emit(PLAYER_RESPONSES.GAME_HANDSHAKE, this.createHandshake(player.id_))
-                    }
+                    player.emit(PLAYER_RESPONSES.GAME_HANDSHAKE, this.createHandshake(player.id))
                 })
             },
             [GAME_SERVER_EVENTS.ROUND_UPDATE]: (data: { round_count: number }) => {
@@ -353,12 +355,10 @@ export class CombatConnection {
                 this.updateEntitiesInfo(data.newEntityData)
                 // instead of broadcasting, we send info individually, because of 'controlledEntities' data
                 for (const player of this.players) {
-                    if (player.socket) {
-                        player.socket.emit(PLAYER_RESPONSES.ENTITIES_UPDATED, {
-                            newControlledEntities: this.generateEntityFullInfoForPlayer(player.id_),
-                            // tooltips are sent in battlefield, duh
-                        })
-                    }
+                    player.emit(PLAYER_RESPONSES.ENTITIES_UPDATED, {
+                        newControlledEntities: this.generateEntityFullInfoForPlayer(player.id),
+                        // tooltips are sent in battlefield, duh
+                    })
                 }
             },
             [GAME_SERVER_EVENTS.BATTLE_STARTED]: () => {
@@ -450,8 +450,17 @@ export class CombatConnection {
         this.addBatchOfEventsListener(this.gameSocket, LISTENERS)
     }
 
-    private setupPlayerListeners(playerSocket: PlayerSocket, player: Player) {
+    private setupPlayerListeners(playerSocket: PlayerSocket, player: iPlayer) {
         const LISTENERS = {
+            [PLAYER_EVENTS.CONNECT]: () => {
+                this.broadcastGameLobbyStateUpdate().then()
+                console.log('Player connected', player.id)
+            },
+            [PLAYER_EVENTS.DISCONNECT]: () => {
+                console.log('Player disconnected', player.id)
+                this.players[this.players.indexOf(player)].resetSocket()
+                this.broadcastGameLobbyStateUpdate().then()
+            },
             [PLAYER_EVENTS.TAKE_ACTION]: (data: { action: string; [action_vars: string]: string }) => {
                 this.sendActionsToServer(data, player)
             },
@@ -484,7 +493,7 @@ export class CombatConnection {
                   }) => {
                 switch (type) {
                     case 'messages':
-                        player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                        player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                             type: 'messages',
                             payload: {
                                 messages: () => {
@@ -496,7 +505,7 @@ export class CombatConnection {
                         break
                     case 'current_entity_info':
                         if (this.gameState.turnInfo.order[0] !== null) {
-                            player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                            player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                                 type: 'current_entity_info',
                                 payload: {
                                     entity: (() => {
@@ -506,7 +515,7 @@ export class CombatConnection {
                                 },
                             })
                         } else {
-                            player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                            player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                                 type: 'current_entity_info',
                                 payload: {
                                     entity: null,
@@ -521,14 +530,14 @@ export class CombatConnection {
                                 entity && entity.square.line === square.line && entity.square.column === square.column
                         )
                         if (entity) {
-                            player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                            player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                                 type: 'entity_tooltip',
                                 payload: {
                                     entity: this.generateEntityToolTip(entity),
                                 },
                             })
                         } else {
-                            player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                            player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                                 type: 'entity_tooltip',
                                 payload: {
                                     entity: null,
@@ -538,15 +547,15 @@ export class CombatConnection {
                         break
                     }
                     case 'controlled_entities':
-                        player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                        player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                             type: 'controlled_entities',
                             payload: {
-                                newControlledEntities: this.generateEntityFullInfoForPlayer(player.id_),
+                                newControlledEntities: this.generateEntityFullInfoForPlayer(player.id),
                             },
                         })
                         break
                     case 'battlefield':
-                        player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                        player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                             type: 'battlefield',
                             payload: {
                                 battlefield: this.generateBattlefieldPlayers(),
@@ -554,7 +563,7 @@ export class CombatConnection {
                         })
                         break
                     default:
-                        player.socket?.emit(PLAYER_RESPONSES.INCOMING_DATA, {
+                        player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                             type: 'invalid',
                             payload: {
                                 request: {
@@ -570,7 +579,7 @@ export class CombatConnection {
         this.addBatchOfEventsListener(playerSocket, LISTENERS)
     }
 
-    private setupGmListeners(playerSocket: PlayerSocket, player: Player) {
+    private setupGmListeners(playerSocket: PlayerSocket, player: iPlayer) {
         const GM_LISTENERS = {
             [GM_EVENTS.ALLOCATE]: ({
                 filter,
@@ -590,7 +599,13 @@ export class CombatConnection {
                 })
             },
             [GM_EVENTS.START_COMBAT]: () => {
-                this.sendToServer(GAME_SERVER_RESPONSES.START_COMBAT)
+                if (this.isConnectedToGameServer()) {
+                    this.sendToServer(GAME_SERVER_RESPONSES.START_COMBAT)
+                } else {
+                    this.sendToPlayer(player.id, PLAYER_RESPONSES.ERROR, {
+                        message: 'Game server not connected',
+                    })
+                }
             },
             [GM_EVENTS.END_COMBAT]: () => {
                 this.broadcast(PLAYER_RESPONSES.HALT_ACTION)
@@ -601,8 +616,9 @@ export class CombatConnection {
     }
 
     private addBatchOfEventsListener(
-        socket: PlayerSocket | GameSocket,
+        socket: PlayerSocket | GameSocketType,
         listeners: {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             [key: string]: (...args: any[]) => void
         }
     ) {
@@ -670,11 +686,9 @@ export class CombatConnection {
     private sendOutTurnOrderToPlayers() {
         const turnOrder = this.generateGeneralTurnOrderInfo()
         for (const player of this.players) {
-            if (player.socket) {
-                player.socket.emit(PLAYER_RESPONSES.TURN_ORDER_UPDATED, {
-                    turnOrder: this.generateIndividualTurnOrder(player.id_, turnOrder),
-                })
-            }
+            player.emit(PLAYER_RESPONSES.TURN_ORDER_UPDATED, {
+                turnOrder: this.generateIndividualTurnOrder(player.id, turnOrder),
+            })
         }
     }
 
@@ -759,7 +773,7 @@ export class CombatConnection {
                     actions: this.gameState.turnInfo.actions,
                 })
             }
-            if (user_token && this.players.find((player) => player.id_ === user_token)) {
+            if (user_token && this.players.find((player) => player.id === user_token)) {
                 this.sendToPlayer(user_token, PLAYER_RESPONSES.TAKE_ACTION, {
                     entityId: entity_id,
                     actions: this.gameState.turnInfo.actions,
@@ -790,6 +804,24 @@ export class CombatConnection {
     }
 
     public getActivePlayers(): Array<string> {
-        return this.players.filter((player) => player.socket?.connected).map((player) => player.id_)
+        return this.players.filter((player) => player.isConnected()).map((player) => player.id)
+    }
+
+    public async getGameLobbyState(): Promise<iGameLobbyState> {
+        const state: iGameLobbyState = {
+            players: [],
+        }
+        for (const player of this.players) {
+            state.players.push({
+                handle: (await DatabaseService.getUser(player.id))?.handle ?? 'dummy',
+                isGm: player.id === this.gmId,
+                isConnected: player.isConnected() ?? false,
+            })
+        }
+        return state
+    }
+
+    public async broadcastGameLobbyStateUpdate() {
+        this.broadcast(PLAYER_RESPONSES.GAME_LOBBY_STATE, await this.getGameLobbyState())
     }
 }

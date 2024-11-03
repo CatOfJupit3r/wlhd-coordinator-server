@@ -1,5 +1,5 @@
 import { CombatSaveType } from '@schemas/CombatSaveSchema'
-import { CombatConnection } from './CombatConnection'
+import { CombatConnection } from './CombatConnection/CombatConnection'
 
 class CombatManager {
     private combats: Map<string, CombatConnection> = new Map()
