@@ -57,7 +57,7 @@
         "typescript": "^5"
     },
     "lint-staged": {
-        "*.{ts, js}": [
+        "*.{ts,js}": [
             "eslint --fix",
             "prettier --write",
             "bash -c 'npm run ts'"
