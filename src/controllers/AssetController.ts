@@ -23,11 +23,12 @@ class AssetController {
         async (req: Request, res: Response) => {
             const { dlc, asset } = req.params
 
-            const found_asset = AssetService.getAsset(dlc, asset)
-            if (!asset) {
+            const found_asset = AssetService.getAssetPath(dlc, asset)
+            if (!found_asset) {
                 res.status(404).send({ message: 'Asset not found' })
             } else {
-                res.status(200).send(found_asset)
+                const { path } = found_asset
+                res.status(200).header('Cache-Control', 'no-cache').sendFile(path)
             }
         },
         {

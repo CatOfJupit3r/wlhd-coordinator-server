@@ -24,7 +24,7 @@ class AssetService {
         return Object.keys(this.loadedAssets[dlc] || {}) || []
     }
 
-    public getAsset(dlc: string, asset: string) {
+    public getAssetPath(dlc: string, asset: string) {
         const available_assets = this.getAssetsInfo(dlc, dlc === 'coordinator')
         const assetFormats = available_assets[asset]
         if (!assetFormats) {
@@ -38,7 +38,13 @@ class AssetService {
         }
         for (const format of assetFormats) {
             try {
-                return fs.readFileSync(ASSET_PATH(format))
+                const isPresent = fs.existsSync(ASSET_PATH(format))
+                if (isPresent) {
+                    return {
+                        format,
+                        path: ASSET_PATH(format),
+                    }
+                }
             } catch (err) {
                 continue
             }
