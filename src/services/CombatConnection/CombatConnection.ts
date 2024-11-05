@@ -595,9 +595,15 @@ export class CombatConnection {
                 if (this.isConnectedToGameServer()) {
                     this.sendToServer(GAME_SERVER_RESPONSES.START_COMBAT)
                 } else {
-                    this.sendToPlayer(player.id, PLAYER_RESPONSES.ERROR, {
-                        message: 'Game server not connected',
-                    })
+                    this.gameSocket.connect()
+                    setTimeout(() => {
+                        if (this.isConnectedToGameServer()) {
+                            this.sendToServer(GAME_SERVER_RESPONSES.START_COMBAT)
+                        }
+                        this.sendToPlayer(player.id, PLAYER_RESPONSES.ERROR, {
+                            message: 'Game server not connected',
+                        })
+                    }, 500)
                 }
             },
             [GM_EVENTS.END_COMBAT]: () => {
