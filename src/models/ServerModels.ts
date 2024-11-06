@@ -9,7 +9,7 @@ export interface GameHandshake {
     turnInfo: {
         order: TurnOrder
 
-        actions: EntityAction | null
+        actions: iCharacterAction | null
         playerId: string | null
     }
     combatStatus: 'ongoing' | 'pending'
@@ -104,7 +104,7 @@ export interface iActionDecoration extends GameComponentDecoration {
     cost: string
 }
 
-export interface Action {
+export interface iAction {
     id: string
     decorations: iActionDecoration
     available: boolean
@@ -113,14 +113,8 @@ export interface Action {
     }
 }
 
-export interface EntityAction {
-    action: Array<Action>
-    aliases: {
-        [key: string]: Array<Action>
-    }
-    alias_translations: {
-        [key: string]: string
-    }
+export interface iCharacterAction {
+    [key: string]: Array<iAction>
 }
 
 export type GameMessage = Array<TranslatableString>

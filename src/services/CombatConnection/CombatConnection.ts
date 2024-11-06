@@ -11,10 +11,10 @@ import {
 import { ControlInfo } from '@models/GameSaveModels'
 import {
     Battlefield,
-    EntityAction,
     EntityInfo,
     GameHandshake as GameHandshakeGameServer,
     GameStateContainer,
+    iCharacterAction,
 } from '@models/ServerModels'
 import { TranslatableString } from '@models/Translation'
 import { CombatSaveType } from '@schemas/CombatSaveSchema'
@@ -214,7 +214,7 @@ export class CombatConnection {
         }
     }
 
-    private updateEntityActions(actions: EntityAction) {
+    private updateEntityActions(actions: iCharacterAction) {
         if (this.gameState.turnInfo.order[0] === null) {
             return
         }
@@ -366,7 +366,7 @@ export class CombatConnection {
             }: {
                 user_token: string
                 entity_id: string
-                actions: EntityAction
+                actions: iCharacterAction
             }) => {
                 try {
                     this.gameState.turnInfo.playerId = user_token
