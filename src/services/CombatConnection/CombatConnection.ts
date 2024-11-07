@@ -79,6 +79,7 @@ const PLAYER_RESPONSES = {
     INCOMING_DATA: 'incoming_data',
     GAME_LOBBY_STATE: 'game_lobby_state',
     ERROR: 'error',
+    ACTION_TIMESTAMP: 'action_timestamp',
 }
 
 const GM_RESPONSES = {
@@ -101,7 +102,7 @@ export class CombatConnection {
         battleResult: 'pending' | 'ongoing'
         currentBattlefield: Battlefield
         allEntitiesInfo: { [characterId: string]: EntityInfo } // info about all entities.
-        turnInfo: GameHandshakeGameServer['turnInfo']
+        turnInfo: GameHandshakeGameServer['turnInfo'] & { actionTimeStamp: null | number }
     }
     private readonly gmId: string
     private readonly removeSelf: () => void
@@ -312,7 +313,10 @@ export class CombatConnection {
                     battleResult: combatStatus,
                     currentBattlefield: battlefield,
                     allEntitiesInfo: allEntitiesInfo,
-                    turnInfo: turnInfo,
+                    turnInfo: {
+                        ...turnInfo,
+                        actionTimeStamp: null,
+                    },
                 }
                 this.players.forEach((player) => {
                     player.emit(PLAYER_RESPONSES.GAME_HANDSHAKE, this.createHandshake(player.id))
@@ -374,7 +378,8 @@ export class CombatConnection {
                         this.gameState.turnInfo.order[0] = entity_id
                         this.sendOutTurnOrderToPlayers()
                     }
-
+                    this.gameState.turnInfo.actionTimeStamp = Date.now()
+                    this.sendActionTimeStampsToPlayers()
                     this.updateEntityActions(actions)
                     this.emitTakeActionToPlayer()
                 } catch (e) {
@@ -395,10 +400,8 @@ export class CombatConnection {
             }) => {
                 console.log('Action result', data)
                 this.gameState.turnInfo.playerId = null
-
-                // this.broadcast(PLAYER_RESPONSES.NO_CURRENT_ENTITY)
-                // ^ above code is from old code, which had a different approach to handling current entity
-
+                this.gameState.turnInfo.actionTimeStamp = null
+                this.sendActionTimeStampsToPlayers()
                 this.sendToPlayer(data.user_token, PLAYER_RESPONSES.ACTION_RESULT, {
                     code: data.code,
                     message: data.message,
@@ -691,6 +694,12 @@ export class CombatConnection {
         }
     }
 
+    private sendActionTimeStampsToPlayers() {
+        this.broadcast(PLAYER_RESPONSES.ACTION_TIMESTAMP, {
+            timestamp: this.gameState.turnInfo.actionTimeStamp,
+        })
+    }
+
     private generateIndividualTurnOrder(
         playerId: string,
         turnOrder?: Array<CharacterInTurnOrder | null>
@@ -745,6 +754,7 @@ export class CombatConnection {
             turnOrder: this.generateIndividualTurnOrder(playerId),
             controlledEntities: this.generateEntityFullInfoForPlayer(playerId),
             gameLobbyState: this.getGameLobbyState(),
+            actionTimestamp: this.gameState.turnInfo.actionTimeStamp ?? null,
         }
     }
 

@@ -18,6 +18,7 @@ export interface GameHandshake {
     currentBattlefield: BattlefieldPlayers
     controlledEntities: Array<EntityInfoFull> | null
     turnOrder: IndividualTurnOrder | null
+    actionTimestamp: number | null
     gameLobbyState: iGameLobbyState
 }
 
