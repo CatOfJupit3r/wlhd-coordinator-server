@@ -48,7 +48,7 @@ class PackageManagerService {
     }
 
     private checkIfGithubCredentialsExist() {
-        return !!GITHUB_TOKEN()
+        return !!GITHUB_TOKEN
     }
 
     public async installPackages(manifests: Array<Manifest>) {
@@ -69,7 +69,9 @@ class PackageManagerService {
             await this.installPackage(source, descriptor)
         }
         await this.installMandatoryPackages(encounteredPackages)
-        this.CLEANUP && this.cleanPackageFolder()
+        if (this.CLEANUP) {
+            this.cleanPackageFolder()
+        }
         this.verifyPackageManifest()
     }
 
@@ -171,7 +173,7 @@ class PackageManagerService {
         if (!this.checkIfGithubCredentialsExist()) {
             return url
         }
-        return url.replace('https://', `https://${GITHUB_TOKEN()}@`)
+        return url.replace('https://', `https://${GITHUB_TOKEN}@`)
     }
 
     public getDLCWeapon(descriptor: string): WeaponPreset | null {

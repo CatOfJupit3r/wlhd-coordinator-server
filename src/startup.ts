@@ -1,4 +1,4 @@
-import dotenv from 'dotenv'
+import { SERVER_HOST, SERVER_PORT } from '@config/env'
 import express from 'express'
 import http from 'http'
 import RootLoader from './loaders'
@@ -8,20 +8,13 @@ const startServer = async () => {
         const app = express()
         const server = http.createServer(app)
 
-        dotenv.config({
-            path: '.env',
-        })
-
-        const PORT = (process.env.PORT && parseInt(process.env.PORT)) || 5000
-        const HOST = process.env.HOST || 'localhost'
-
         await RootLoader(app, server)
 
-        server.listen(PORT, HOST, () => {
+        server.listen(SERVER_PORT, SERVER_HOST, () => {
             console.log(`
         #############################################
-          Server listening on port: ${PORT} 
-          Address: http://localhost:${PORT} ️
+          Server listening on port: ${SERVER_PORT} 
+          Address: http://localhost:${SERVER_PORT} ️
         #############################################
       `)
         })

@@ -116,12 +116,12 @@ export class CombatConnection {
             this.players.push(new Player(null, player, { getGmId: () => this.gmId }))
         })
         this.removeSelf = removeSelf
-        this.gameSocket = io(GAME_SERVER_URL(), {
+        this.gameSocket = io(GAME_SERVER_URL, {
             path: '/sockets',
             autoConnect: false,
             reconnection: false,
             query: {
-                token: GAME_SECRET_TOKEN(),
+                token: GAME_SECRET_TOKEN,
             },
         })
     }

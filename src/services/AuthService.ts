@@ -8,14 +8,14 @@ class AuthService {
 
     generateAccessToken(user: { _id: Types.ObjectId; handle: string }) {
         const payload = { _id: user._id, handle: user.handle }
-        return jwt.sign(payload, JWT_ACCESS_SECRET(), {
+        return jwt.sign(payload, JWT_ACCESS_SECRET, {
             expiresIn: '7d',
         })
     }
 
     generateRefreshToken(user: { _id: Types.ObjectId; handle: string }) {
         const payload = { _id: user._id, handle: user.handle }
-        const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET(), {
+        const refreshToken = jwt.sign(payload, JWT_REFRESH_SECRET, {
             expiresIn: '7d',
         })
         this.refreshTokens.push(refreshToken)
@@ -32,7 +32,7 @@ class AuthService {
         if (!accessToken) {
             throw new BadRequest('Access token is missing')
         }
-        return jwt.verify(accessToken, JWT_ACCESS_SECRET()) as { _id: string; handle: string }
+        return jwt.verify(accessToken, JWT_ACCESS_SECRET) as { _id: string; handle: string }
     }
 
     verifyAuthorizationHeader(header: unknown): { _id: string; handle: string } {
@@ -57,7 +57,7 @@ class AuthService {
         if (!this.refreshTokens.includes(refreshToken)) {
             throw new BadRequest('Refresh token is not valid')
         }
-        return jwt.verify(refreshToken, JWT_REFRESH_SECRET()) as { _id: string; handle: string }
+        return jwt.verify(refreshToken, JWT_REFRESH_SECRET) as { _id: string; handle: string }
     }
 
     invalidateRefreshToken(refreshToken: string) {

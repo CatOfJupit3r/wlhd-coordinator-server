@@ -1,4 +1,4 @@
-import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '@configs'
+import { GAME_SECRET_TOKEN, GAME_SERVER_URL, IS_DEVELOPMENT_MODE } from '@configs'
 import TranslationController from '@controllers/TranslationController'
 import { GameServerStatus, Manifest } from '@models/GameDLCData'
 import { CombatClass } from '@models/TypegooseModels'
@@ -26,16 +26,21 @@ class GameServerService {
         try {
             const serverStatus = await this.checkGameServers()
             installed = serverStatus.installed
-            // const { installed } = await this.checkGameServers()
             if (!installed) {
                 console.log('No DLCs found on game server')
                 return
             }
-            await this.installDLCs(installed)
+            if (IS_DEVELOPMENT_MODE) {
+                // if in dev, install all DLCs. otherwise they should be provided by the game server
+                await this.installDLCs(installed)
+            }
         } catch (error: unknown) {
             if (isAxiosError(error)) {
-                console.log('Connecting to game server failed, installing mandatory packages')
-                await PackageManagerService.installMandatoryPackages()
+                console.log('Connecting to game server failed')
+                if (IS_DEVELOPMENT_MODE) {
+                    console.log('Installing mandatory packages')
+                    await PackageManagerService.installMandatoryPackages()
+                }
             } else {
                 console.log('Error loading game servers', error)
             }
@@ -52,7 +57,7 @@ class GameServerService {
     }
 
     async checkGameServers(): Promise<GameServerStatus> {
-        const res = await this.fetch(`${GAME_SERVER_URL()}/api/`)
+        const res = await this.fetch(`${GAME_SERVER_URL}/api/`)
         return res.data
     }
 
@@ -65,7 +70,7 @@ class GameServerService {
     private async fetch(url: string) {
         return await axios.get(url, {
             headers: {
-                Authorization: `Bearer ${GAME_SECRET_TOKEN()}`,
+                Authorization: `Bearer ${GAME_SECRET_TOKEN}`,
             },
         })
     }
