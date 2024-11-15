@@ -1,4 +1,4 @@
-import { PATH_TO_INSTALLED_PACKAGES } from '@configs'
+import { CDN_PATH, PATH_TO_INSTALLED_PACKAGES } from '@configs'
 import fs from 'fs'
 import path from 'path'
 
@@ -32,7 +32,7 @@ class AssetService {
         }
         let ASSET_PATH: (format: string) => string
         if (dlc === 'coordinator') {
-            ASSET_PATH = (format: string) => path.join(process.cwd(), 'src', 'cdn', 'game', `${asset}.${format}`)
+            ASSET_PATH = (format: string) => path.join(CDN_PATH, 'game', `${asset}.${format}`)
         } else {
             ASSET_PATH = (format: string) => path.join(PATH_TO_INSTALLED_PACKAGES, dlc, 'assets', `${asset}.${format}`)
         }

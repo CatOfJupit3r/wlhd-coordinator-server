@@ -1,9 +1,8 @@
+import { CDN_PATH } from '@config/constants'
 import { iUserAvatar } from '@models/InfoModels'
 import { RandomUtils } from '@utils'
 import fs from 'fs'
 import UserAvatarGenerator from '../utils/UserAvatarGenerator'
-
-const CDN_PATH = 'src/cdn'
 
 class CDNService {
     /*
