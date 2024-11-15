@@ -4,7 +4,7 @@
     "private": true,
     "esModuleInterop": true,
     "scripts": {
-        "start": "ts-node src/app.ts",
+        "start": "node -r tsconfig-paths-bootstrap.js dist/index.js",
         "dev": "nodemon src/app.ts",
         "lint": "eslint . --fix",
         "ts": "tsc --noEmit",
