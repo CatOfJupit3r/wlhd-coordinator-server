@@ -1,3 +1,4 @@
+import { MONGO_DB_NAME, MONGO_PASSWORD, MONGO_URI, MONGO_USER } from '@config/env'
 import { DESCRIPTOR_NO_DLC_REGEX, DESCRIPTOR_REGEX } from '@configs'
 import { BadRequest, InternalServerError, NotFound } from '@models/ErrorModels'
 import { EntityInfoFullToCharacterClass } from '@models/GameEditorModels'
@@ -25,7 +26,13 @@ type SupportedDocumentTypes =
 
 class DatabaseService {
     public connect = async (): Promise<void> => {
-        await mongoose.connect('mongodb://localhost:27017/gameDB')
+        await mongoose.connect(MONGO_URI, {
+            dbName: MONGO_DB_NAME,
+            auth: {
+                username: MONGO_USER,
+                password: MONGO_PASSWORD,
+            },
+        })
     }
 
     private saveDocument = async (document: SupportedDocumentTypes) => {

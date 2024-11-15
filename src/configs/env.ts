@@ -12,3 +12,7 @@ export const GITHUB_TOKEN = process.env.GITHUB_TOKEN
 export const IS_DEVELOPMENT_MODE = process.env.NODE_ENV === 'development'
 export const SERVER_PORT = (process.env.PORT && parseInt(process.env.PORT)) || 5000
 export const SERVER_HOST = process.env.HOST || 'localhost'
+export const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017'
+export const MONGO_DB_NAME = process.env.MONGO_DB_NAME || 'game'
+export const MONGO_USER = process.env.MONGO_USER
+export const MONGO_PASSWORD = process.env.MONGO_PASSWORD
