@@ -5,7 +5,7 @@
     "esModuleInterop": true,
     "scripts": {
         "start": "node -r ./tsconfig-paths-bootstrap.js dist/index.js",
-        "dev": "set NODE_ENV=development&& nodemon src/app.ts",
+        "dev": "set NODE_ENV=development&& nodemon src/index.ts",
         "lint": "eslint . --fix",
         "ts": "tsc --noEmit",
         "build": "rimraf ./dist && npx tsc",
