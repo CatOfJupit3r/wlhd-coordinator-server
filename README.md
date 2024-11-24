@@ -44,7 +44,6 @@ npm install
 -   `CDN_SECRET_TOKEN` — Secret token to access coordinator-only routes on CDN server. **DO NOT SHARE THIS!**
 -   `JWT_SECRET` — Secret token for JWT. **DO NOT SHARE THIS!**
 -   `JWT_REFRESH` — Secret token for JWT refresh. **DO NOT SHARE THIS TOO!**
--   `GITHUB_TOKEN` — GitHub token for cloning and pulling DLCs. Use this if you want automatic installation of DLCs. IF RUN IN _production_, THEN IGNORE
 -   `MONGO_URI` — MongoDB URI
 -   `MONGO_DB` — MongoDB database name
 -   `MONGO_USER` — MongoDB username
