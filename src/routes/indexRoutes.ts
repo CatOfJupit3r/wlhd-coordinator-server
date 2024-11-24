@@ -6,7 +6,7 @@ export default createRouter([
         res.send('Welcome. Actually, you are not!')
     }),
     createConfig('get', '/health', (req, res) => {
-        res.send('OK')
+        res.status(200).json({ status: 'OK' })
     }),
     createConfig('post', '/register', LoginController.register),
     createConfig('post', '/login', LoginController.login),
