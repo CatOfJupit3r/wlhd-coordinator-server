@@ -20,7 +20,7 @@ WORKDIR /app
 
 COPY package*.json .
 
-RUN mkdir node_modules && npm ci --only=production
+RUN mkdir node_modules && npm ci --only=production --ignore-scripts
 # https://github.com/kelektiv/node.bcrypt.js/issues/800
 RUN npm rebuild bcrypt
 
