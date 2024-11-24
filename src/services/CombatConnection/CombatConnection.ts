@@ -1,4 +1,4 @@
-import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '@config/index'
+import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '@config/env'
 import {
     BattlefieldPlayers,
     CharacterInTurnOrder,
@@ -19,9 +19,8 @@ import {
 import { TranslatableString } from '@models/Translation'
 import { CombatSaveType } from '@schemas/CombatSaveSchema'
 import { iPlayer, Player } from '@services/CombatConnection/PlayerInGame'
-import { Socket as PlayerSocket } from 'socket.io'
+import { DefaultEventsMap, Socket as PlayerSocket } from 'socket.io'
 import io, { Socket } from 'socket.io-client'
-import { DefaultEventsMap } from 'socket.io/dist/typed-events'
 
 const GAME_SERVER_EVENTS = {
     GAME_HANDSHAKE: 'game_handshake',

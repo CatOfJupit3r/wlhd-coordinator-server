@@ -19,5 +19,7 @@
             "@schemas/*": ["./schemas/*"],
             "@configs": ["./configs"]
         }
-    }
+    },
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules"]
 }

@@ -237,12 +237,12 @@ class LobbyService {
             if (character.decorations?.name)
                 res[character.descriptor] = {
                     name: character.decorations.name,
-                    description: character.decorations.description,
+                    desc: character.decorations.description,
                 }
             else if (character.descriptor) {
                 res[character.descriptor] = {
                     name: `${character.descriptor}.name`,
-                    description: `${character.descriptor}.description`,
+                    desc: `${character.descriptor}.desc`,
                 }
             } else {
                 throw new InternalServerError(

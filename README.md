@@ -36,14 +36,16 @@ npm install
 
 ## Environment Variables
 
--   PORT — Port on which the server will run _(default: 5000)_
--   HOST — Host on which the server will run _(default: localhost)_
--   GAME_SERVER_URL — FULL URL to the GAME server ~~(not this repository)~~
--   GAME_SECRET_TOKEN — Secret token to access the GAME server. **DO NOT SHARE THIS!**
--   JWT_SECRET — Secret token for JWT. **DO NOT SHARE THIS!**
--   JWT_REFRESH — Secret token for JWT refresh. **DO NOT SHARE THIS TOO!**
--   GITHUB_TOKEN — GitHub token for cloning and pulling DLCs. Use this if you want automatic installation of DLCs. IF RUN IN _production_, THEN IGNORE
--   ENVIRONMENT — Environment in which the server is running _(default: development)_. If run in production, then DLCs won't be fetched from GitHub.
+-   `PORT` — Port on which the server will run _(default: 5000)_
+-   `HOST` — Host on which the server will run _(default: localhost)_
+-   `GAME_SERVER_URL` — FULL URL to the GAME server ~~(not this repository)~~
+-   `GAME_SECRET_TOKEN` — Secret token to access the GAME server. **DO NOT SHARE THIS!**
+-   `CDN_URL` — URL to the CDN server
+-   `CDN_SECRET_TOKEN` — Secret token to access coordinator-only routes on CDN server. **DO NOT SHARE THIS!**
+-   `JWT_SECRET` — Secret token for JWT. **DO NOT SHARE THIS!**
+-   `JWT_REFRESH` — Secret token for JWT refresh. **DO NOT SHARE THIS TOO!**
+-   `GITHUB_TOKEN` — GitHub token for cloning and pulling DLCs. Use this if you want automatic installation of DLCs. IF RUN IN _production_, THEN IGNORE
+-   `ENVIRONMENT` — Environment in which the server is running _(default: development)_. If run in production, then DLCs won't be fetched from GitHub.
 
 ## Usage
 

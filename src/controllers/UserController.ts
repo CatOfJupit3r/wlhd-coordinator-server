@@ -1,10 +1,15 @@
+import { CDN_SECRET_TOKEN, CDN_URL } from '@config/env'
 import { createRouteInController } from '@controllers/RouteInController'
-import { NotFound } from '@models/ErrorModels'
+import { BadRequest, NotFound } from '@models/ErrorModels'
 import AuthService from '@services/AuthService'
-import CDNService from '@services/CDNService'
 import UserService from '@services/UserService'
+import axios, { isAxiosError } from 'axios'
 import { Request, Response } from 'express'
 import { z } from 'zod'
+
+// const sanitizeColor = (color: string) => {
+//     return color.replace('#', '%23')
+// }
 
 class UserController {
     getProfile = createRouteInController(async (req: Request, res: Response) => {
@@ -49,9 +54,47 @@ class UserController {
                     content: avatar.url,
                 })
             } else {
-                res.status(200).json({
+                let proxy
+                try {
+                    proxy = await axios.get(`${CDN_URL}/avatars`, {
+                        params: {
+                            pattern: avatar.generated.pattern,
+                            primary: avatar.generated.mainColor,
+                            secondary: avatar.generated.secondaryColor,
+                        },
+                        headers: {
+                            Authorization: `Bearer ${CDN_SECRET_TOKEN}`,
+                        },
+                        responseType: 'arraybuffer',
+                    })
+                } catch (e) {
+                    if (!isAxiosError(e)) {
+                        throw e
+                    }
+                    // if error code is 404, try generating
+                    if (e.response?.status === 404) {
+                        proxy = await axios.post(
+                            `${CDN_URL}/avatars`,
+                            {
+                                pattern: avatar.generated.pattern,
+                                primary: avatar.generated.mainColor,
+                                secondary: avatar.generated.secondaryColor,
+                            },
+                            {
+                                headers: {
+                                    Authorization: `Bearer ${CDN_SECRET_TOKEN}`,
+                                },
+                                responseType: 'arraybuffer',
+                            }
+                        )
+                    } else {
+                        throw new BadRequest('Failed to generate avatar')
+                    }
+                }
+                const base64Content = Buffer.from(proxy.data).toString('base64')
+                res.status(proxy.status).json({
                     type: 'generated',
-                    content: await CDNService.getAvatarFile(avatar),
+                    content: base64Content,
                 })
             }
         },

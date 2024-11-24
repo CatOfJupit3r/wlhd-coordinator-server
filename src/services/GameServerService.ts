@@ -1,8 +1,6 @@
-import { GAME_SECRET_TOKEN, GAME_SERVER_URL, IS_DEVELOPMENT_MODE } from '@configs'
-import TranslationController from '@controllers/TranslationController'
-import { GameServerStatus, Manifest } from '@models/GameDLCData'
+import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '@configs'
+import { GameServerStatus } from '@models/GameDLCData'
 import { CombatClass } from '@models/TypegooseModels'
-import AssetService from '@services/AssetService'
 import axios, { isAxiosError } from 'axios'
 import GameConversionService from './GameConversionService'
 import LobbyService from './LobbyService'
@@ -30,23 +28,13 @@ class GameServerService {
                 console.log('No DLCs found on game server')
                 return
             }
-            if (IS_DEVELOPMENT_MODE) {
-                // if in dev, install all DLCs. otherwise they should be provided by the game server
-                await this.installDLCs(installed)
-            }
         } catch (error: unknown) {
             if (isAxiosError(error)) {
                 console.log('Connecting to game server failed')
-                if (IS_DEVELOPMENT_MODE) {
-                    console.log('Installing mandatory packages')
-                    await PackageManagerService.installMandatoryPackages()
-                }
             } else {
                 console.log('Error loading game servers', error)
             }
         }
-        TranslationController.reloadTranslations()
-        AssetService.reloadAssets()
         PackageManagerService.resetCache()
         PackageManagerService.cacheAllDLCs()
         GameConversionService.resetCache()
@@ -59,12 +47,6 @@ class GameServerService {
     async checkGameServers(): Promise<GameServerStatus> {
         const res = await this.fetch(`${GAME_SERVER_URL}/api/`)
         return res.data
-    }
-
-    async installDLCs(manifests: Manifest[]) {
-        await PackageManagerService.installPackages(manifests)
-        TranslationController.reloadTranslations()
-        AssetService.reloadAssets()
     }
 
     private async fetch(url: string) {
