@@ -7,6 +7,7 @@ COPY package*.json .
 COPY tsconfig.json .
 
 RUN npm install
+RUN npm rebuild bcrypt
 
 COPY . .
 
@@ -20,6 +21,8 @@ WORKDIR /app
 COPY package*.json .
 
 RUN mkdir node_modules && npm ci --only=production
+# https://github.com/kelektiv/node.bcrypt.js/issues/800
+RUN npm rebuild bcrypt
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/tsconfig-paths-bootstrap.js .
