@@ -8,6 +8,7 @@
         "dev": "set NODE_ENV=development&& nodemon src/app.ts",
         "lint": "eslint . --fix",
         "ts": "tsc --noEmit",
+        "build": "rimraf ./dist && npx tsc",
         "prepare": "husky",
         "pretty": "prettier --plugin=prettier-plugin-organize-imports --write .",
         "migration": "ts-node src/migrations/index.ts"
