@@ -8,6 +8,8 @@
         "emitDecoratorMetadata": true,
         "strictPropertyInitialization": false,
         "baseUrl": "./src/",
+        "rootDir" : "./src/",
+        "outDir": "./dist/",
         "paths": {
             "@controllers/*": ["./controllers/*"],
             "@models/*": ["./models/*"],
