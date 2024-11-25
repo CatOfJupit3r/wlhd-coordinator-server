@@ -3,6 +3,8 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
+RUN apk --no-cache add curl
+
 COPY package*.json .
 COPY tsconfig.json .
 
@@ -17,6 +19,8 @@ RUN npm run build
 FROM node:22-alpine AS production
 
 WORKDIR /app
+
+RUN apk --no-cache add curl
 
 COPY package*.json .
 
