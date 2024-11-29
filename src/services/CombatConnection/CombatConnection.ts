@@ -9,11 +9,11 @@ import {
     IndividualTurnOrder,
 } from '@models/ClientModels'
 import { ControlInfo } from '@models/GameSaveModels'
+import GameState from '@models/GameState'
 import {
     Battlefield,
     EntityInfo,
     GameHandshake as GameHandshakeGameServer,
-    GameStateContainer,
     iCharacterAction,
 } from '@models/ServerModels'
 import { TranslatableString } from '@models/Translation'
@@ -95,14 +95,8 @@ export class CombatConnection {
     private readonly players: Array<iPlayer>
     private readonly gameSocket: GameSocketType
     private gameId: string
-    private gameState: {
-        roundCount: number
-        messages: GameStateContainer
-        battleResult: 'pending' | 'ongoing'
-        currentBattlefield: Battlefield
-        allEntitiesInfo: { [characterId: string]: EntityInfo } // info about all entities.
-        turnInfo: GameHandshakeGameServer['turnInfo'] & { actionTimeStamp: null | number }
-    }
+
+    private readonly gameState: GameState
     private readonly gmId: string
     private readonly removeSelf: () => void
 
@@ -111,6 +105,7 @@ export class CombatConnection {
         this.initialSave = save
         this.gmId = gmId
         this.players = []
+        this.gameState = new GameState()
         players.forEach((player) => {
             this.players.push(new Player(null, player, { getGmId: () => this.gmId }))
         })
@@ -131,8 +126,7 @@ export class CombatConnection {
     }
 
     public getRoundCount() {
-        console.log('Current game state', this.gameState)
-        return this.gameState?.roundCount || 0
+        return this.gameState.getRoundCount()
     }
 
     public isActive() {
@@ -195,34 +189,8 @@ export class CombatConnection {
         this.removeSelf()
     }
 
-    private addNewMessage(newMessage: Array<TranslatableString>) {
-        this.gameState.messages = [...this.gameState.messages, newMessage]
-    }
-
-    private updateBattlefield(newBattlefield: Battlefield) {
-        this.gameState.currentBattlefield = newBattlefield
-    }
-
-    private updateRoundCount(newRoundCount: number) {
-        this.gameState.roundCount = newRoundCount
-    }
-
-    private updateEntitiesInfo(newEntityData: { [square: string]: EntityInfo }) {
-        this.gameState.allEntitiesInfo = {
-            ...this.gameState.allEntitiesInfo,
-            ...newEntityData,
-        }
-    }
-
-    private updateEntityActions(actions: iCharacterAction) {
-        if (this.gameState.turnInfo.order[0] === null) {
-            return
-        }
-        this.gameState.turnInfo.actions = actions
-    }
-
     private sendActionsToServer(actions: { [key: string]: string }, player: iPlayer) {
-        if (this.gameState && (player.isGm() || this.gameState.turnInfo.playerId === player.id)) {
+        if (this.gameState && (player.isGm() || this.gameState.isPlayerIdTurn(player.id))) {
             if (!('action' in actions)) {
                 player.emit(PLAYER_RESPONSES.ERROR, 'No action specified!')
                 return
@@ -259,7 +227,7 @@ export class CombatConnection {
                 Object.values(PLAYER_EVENTS).includes(event)
             ) {
                 if (
-                    (this.gameState && this.gameState.battleResult === 'ongoing') ||
+                    this.gameState.isOngoing() ||
                     event === PLAYER_EVENTS.GAME_HANDSHAKE ||
                     event === GM_EVENTS.START_COMBAT
                 ) {
@@ -289,11 +257,7 @@ export class CombatConnection {
                 PLAYER_RESPONSES.GAME_HANDSHAKE,
                 this.createHandshake(player.id)
             )
-            if (
-                this.gameState.battleResult === 'ongoing' &&
-                this.gameState.turnInfo.playerId === player.id &&
-                this.gameState.turnInfo.order !== null
-            ) {
+            if (this.gameState.isPlayersTurn(player)) {
                 this.emitTakeActionToPlayer()
             }
         }
@@ -303,41 +267,31 @@ export class CombatConnection {
         const LISTENERS = {
             [GAME_SERVER_EVENTS.GAME_HANDSHAKE]: (data: GameHandshakeGameServer) => {
                 console.log('Handshake', data)
-                const { gameId, roundCount, battlefield, turnInfo, messages, combatStatus, allEntitiesInfo } = data
+                const { gameId } = data
                 this.setGameId(gameId)
 
-                this.gameState = {
-                    roundCount: roundCount,
-                    messages: messages,
-                    battleResult: combatStatus,
-                    currentBattlefield: battlefield,
-                    allEntitiesInfo: allEntitiesInfo,
-                    turnInfo: {
-                        ...turnInfo,
-                        actionTimeStamp: null,
-                    },
-                }
+                this.gameState.fromHandshake(data)
                 this.players.forEach((player) => {
                     player.emit(PLAYER_RESPONSES.GAME_HANDSHAKE, this.createHandshake(player.id))
                 })
             },
             [GAME_SERVER_EVENTS.ROUND_UPDATE]: (data: { round_count: number }) => {
                 console.log('Round updated', data)
-                this.updateRoundCount(data.round_count)
+                this.gameState.updateRoundCount(data.round_count)
                 this.broadcast(PLAYER_RESPONSES.ROUND_UPDATE, {
                     roundCount: this.gameState.roundCount,
                 })
             },
             [GAME_SERVER_EVENTS.NEW_MESSAGE]: ({ message }: { message: Array<TranslatableString> }) => {
                 console.log('New message', message)
-                this.addNewMessage(message)
+                this.gameState.addNewMessage(message)
                 this.broadcast(PLAYER_RESPONSES.NEW_MESSAGE, {
                     message: message,
                 })
             },
             [GAME_SERVER_EVENTS.BATTLEFIELD_UPDATED]: (data: { battlefield: Battlefield }) => {
                 console.log('Battlefield updated')
-                this.updateBattlefield(data.battlefield)
+                this.gameState.updateBattlefield(data.battlefield)
                 this.broadcast(PLAYER_RESPONSES.BATTLEFIELD_UPDATED, {
                     battlefield: this.generateBattlefieldPlayers(),
                 })
@@ -348,7 +302,7 @@ export class CombatConnection {
                 }
             }) => {
                 console.log('Entities updated')
-                this.updateEntitiesInfo(data.newEntityData)
+                this.gameState.updateEntitiesInfo(data.newEntityData)
                 // instead of broadcasting, we send info individually, because of 'controlledEntities' data
                 for (const player of this.players) {
                     player.emit(PLAYER_RESPONSES.ENTITIES_UPDATED, {
@@ -359,7 +313,7 @@ export class CombatConnection {
             },
             [GAME_SERVER_EVENTS.BATTLE_STARTED]: () => {
                 console.log('Game has started')
-                this.gameState.battleResult = 'ongoing'
+                this.gameState.setBattleResult('ongoing')
                 this.broadcast(PLAYER_RESPONSES.BATTLE_STARTED)
             },
             [GAME_SERVER_EVENTS.PLAYER_TURN]: async ({
@@ -373,13 +327,13 @@ export class CombatConnection {
             }) => {
                 try {
                     this.gameState.turnInfo.playerId = user_token
-                    if (this.gameState.turnInfo.order[0] !== entity_id) {
-                        this.gameState.turnInfo.order[0] = entity_id
+                    if (this.gameState.currentCharacterId() !== entity_id) {
+                        this.gameState.setCurrentCharacterId(entity_id)
                         this.sendOutTurnOrderToPlayers()
                     }
-                    this.gameState.turnInfo.actionTimeStamp = Date.now()
+                    this.gameState.updateTimeStamp()
                     this.sendActionTimeStampsToPlayers()
-                    this.updateEntityActions(actions)
+                    this.gameState.updateEntityActions(actions)
                     this.emitTakeActionToPlayer()
                 } catch (e) {
                     console.log('Error handling take action listener ', e)
@@ -398,8 +352,7 @@ export class CombatConnection {
                 message: 'builtins:action_performed' | 'builtins:invalid_input' | string
             }) => {
                 console.log('Action result', data)
-                this.gameState.turnInfo.playerId = null
-                this.gameState.turnInfo.actionTimeStamp = null
+                this.gameState.resetTurnInfo()
                 this.sendActionTimeStampsToPlayers()
                 this.sendToPlayer(data.user_token, PLAYER_RESPONSES.ACTION_RESULT, {
                     code: data.code,
@@ -408,7 +361,7 @@ export class CombatConnection {
             },
             [GAME_SERVER_EVENTS.TURN_ORDER_UPDATED]: (data: { turn_queue: Array<string> }) => {
                 console.log('Turn order updated', data)
-                this.gameState.turnInfo['order'] = data.turn_queue
+                this.gameState.setTurnOrder(data.turn_queue)
 
                 this.sendOutTurnOrderToPlayers()
             },
@@ -498,13 +451,14 @@ export class CombatConnection {
                             },
                         })
                         break
-                    case 'current_entity_info':
-                        if (this.gameState.turnInfo.order[0] !== null) {
+                    case 'current_entity_info': {
+                        const currentCharacter = this.gameState.currentCharacterId()
+                        if (currentCharacter !== null) {
                             player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                                 type: 'current_entity_info',
                                 payload: {
                                     entity: (() => {
-                                        const entityInfo = this.findEntityInfoById(this.gameState.turnInfo.order[0])
+                                        const entityInfo = this.gameState.getCharacterById(currentCharacter)
                                         return entityInfo ? this.generateEntityFullInfo(entityInfo) : null
                                     })(),
                                 },
@@ -518,12 +472,11 @@ export class CombatConnection {
                             })
                         }
                         break
+                    }
+
                     case 'entity_tooltip': {
                         const { square } = payload
-                        const entity = Object.values(this.gameState.allEntitiesInfo).find(
-                            (entity) =>
-                                entity && entity.square.line === square.line && entity.square.column === square.column
-                        )
+                        const entity = this.gameState.getCharacterOnSquare(square)
                         if (entity) {
                             player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
                                 type: 'entity_tooltip',
@@ -724,7 +677,7 @@ export class CombatConnection {
                 turnOrderInfo.push(null)
                 continue
             }
-            const entity = this.findEntityInfoById(entityId)
+            const entity = this.gameState.getCharacterById(entityId)
             if (entity) {
                 turnOrderInfo.push({
                     controlledBy: entity.controlledBy,
@@ -738,10 +691,6 @@ export class CombatConnection {
             }
         }
         return turnOrderInfo
-    }
-
-    private findEntityInfoById(id: string): EntityInfo | null {
-        return this.gameState.allEntitiesInfo[id] ?? null
     }
 
     private createHandshake(playerId: string): GameHandshakePlayers {
@@ -764,7 +713,7 @@ export class CombatConnection {
         }
         for (const [square, pawn] of Object.entries(pawns)) {
             if (pawn.character_id) {
-                const entityOnSquare = this.findEntityInfoById(pawn.character_id)
+                const entityOnSquare = this.gameState.getCharacterById(pawn.character_id)
                 res.pawns[square] = {
                     character: entityOnSquare === null ? entityOnSquare : this.generateEntityToolTip(entityOnSquare),
                     areaEffects: pawn.area_effects,
