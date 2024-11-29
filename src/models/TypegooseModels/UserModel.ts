@@ -1,4 +1,4 @@
-import { getModelForClass, modelOptions, prop } from '@typegoose/typegoose'
+import { getModelForClass, modelOptions, prop, ReturnModelType } from '@typegoose/typegoose'
 
 @modelOptions({ schemaOptions: { _id: false } })
 class GeneratedAvatar {
@@ -36,6 +36,10 @@ export class UserClass {
 
     @prop({ required: true })
     createdAt: Date
+
+    public static async findByHandle(this: ReturnModelType<typeof UserClass>, handle: string) {
+        return this.findOne({ handle }).exec()
+    }
 }
 
 export const UserModel = getModelForClass(UserClass, {

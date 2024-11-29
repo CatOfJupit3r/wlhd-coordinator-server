@@ -62,7 +62,7 @@ class DatabaseService {
     }
 
     public getUserByHandle = async (handle: string): Promise<UserClass | null> => {
-        return UserModel.findOne({ handle })
+        return UserModel.findByHandle(handle)
     }
 
     public getCharacter = async (characterId: string): Promise<CharacterClass | null> => {
@@ -173,7 +173,7 @@ class DatabaseService {
         if (!lobby) throw new NotFound('Lobby not found')
         const player = lobby.players.find((p) => p.userId === userId.toString())
         if (!player) throw new NotFound('Player not found')
-        const character = await this.getCharacterByDescriptor(descriptor)
+        const character = await CharacterModel.findByDescriptor(descriptor)
         if (!character) throw new NotFound('Entity you were looking for was removed from Database.')
         const characterInLobbyBank = lobby.characterBank.find((c) => c.characterId === character._id.toString())
         if (!characterInLobbyBank) throw new NotFound('Character not found')
@@ -193,7 +193,7 @@ class DatabaseService {
         if (!lobby) throw new NotFound('Lobby not found')
         const player = lobby.players.find((p) => p.userId === userId.toString())
         if (!player) throw new NotFound('Player not found')
-        const character = await this.getCharacterByDescriptor(descriptor)
+        const character = await CharacterModel.findByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         const characterInLobbyBank = lobby.characterBank.find((c) => c.characterId === character._id.toString())
         if (!characterInLobbyBank) throw new NotFound('Character not found')
@@ -226,7 +226,7 @@ class DatabaseService {
     ): Promise<void> => {
         const lobby = await this.getLobby(lobbyId)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacterByDescriptor(descriptor)
+        const character = await CharacterModel.findByDescriptor(descriptor)
         if (!character) throw new NotFound('Character not found')
         lobby.characterBank.push({ characterId: character._id.toString(), controlledBy: controlledBy || [] })
         await mongoose.connection
@@ -242,16 +242,14 @@ class DatabaseService {
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacterByDescriptor(characterDescriptor)
+        const character = await CharacterModel.findByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!PackageManagerService.checkIfPresetExists('weapons', weaponDescriptor)) {
             throw new BadRequest('Weapon not found in package')
         }
         if (!character.weaponry) character.weaponry = []
         character.weaponry.push({ descriptor: weaponDescriptor, quantity })
-        await mongoose.connection
-            .collection('characters')
-            .updateOne({ descriptor: characterDescriptor }, { $set: { weaponry: character.weaponry } })
+        await this.saveDocument(character)
     }
 
     public addSpellToCharacter = async (
@@ -261,7 +259,7 @@ class DatabaseService {
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacterByDescriptor(characterDescriptor)
+        const character = await CharacterModel.findByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.spellBook.knownSpells) character.spellBook.knownSpells = []
         if (character.spellBook.knownSpells.find((s) => s.descriptor === characterDescriptor))
@@ -270,9 +268,7 @@ class DatabaseService {
             throw new BadRequest('Spell not found in package')
         }
         character.spellBook.knownSpells.push({ descriptor: spellDescriptor, isActive: false })
-        await mongoose.connection
-            .collection('characters')
-            .updateOne({ descriptor: characterDescriptor }, { $set: { spellBook: character.spellBook } })
+        await this.saveDocument(character)
     }
 
     public addStatusEffectToCharacter = async (
@@ -283,7 +279,7 @@ class DatabaseService {
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacterByDescriptor(characterDescriptor)
+        const character = await CharacterModel.findByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.statusEffects) character.statusEffects = []
         if (character.statusEffects.find((s) => s.descriptor === effectDescriptor)) {
@@ -293,9 +289,7 @@ class DatabaseService {
             throw new BadRequest('Status effect not found in package')
         }
         character.statusEffects.push({ descriptor: effectDescriptor, duration })
-        await mongoose.connection
-            .collection('characters')
-            .updateOne({ descriptor: characterDescriptor }, { $set: { statusEffects: character.statusEffects } })
+        await this.saveDocument(character)
     }
 
     public addItemToCharacter = async (
@@ -306,16 +300,14 @@ class DatabaseService {
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacterByDescriptor(characterDescriptor)
+        const character = await CharacterModel.findByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.inventory) character.inventory = []
         if (character.inventory.find((i) => i.descriptor === itemDescriptor)) {
             throw new BadRequest('Item already exists')
         }
         character.inventory.push({ descriptor: itemDescriptor, quantity })
-        await mongoose.connection
-            .collection('characters')
-            .updateOne({ descriptor: characterDescriptor }, { $set: { inventory: character.inventory } })
+        await this.saveDocument(character)
     }
 
     public addAttributeToCharacter = async (
@@ -327,7 +319,7 @@ class DatabaseService {
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacterByDescriptor(characterDescriptor)
+        const character = await CharacterModel.findByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
         if (!character.attributes) character.attributes = []
         const fullDescriptor = `${dlc}:${attributeDescriptor}`
@@ -337,9 +329,7 @@ class DatabaseService {
         } else {
             character.attributes.push({ descriptor: fullDescriptor, value })
         }
-        await mongoose.connection
-            .collection('characters')
-            .updateOne({ descriptor: characterDescriptor }, { $set: { attributes: character.attributes } })
+        await this.saveDocument(character)
     }
 
     public getCharactersOfPlayer = async (lobbyId: string, userId: string): Promise<Array<CharacterClass>> => {
@@ -423,7 +413,7 @@ class DatabaseService {
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')
-        const character = await this.getCharacterByDescriptor(characterDescriptor)
+        const character = await CharacterModel.findByDescriptor(characterDescriptor)
         if (!character) throw new NotFound('Character not found')
 
         if (newCharacter.decorations) {
@@ -508,9 +498,7 @@ class DatabaseService {
             if (newCharacter.weaponry.length > 32) throw new BadRequest('Too many weapons')
             character.weaponry = newCharacter.weaponry.map((w) => ({ descriptor: w.descriptor, quantity: w.quantity }))
         }
-        await mongoose.connection
-            .collection('characters')
-            .updateOne({ descriptor: characterDescriptor }, { $set: character })
+        await this.saveDocument(character)
     }
 }
 

@@ -1,5 +1,5 @@
 import { DESCRIPTOR_REGEX } from '@configs'
-import { getModelForClass, modelOptions, prop, Severity } from '@typegoose/typegoose'
+import { getModelForClass, modelOptions, prop, ReturnModelType, Severity } from '@typegoose/typegoose'
 import { Types } from 'mongoose'
 
 const requiredProp = (options: { [key: string]: unknown } = {}) => prop({ required: true, ...options })
@@ -94,7 +94,7 @@ export class CharacterClass {
     @prop()
     _id: Types.ObjectId
 
-    @requiredProp()
+    @requiredProp({ unique: true }) //
     descriptor: string
 
     @prop({ required: true, _id: false, type: () => CharacterDecorationsClass })
@@ -133,6 +133,10 @@ export class CharacterClass {
 
     @prop({ type: () => [StatusEffectClass], default: [] })
     statusEffects: Array<StatusEffectClass>
+
+    public static async findByDescriptor(this: ReturnModelType<typeof CharacterClass>, descriptor: string) {
+        return await this.findOne({ descriptor }).exec()
+    }
 }
 
 export const CharacterModel = getModelForClass(CharacterClass)
