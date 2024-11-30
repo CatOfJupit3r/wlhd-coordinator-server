@@ -71,7 +71,6 @@ interface UsableComponentEditableFields extends CommonEditableField {
 }
 
 export interface ItemEditable extends UsableComponentEditableFields {
-    applies: Array<string>
     quantity: number
     isConsumable: boolean
 }

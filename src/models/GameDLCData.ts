@@ -79,7 +79,6 @@ interface UsableComponentPresetFields extends CommonPresetField {
 export interface SpellPreset extends UsableComponentPresetFields {}
 
 export interface ItemPreset extends UsableComponentPresetFields {
-    applies: Array<string>
     quantity: number
     isConsumable: boolean
 }
