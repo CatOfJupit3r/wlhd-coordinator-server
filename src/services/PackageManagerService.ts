@@ -11,7 +11,7 @@ import {
     WeaponPreset,
 } from '@models/GameDLCData'
 
-type presetTypes = 'weapons' | 'spells' | 'items' | 'status_effects' | 'entities'
+type presetTypes = 'weapons' | 'spells' | 'items' | 'status_effects' | 'characters'
 
 class PackageManagerService {
     private availableDLCs: Array<string>
@@ -23,7 +23,7 @@ class PackageManagerService {
             spells: {},
             items: {},
             status_effects: {},
-            entities: {},
+            characters: {},
         },
     }
 
@@ -167,7 +167,10 @@ class PackageManagerService {
         if (!this.cachedPresets[dlc]) {
             return {}
         }
-        return Object.entries(this.cachedPresets[dlc].entities).reduce((acc, item) => this.presetReducer(item, acc), {})
+        return Object.entries(this.cachedPresets[dlc].characters).reduce(
+            (acc, item) => this.presetReducer(item, acc),
+            {}
+        )
     }
 
     public checkIfPresetExists(type: presetTypes, full_descriptor: string): boolean {

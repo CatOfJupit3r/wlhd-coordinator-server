@@ -1,6 +1,6 @@
 import { GameComponentDecoration, GameComponentMemory } from './GameDLCData'
 
-export interface EntityInfoFullToCharacterClass {
+export interface CharacterInfoFullToCharacterClass {
     decorations: {
         name: string
         description: string
@@ -87,7 +87,7 @@ export interface StatusEffectEditable extends CommonEditableField {
     isVisible: boolean
     activatesOnApply: boolean
 
-    owner: null | unknown // entity, but unknown for now
+    owner: null | unknown // character, but unknown for now
     updateType: string
     activationType: string
 }

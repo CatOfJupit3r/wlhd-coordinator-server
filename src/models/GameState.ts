@@ -1,7 +1,7 @@
 import { TurnOrder } from '@models/GameSaveModels'
 import {
     Battlefield,
-    EntityInfo,
+    CharacterInfo,
     GameHandshake as GameHandshakeGameServer,
     GameStateContainer,
     iCharacterAction,
@@ -14,7 +14,7 @@ class GameState {
     public messages: GameStateContainer
     public battleResult: 'pending' | 'ongoing'
     public currentBattlefield: Battlefield
-    public allEntitiesInfo: { [characterId: string]: EntityInfo }
+    public allCharactersInfo: { [characterId: string]: CharacterInfo }
     public turnInfo: GameHandshakeGameServer['turnInfo'] & { actionTimeStamp: null | number }
 
     constructor() {
@@ -22,7 +22,7 @@ class GameState {
         this.messages = []
         this.battleResult = 'pending'
         this.currentBattlefield = { pawns: {} }
-        this.allEntitiesInfo = {}
+        this.allCharactersInfo = {}
         this.turnInfo = {
             actions: null,
             playerId: null,
@@ -32,13 +32,13 @@ class GameState {
     }
 
     public fromHandshake = (handshake: GameHandshakeGameServer) => {
-        const { roundCount, battlefield, turnInfo, messages, combatStatus, allEntitiesInfo } = handshake
+        const { roundCount, battlefield, turnInfo, messages, combatStatus, allCharactersInfo } = handshake
 
         this.roundCount = roundCount
         this.messages = messages
         this.battleResult = combatStatus
         this.currentBattlefield = battlefield
-        this.allEntitiesInfo = allEntitiesInfo
+        this.allCharactersInfo = allCharactersInfo
         this.turnInfo = {
             ...turnInfo,
             actionTimeStamp: null,
@@ -88,14 +88,14 @@ class GameState {
         this.roundCount = newRoundCount
     }
 
-    public updateEntitiesInfo(newEntityData: { [square: string]: EntityInfo }) {
-        this.allEntitiesInfo = {
-            ...this.allEntitiesInfo,
-            ...newEntityData,
+    public updateCharactersInfo(newCharacterData: { [square: string]: CharacterInfo }) {
+        this.allCharactersInfo = {
+            ...this.allCharactersInfo,
+            ...newCharacterData,
         }
     }
 
-    public updateEntityActions(actions: iCharacterAction) {
+    public updateCharacterActions(actions: iCharacterAction) {
         if (this.turnInfo.order[0] === null) {
             return
         }
@@ -118,16 +118,17 @@ class GameState {
         this.turnInfo.order[0] = characterId
     }
 
-    public getCharacterOnSquare = (square: { line: number; column: number }): EntityInfo | null => {
+    public getCharacterOnSquare = (square: { line: number; column: number }): CharacterInfo | null => {
         return (
-            Object.values(this.allEntitiesInfo).find(
-                (entity) => entity && entity.square.line === square.line && entity.square.column === square.column
+            Object.values(this.allCharactersInfo).find(
+                (character) =>
+                    character && character.square.line === square.line && character.square.column === square.column
             ) ?? null
         )
     }
 
-    public getCharacterById = (id: string): EntityInfo | null => {
-        return this.allEntitiesInfo[id] ?? null
+    public getCharacterById = (id: string): CharacterInfo | null => {
+        return this.allCharactersInfo[id] ?? null
     }
 }
 

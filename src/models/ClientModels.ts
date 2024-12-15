@@ -5,7 +5,7 @@ import { GameStateContainer, ItemInfo, SpellInfo, StatusEffectInfo, WeaponInfo }
 export interface BattlefieldPlayers {
     pawns: {
         [key: string]: {
-            character: EntityInfoTooltip | null
+            character: CharacterInfoTooltip | null
             areaEffects: Array<unknown>
         }
     }
@@ -16,13 +16,13 @@ export interface GameHandshake {
     messages: GameStateContainer // but only last 10 instead of all
     combatStatus: 'ongoing' | 'pending'
     currentBattlefield: BattlefieldPlayers
-    controlledEntities: Array<EntityInfoFull> | null
+    controlledCharacters: Array<CharacterInfoFull> | null
     turnOrder: IndividualTurnOrder | null
     actionTimestamp: number | null
     gameLobbyState: iGameLobbyState
 }
 
-export interface EntityInfoTooltip {
+export interface CharacterInfoTooltip {
     decorations: GameComponentDecoration
     square: { line: number; column: number }
     health: { current: number; max: number }
@@ -34,7 +34,7 @@ export interface EntityInfoTooltip {
     }>
 }
 
-export interface EntityInfoFull {
+export interface CharacterInfoFull {
     decorations: GameComponentDecoration
     square: { line: number; column: number }
     attributes: { [attribute: string]: number }

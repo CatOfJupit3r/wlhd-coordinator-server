@@ -1,7 +1,7 @@
 import { DESCRIPTOR_NO_DLC_REGEX, DESCRIPTOR_REGEX } from '@config/regex'
 import { createRouteInController } from '@controllers/RouteInController'
 import { BadRequest, Forbidden, InternalServerError, NotFound } from '@models/ErrorModels'
-import { EntityInfoFullToCharacterClass } from '@models/GameEditorModels'
+import { CharacterInfoFullToCharacterClass } from '@models/GameEditorModels'
 import { AttributeInfo } from '@models/ServerModels'
 import { DescriptorZodString } from '@schemas/CombatEditorSchemas'
 import CombatSaveZod from '@schemas/CombatSaveSchema'
@@ -374,7 +374,7 @@ class LobbyController {
 
             const NewCharacterClass = {
                 ...req.body,
-            } as EntityInfoFullToCharacterClass
+            } as CharacterInfoFullToCharacterClass
             await DatabaseService.updateCharacter(lobby_id, descriptor, NewCharacterClass)
             res.status(200).json({ message: 'ok', descriptor })
         },

@@ -14,8 +14,8 @@ export interface GameHandshake {
     }
     combatStatus: 'ongoing' | 'pending'
     battlefield: Battlefield
-    allEntitiesInfo: {
-        [characterID: string]: EntityInfo
+    allCharactersInfo: {
+        [characterID: string]: CharacterInfo
     }
 }
 
@@ -34,7 +34,7 @@ interface CommonGameComponentInfoFields {
     tags: Array<string>
 }
 
-export interface EntityInfo extends CommonGameComponentInfoFields {
+export interface CharacterInfo extends CommonGameComponentInfoFields {
     descriptor: string
     attributes: AttributeInfo
     controlledBy: ControlInfo
@@ -79,7 +79,7 @@ export interface ItemInfo extends CommonGameComponentInfoFields {
     }
     userNeedsRange: Array<number>
     cooldown: { current: number; max: number | null }
-    quantity: number // how many of given item entity has
+    quantity: number // how many of given item character has
     consumable: boolean // if item is consumable
 }
 

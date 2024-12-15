@@ -138,7 +138,7 @@ const TStringContainerZod = z.array(z.array(TStringZod))
 const SquareZod = z.string().regex(/^[1-6]+\/[1-6]+$/)
 
 const TurnOrderZod = z.array(z.string().nullable()).nonempty({
-    message: 'Turn order should have at least one entity',
+    message: 'Turn order should have at least one character',
 })
 
 const CombatSaveZod = z.object({

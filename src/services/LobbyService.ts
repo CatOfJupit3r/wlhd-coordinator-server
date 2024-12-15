@@ -176,9 +176,9 @@ class LobbyService {
         },
         attributes: Array<AttributeClass>
     ): Promise<Types.ObjectId> {
-        const entity_id = await DatabaseService.createNewCharacter(descriptor, decorations, attributes)
-        await DatabaseService.addCharacterToLobby(lobby_id, entity_id.toString(), controlledBy)
-        return entity_id
+        const character_id = await DatabaseService.createNewCharacter(descriptor, decorations, attributes)
+        await DatabaseService.addCharacterToLobby(lobby_id, character_id.toString(), controlledBy)
+        return character_id
     }
 
     async deleteCharacter(lobby_id: string, descriptor: string): Promise<void> {

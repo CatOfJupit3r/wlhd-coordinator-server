@@ -1,7 +1,7 @@
 import { MONGO_DB_NAME, MONGO_PASSWORD, MONGO_URI, MONGO_USER } from '@config/env'
 import { DESCRIPTOR_NO_DLC_REGEX, DESCRIPTOR_REGEX } from '@configs'
 import { BadRequest, InternalServerError, NotFound } from '@models/ErrorModels'
-import { EntityInfoFullToCharacterClass } from '@models/GameEditorModels'
+import { CharacterInfoFullToCharacterClass } from '@models/GameEditorModels'
 import {
     AttributeClass,
     CharacterClass,
@@ -131,9 +131,9 @@ class DatabaseService {
         if (!DESCRIPTOR_NO_DLC_REGEX().test(descriptor)) throw new BadRequest('Invalid descriptor')
         const isDescriptorTaken = await CharacterModel.findOne({ descriptor }, { _id: 1 }).lean()
         if (isDescriptorTaken) throw new BadRequest('Descriptor already taken')
-        const entity = new CharacterModel({ descriptor, decorations, attributes, _id: new Types.ObjectId() })
-        await this.saveDocument(entity)
-        return entity._id
+        const character = new CharacterModel({ descriptor, decorations, attributes, _id: new Types.ObjectId() })
+        await this.saveDocument(character)
+        return character._id
     }
 
     public deleteCharacter = async (characterId: Types.ObjectId): Promise<void> => {
@@ -174,7 +174,7 @@ class DatabaseService {
         const player = lobby.players.find((p) => p.userId === userId.toString())
         if (!player) throw new NotFound('Player not found')
         const character = await CharacterModel.findByDescriptor(descriptor)
-        if (!character) throw new NotFound('Entity you were looking for was removed from Database.')
+        if (!character) throw new NotFound('Character you were looking for was removed from Database.')
         const characterInLobbyBank = lobby.characterBank.find((c) => c.characterId === character._id.toString())
         if (!characterInLobbyBank) throw new NotFound('Character not found')
         if (!characterInLobbyBank.controlledBy) characterInLobbyBank.controlledBy = []
@@ -409,7 +409,7 @@ class DatabaseService {
     public updateCharacter = async (
         lobby_id: string,
         characterDescriptor: string,
-        newCharacter: EntityInfoFullToCharacterClass
+        newCharacter: CharacterInfoFullToCharacterClass
     ): Promise<void> => {
         const lobby = await this.getLobby(lobby_id)
         if (!lobby) throw new NotFound('Lobby not found')

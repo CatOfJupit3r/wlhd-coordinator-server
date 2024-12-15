@@ -1,4 +1,5 @@
 import { getModelForClass, modelOptions, prop, Severity } from '@typegoose/typegoose'
+import { Types } from 'mongoose'
 
 @modelOptions({
     options: { allowMixed: Severity.ALLOW },
@@ -29,7 +30,7 @@ class ControlledByGameLogic {
 })
 class Pawn {
     @prop({ required: true })
-    path: string // if source is dlc, then path is descriptor. if source is embedded, then path is id in custom_entities
+    path: string // if source is dlc, then path is descriptor. if source is embedded, then path is id in custom_characters
 
     @prop({ required: true })
     square: string
@@ -45,6 +46,9 @@ class Pawn {
     schemaOptions: { collection: 'combatPresets' },
 })
 export class CombatClass {
+    @prop({ required: true })
+    lobbyId: Types.ObjectId
+
     @prop({ required: true, type: () => [Pawn] })
     field: Array<Pawn>
 }

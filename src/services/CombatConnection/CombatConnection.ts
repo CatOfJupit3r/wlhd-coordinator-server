@@ -1,9 +1,9 @@
 import { GAME_SECRET_TOKEN, GAME_SERVER_URL } from '@config/env'
 import {
     BattlefieldPlayers,
+    CharacterInfoFull,
+    CharacterInfoTooltip,
     CharacterInTurnOrder,
-    EntityInfoFull,
-    EntityInfoTooltip,
     GameHandshake as GameHandshakePlayers,
     iGameLobbyState,
     IndividualTurnOrder,
@@ -12,13 +12,14 @@ import { ControlInfo } from '@models/GameSaveModels'
 import GameState from '@models/GameState'
 import {
     Battlefield,
-    EntityInfo,
+    CharacterInfo,
     GameHandshake as GameHandshakeGameServer,
     iCharacterAction,
 } from '@models/ServerModels'
 import { TranslatableString } from '@models/Translation'
 import { CombatSaveType } from '@schemas/CombatSaveSchema'
 import { iPlayer, Player } from '@services/CombatConnection/PlayerInGame'
+import { omit } from 'lodash'
 import { DefaultEventsMap, Socket as PlayerSocket } from 'socket.io'
 import io, { Socket } from 'socket.io-client'
 
@@ -33,7 +34,7 @@ const GAME_SERVER_EVENTS = {
     BATTLE_ENDED: 'battle_ended',
     NEW_MESSAGE: 'new_message',
     BATTLEFIELD_UPDATED: 'battlefield_updated',
-    ENTITIES_UPDATED: 'entities_updated',
+    CHARACTERS_UPDATED: 'characters_updated',
     TURN_ORDER_UPDATED: 'turn_order_updated',
     PING: 'ping',
 }
@@ -68,8 +69,8 @@ const PLAYER_RESPONSES = {
     GAME_HANDSHAKE: 'game_handshake',
     ACTION_RESULT: 'action_result',
     BATTLE_ENDED: 'battle_ended',
-    ENTITIES_UPDATED: 'entities_updated', // this response to give tooltips and full info (players) of entities
-    NO_CURRENT_ENTITY: 'no_current_entity', // and this response to remove info about CURRENT ACTIVE entity, if there is
+    CHARACTERS_UPDATED: 'characters_updated', // this response to give tooltips and full info (players) of characters
+    NO_CURRENT_CHARACTER: 'no_current_character', // and this response to remove info about CURRENT ACTIVE character, if there is
     HALT_ACTION: 'halt_action',
     TAKE_ACTION: 'take_action',
     NEW_MESSAGE: 'new_message',
@@ -83,7 +84,7 @@ const PLAYER_RESPONSES = {
 
 const GM_RESPONSES = {
     TAKE_UNALLOCATED_ACTION: 'take_unallocated_action',
-    // if player is not present, but GM is, then GM can take action and is notified about unallocated entity.
+    // if player is not present, but GM is, then GM can take action and is notified about unallocated character.
     TAKE_OFFLINE_PLAYER_ACTION: 'take_offline_player_action',
 }
 
@@ -296,17 +297,16 @@ export class CombatConnection {
                     battlefield: this.generateBattlefieldPlayers(),
                 })
             },
-            [GAME_SERVER_EVENTS.ENTITIES_UPDATED]: (data: {
-                newEntityData: {
-                    [id: string]: EntityInfo
+            [GAME_SERVER_EVENTS.CHARACTERS_UPDATED]: (data: {
+                newCharacterData: {
+                    [id: string]: CharacterInfo
                 }
             }) => {
-                console.log('Entities updated')
-                this.gameState.updateEntitiesInfo(data.newEntityData)
-                // instead of broadcasting, we send info individually, because of 'controlledEntities' data
+                this.gameState.updateCharactersInfo(data.newCharacterData)
+                // instead of broadcasting, we send info individually, because of 'controlledCharacters' data
                 for (const player of this.players) {
-                    player.emit(PLAYER_RESPONSES.ENTITIES_UPDATED, {
-                        newControlledEntities: this.generateEntityFullInfoForPlayer(player.id),
+                    player.emit(PLAYER_RESPONSES.CHARACTERS_UPDATED, {
+                        newControlledCharacters: this.generateCharacterFullInfoForPlayer(player.id),
                         // tooltips are sent in battlefield, duh
                     })
                 }
@@ -318,22 +318,22 @@ export class CombatConnection {
             },
             [GAME_SERVER_EVENTS.PLAYER_TURN]: async ({
                 user_token,
-                entity_id,
+                character_id,
                 actions,
             }: {
                 user_token: string
-                entity_id: string
+                character_id: string
                 actions: iCharacterAction
             }) => {
                 try {
                     this.gameState.turnInfo.playerId = user_token
-                    if (this.gameState.currentCharacterId() !== entity_id) {
-                        this.gameState.setCurrentCharacterId(entity_id)
+                    if (this.gameState.currentCharacterId() !== character_id) {
+                        this.gameState.setCurrentCharacterId(character_id)
                         this.sendOutTurnOrderToPlayers()
                     }
                     this.gameState.updateTimeStamp()
                     this.sendActionTimeStampsToPlayers()
-                    this.gameState.updateEntityActions(actions)
+                    this.gameState.updateCharacterActions(actions)
                     this.emitTakeActionToPlayer()
                 } catch (e) {
                     console.log('Error handling take action listener ', e)
@@ -424,15 +424,15 @@ export class CombatConnection {
                       payload?: { start: number; end: number } // if there is no payload, then we send last 10 messages
                   }
                 | {
-                      type: 'current_entity_info'
+                      type: 'current_character_info'
                       payload: null
                   }
                 | {
-                      type: 'entity_tooltip'
+                      type: 'character_tooltip'
                       payload: { square: { line: number; column: number } }
                   }
                 | {
-                      type: 'controlled_entities'
+                      type: 'controlled_characters'
                       payload: null
                   }
                 | {
@@ -451,54 +451,54 @@ export class CombatConnection {
                             },
                         })
                         break
-                    case 'current_entity_info': {
+                    case 'current_character_info': {
                         const currentCharacter = this.gameState.currentCharacterId()
                         if (currentCharacter !== null) {
                             player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
-                                type: 'current_entity_info',
+                                type: 'current_character_info',
                                 payload: {
-                                    entity: (() => {
-                                        const entityInfo = this.gameState.getCharacterById(currentCharacter)
-                                        return entityInfo ? this.generateEntityFullInfo(entityInfo) : null
+                                    character: (() => {
+                                        const characterInfo = this.gameState.getCharacterById(currentCharacter)
+                                        return characterInfo ? this.generateCharacterFullInfo(characterInfo) : null
                                     })(),
                                 },
                             })
                         } else {
                             player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
-                                type: 'current_entity_info',
+                                type: 'current_character_info',
                                 payload: {
-                                    entity: null,
+                                    character: null,
                                 },
                             })
                         }
                         break
                     }
 
-                    case 'entity_tooltip': {
+                    case 'character_tooltip': {
                         const { square } = payload
-                        const entity = this.gameState.getCharacterOnSquare(square)
-                        if (entity) {
+                        const character = this.gameState.getCharacterOnSquare(square)
+                        if (character) {
                             player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
-                                type: 'entity_tooltip',
+                                type: 'character_tooltip',
                                 payload: {
-                                    entity: this.generateEntityToolTip(entity),
+                                    character: this.generateCharacterToolTip(character),
                                 },
                             })
                         } else {
                             player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
-                                type: 'entity_tooltip',
+                                type: 'character_tooltip',
                                 payload: {
-                                    entity: null,
+                                    character: null,
                                 },
                             })
                         }
                         break
                     }
-                    case 'controlled_entities':
+                    case 'controlled_characters':
                         player.emit(PLAYER_RESPONSES.INCOMING_DATA, {
-                            type: 'controlled_entities',
+                            type: 'controlled_characters',
                             payload: {
-                                newControlledEntities: this.generateEntityFullInfoForPlayer(player.id),
+                                newControlledCharacters: this.generateCharacterFullInfoForPlayer(player.id),
                             },
                         })
                         break
@@ -536,7 +536,7 @@ export class CombatConnection {
                 filter: { type: 'square' | 'id'; value: string } | { type: 'current' }
                 allocation: ControlInfo
             }) => {
-                // this listener is for GM to allocate entity to player in case id of control info is null
+                // this listener is for GM to allocate character to player in case id of control info is null
                 this.broadcast(PLAYER_RESPONSES.HALT_ACTION)
                 this.sendToServer(GAME_SERVER_RESPONSES.ALLOCATE, {
                     game_id: this.gameId,
@@ -589,23 +589,23 @@ export class CombatConnection {
         }
     }
 
-    private generateEntityToolTip(entity: EntityInfo): EntityInfoTooltip {
+    private generateCharacterToolTip(character: CharacterInfo): CharacterInfoTooltip {
         return {
-            decorations: entity.decorations,
-            square: { line: entity.square.line, column: entity.square.column },
+            decorations: character.decorations,
+            square: { line: character.square.line, column: character.square.column },
             health: {
-                current: entity.attributes['builtins:current_health'],
-                max: entity.attributes['builtins:max_health'],
+                current: character.attributes['builtins:current_health'],
+                max: character.attributes['builtins:max_health'],
             },
             action_points: {
-                current: entity.attributes['builtins:current_action_points'],
-                max: entity.attributes['builtins:max_action_points'],
+                current: character.attributes['builtins:current_action_points'],
+                max: character.attributes['builtins:max_action_points'],
             },
             armor: {
-                current: entity.attributes['builtins:current_armor'],
-                base: entity.attributes['builtins:base_armor'],
+                current: character.attributes['builtins:current_armor'],
+                base: character.attributes['builtins:base_armor'],
             },
-            statusEffects: entity.statusEffects.map((effect) => {
+            statusEffects: character.statusEffects.map((effect) => {
                 return {
                     decorations: effect.decorations,
                     duration: effect.duration,
@@ -614,24 +614,15 @@ export class CombatConnection {
         }
     }
 
-    private generateEntityFullInfo(entity: EntityInfo): EntityInfoFull {
-        const {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            controlledBy,
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            id_,
-            ...entityInfo
-        } = entity
-        return {
-            ...entityInfo,
-        }
+    private generateCharacterFullInfo(character: CharacterInfo): CharacterInfoFull {
+        return omit(character, ['controlledBy', 'id_']) as CharacterInfoFull
     }
 
-    private generateEntityFullInfoForPlayer(playerId: string): Array<EntityInfoFull> {
-        const res: Array<EntityInfoFull> = []
-        Object.values(this.gameState.allEntitiesInfo).forEach((entity) => {
-            if (entity && entity.controlledBy.type === 'player' && entity.controlledBy.id === playerId) {
-                res.push(this.generateEntityFullInfo(entity))
+    private generateCharacterFullInfoForPlayer(playerId: string): Array<CharacterInfoFull> {
+        const res: Array<CharacterInfoFull> = []
+        Object.values(this.gameState.allCharactersInfo).forEach((character) => {
+            if (character && character.controlledBy.type === 'player' && character.controlledBy.id === playerId) {
+                res.push(this.generateCharacterFullInfo(character))
             }
         })
         return res
@@ -659,33 +650,33 @@ export class CombatConnection {
         if (!turnOrder) {
             turnOrder = this.generateGeneralTurnOrderInfo()
         }
-        return turnOrder.map((entity) => {
-            if (entity === null) {
+        return turnOrder.map((character) => {
+            if (character === null) {
                 return null
             }
             return {
-                ...entity,
-                controlledByYou: entity.controlledBy.type === 'player' && entity.controlledBy.id === playerId,
+                ...character,
+                controlledByYou: character.controlledBy.type === 'player' && character.controlledBy.id === playerId,
             }
         })
     }
 
     private generateGeneralTurnOrderInfo(): Array<CharacterInTurnOrder | null> {
         const turnOrderInfo: Array<CharacterInTurnOrder | null> = []
-        for (const entityId of this.gameState.turnInfo.order) {
-            if (entityId === null) {
+        for (const characterId of this.gameState.turnInfo.order) {
+            if (characterId === null) {
                 turnOrderInfo.push(null)
                 continue
             }
-            const entity = this.gameState.getCharacterById(entityId)
-            if (entity) {
+            const character = this.gameState.getCharacterById(characterId)
+            if (character) {
                 turnOrderInfo.push({
-                    controlledBy: entity.controlledBy,
-                    descriptor: entity.descriptor,
-                    decorations: entity.decorations,
+                    controlledBy: character.controlledBy,
+                    descriptor: character.descriptor,
+                    decorations: character.decorations,
                     square: {
-                        line: entity.square.line,
-                        column: entity.square.column,
+                        line: character.square.line,
+                        column: character.square.column,
                     },
                 })
             }
@@ -700,7 +691,7 @@ export class CombatConnection {
             combatStatus: this.gameState.battleResult,
             currentBattlefield: this.generateBattlefieldPlayers(),
             turnOrder: this.generateIndividualTurnOrder(playerId),
-            controlledEntities: this.generateEntityFullInfoForPlayer(playerId),
+            controlledCharacters: this.generateCharacterFullInfoForPlayer(playerId),
             gameLobbyState: this.getGameLobbyState(),
             actionTimestamp: this.gameState.turnInfo.actionTimeStamp ?? null,
         }
@@ -713,9 +704,12 @@ export class CombatConnection {
         }
         for (const [square, pawn] of Object.entries(pawns)) {
             if (pawn.character_id) {
-                const entityOnSquare = this.gameState.getCharacterById(pawn.character_id)
+                const characterOnSquare = this.gameState.getCharacterById(pawn.character_id)
                 res.pawns[square] = {
-                    character: entityOnSquare === null ? entityOnSquare : this.generateEntityToolTip(entityOnSquare),
+                    character:
+                        characterOnSquare === null
+                            ? characterOnSquare
+                            : this.generateCharacterToolTip(characterOnSquare),
                     areaEffects: pawn.area_effects,
                 }
             }
@@ -724,22 +718,22 @@ export class CombatConnection {
     }
 
     private emitTakeActionToPlayer() {
-        const trySending = (user_token: string | null, entity_id: string): boolean => {
+        const trySending = (user_token: string | null, character_id: string): boolean => {
             if (!user_token) {
                 return this.sendToGm(GM_RESPONSES.TAKE_UNALLOCATED_ACTION, {
-                    entityId: entity_id,
+                    characterId: character_id,
                     actions: this.gameState.turnInfo.actions,
                 })
             }
             if (user_token && this.players.find((player) => player.id === user_token)) {
                 this.sendToPlayer(user_token, PLAYER_RESPONSES.TAKE_ACTION, {
-                    entityId: entity_id,
+                    characterId: character_id,
                     actions: this.gameState.turnInfo.actions,
                 })
                 return true
             } else {
                 return this.sendToGm(GM_RESPONSES.TAKE_OFFLINE_PLAYER_ACTION, {
-                    entityId: entity_id,
+                    characterId: character_id,
                     actions: this.gameState.turnInfo.actions,
                 })
             }

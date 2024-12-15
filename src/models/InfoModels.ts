@@ -1,6 +1,6 @@
-import { EntityInfoFull } from './ClientModels'
+import { CharacterInfoFull } from './ClientModels'
 
-export type CharacterInfo = Omit<EntityInfoFull, 'square'>
+export type CharacterInfo = Omit<CharacterInfoFull, 'square'>
 
 export interface iUserAvatar {
     preferred: 'static' | 'generated'
